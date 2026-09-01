@@ -6,7 +6,16 @@
     "pricing": "Fiyatlandırma",
     "blog": "Blog",
     "about": "Hakkımızda",
-    "contact": "İletişim"
+    "contact": "İletişim",
+    "menu": "Menüyü aç",
+    "close": "Menüyü kapat"
+  },
+  "categories": {
+    "organize": "Sayfaları Düzenle",
+    "convert": "PDF Dönüştür",
+    "optimize": "PDF Optimize Et",
+    "edit": "PDF'i Özelleştir",
+    "security": "Güvenlik"
   },
   "footer": {
     "tagline": "Tarayıcınızda hızlı ve gizli PDF araçları.",

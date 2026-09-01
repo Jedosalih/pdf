@@ -4,9 +4,12 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Inter, Cairo } from "next/font/google";
+import { Direction } from "radix-ui";
 import { routing, isRtl, type Locale } from "@/lib/i18n/routing";
-import { Header } from "@/components/navigation/Header";
-import { Footer } from "@/components/navigation/Footer";
+import { AppHeader } from "@/components/layout/AppHeader";
+import { Footer } from "@/components/layout/Footer";
+import { Toaster } from "@/components/ui/Toast";
+import { TooltipProvider } from "@/components/ui/Tooltip";
 import "../globals.css";
 
 const inter = Inter({
@@ -56,9 +59,14 @@ export default async function LocaleLayout({
     >
       <body className={`${fontClassName} flex min-h-screen flex-col antialiased`}>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <Direction.Provider dir={dir}>
+            <TooltipProvider>
+              <AppHeader />
+              <main className="flex-1">{children}</main>
+              <Footer />
+              <Toaster />
+            </TooltipProvider>
+          </Direction.Provider>
         </NextIntlClientProvider>
       </body>
     </html>

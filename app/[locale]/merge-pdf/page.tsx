@@ -3,7 +3,9 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { buildLocalizedMetadata } from "@/lib/seo/metadata";
 import { getToolLimits } from "@/lib/entitlements";
 import { resolveActorReadOnly } from "@/lib/security/actor";
+import { getToolById } from "@/lib/tools/registry";
 import { MergePdfTool } from "@/components/tools/merge-pdf/MergePdfTool";
+import { ToolPage } from "@/components/tools/ToolPage";
 import type { Locale } from "@/lib/i18n/routing";
 
 interface PageProps {
@@ -25,6 +27,10 @@ export default async function MergePdfPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("tool.merge-pdf");
+  const tCommon = await getTranslations("common");
+
+  const tool = getToolById("merge-pdf")!;
+  const Icon = tool.icon;
 
   const actor = await resolveActorReadOnly();
   const limits = await getToolLimits(actor, "merge-pdf");
@@ -43,41 +49,21 @@ export default async function MergePdfPage({ params }: PageProps) {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
-      />
-
-      <h1 className="text-h1 font-bold text-foreground">{t("h1")}</h1>
-      <p className="mt-2 text-body text-muted-foreground">{t("subtitle")}</p>
-
-      <div className="mt-8">
-        <MergePdfTool maxFiles={limits.maxFiles} />
-      </div>
-
-      <section className="mt-16">
-        <h2 className="text-h2 font-semibold text-foreground">
-          {t("howItWorks.title")}
-        </h2>
-        <ol className="mt-4 flex list-decimal flex-col gap-2 ps-5 text-body text-foreground">
-          {steps.map((step) => (
-            <li key={step}>{step}</li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="mt-16">
-        <h2 className="text-h2 font-semibold text-foreground">{t("faq.title")}</h2>
-        <div className="mt-4 flex flex-col gap-4">
-          {faqItems.map((item) => (
-            <div key={item.q}>
-              <h3 className="text-h3 font-medium text-foreground">{item.q}</h3>
-              <p className="mt-1 text-body text-muted-foreground">{item.a}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
+    <ToolPage
+      icon={<Icon className="h-7 w-7" aria-hidden="true" />}
+      title={t("h1")}
+      subtitle={t("subtitle")}
+      breadcrumbs={[
+        { label: tCommon("brand"), href: "/" },
+        { label: tCommon(`categories.${tool.category}`), href: "/#tools" },
+        { label: t("h1") },
+      ]}
+      workspace={<MergePdfTool maxFiles={limits.maxFiles} />}
+      howItWorksTitle={t("howItWorks.title")}
+      steps={steps}
+      faqTitle={t("faq.title")}
+      faqItems={faqItems}
+      faqStructuredData={faqStructuredData}
+    />
   );
 }

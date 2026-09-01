@@ -6,7 +6,16 @@
     "pricing": "الأسعار",
     "blog": "المدونة",
     "about": "من نحن",
-    "contact": "تواصل معنا"
+    "contact": "تواصل معنا",
+    "menu": "فتح القائمة",
+    "close": "إغلاق القائمة"
+  },
+  "categories": {
+    "organize": "تنظيم PDF",
+    "convert": "تحويل PDF",
+    "optimize": "تحسين PDF",
+    "edit": "تحرير PDF",
+    "security": "الأمان"
   },
   "footer": {
     "tagline": "أدوات PDF سريعة وخاصة مباشرة من متصفحك.",

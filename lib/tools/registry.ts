@@ -1,18 +1,27 @@
+import { Combine } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
 const MB = 1024 * 1024;
 
+/**
+ * Tools are only added here once their full pipeline (worker handler, page,
+ * translations, E2E test) actually works end to end — an entry in this
+ * registry is a promise the homepage/nav will link to something real, not
+ * a placeholder (blueprint: "never ship a fake implementation").
+ */
 export const tools: ToolDefinition[] = [
   {
     id: "merge-pdf",
     slug: "merge-pdf",
-    category: "pdf",
+    category: "organize",
+    icon: Combine,
     inputTypes: ["application/pdf"],
     outputType: "application/pdf",
     processor: "qpdf",
     queue: "pdf-processing",
     enabled: true,
     guestEnabled: true,
+    multipleFiles: true,
     translationNamespace: "tool.merge-pdf",
     relatedTools: [],
     limits: {
@@ -34,6 +43,10 @@ export const tools: ToolDefinition[] = [
 
 export function getEnabledTools(): ToolDefinition[] {
   return tools.filter((tool) => tool.enabled);
+}
+
+export function getToolsByCategory(category: ToolDefinition["category"]): ToolDefinition[] {
+  return getEnabledTools().filter((tool) => tool.category === category);
 }
 
 export function getToolBySlug(slug: string): ToolDefinition | undefined {

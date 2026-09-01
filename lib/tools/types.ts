@@ -1,4 +1,6 @@
-export type ToolCategory = "pdf" | "image";
+import type { LucideIcon } from "lucide-react";
+
+export type ToolCategory = "organize" | "convert" | "optimize" | "edit" | "security";
 
 export type ToolProcessor =
   | "qpdf"
@@ -30,12 +32,15 @@ export interface ToolDefinition {
   id: string;
   slug: string;
   category: ToolCategory;
+  icon: LucideIcon;
   inputTypes: string[];
   outputType: string;
   processor: ToolProcessor;
   queue: ToolQueue;
   enabled: boolean;
   guestEnabled: boolean;
+  /** Whether the dropzone should accept more than one file at a time. */
+  multipleFiles: boolean;
   /** Key into messages/<locale>/index.ts, e.g. "tool.merge-pdf". */
   translationNamespace: string;
   relatedTools: string[];

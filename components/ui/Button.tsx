@@ -12,7 +12,10 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   leadingIcon?: ReactNode;
 }
 
-const variantClasses: Record<ButtonVariant, string> = {
+/** Color/state classes only — shared by Button, IconButton, and any
+ * non-<button> element styled to look like one. No sizing here so square
+ * icon buttons and text buttons can each apply their own. */
+export const buttonColorClasses: Record<ButtonVariant, string> = {
   primary: "bg-primary text-white hover:bg-primary-hover",
   secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
   ghost: "bg-transparent text-foreground hover:bg-surface",
@@ -35,7 +38,7 @@ export function buttonVariants(
   return cn(
     "inline-flex items-center justify-center rounded-md font-semibold transition-colors",
     "disabled:pointer-events-none disabled:opacity-50",
-    variantClasses[variant],
+    buttonColorClasses[variant],
     sizeClasses[size],
     className,
   );

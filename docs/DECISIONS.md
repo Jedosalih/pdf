@@ -210,6 +210,56 @@ Verified via `docker logs pdf-pdf-worker-1` and a direct Postgres query
 that the `Job` row reached `COMPLETED` with correctly linked input/output
 `File` rows, not just that the HTTP response looked right.
 
+## 2026-09-02 — Phase A: UI foundation rebuild
+
+Rebuilt the component system per the "Next Phase" brief (professional
+SaaS-quality UI, no AI-template look) before starting new tools:
+
+- **Icons**: `lucide-react` — MIT, tree-shakeable, one consistent icon
+  style. Every tool gets a `LucideIcon` in `lib/tools/registry.ts` now.
+- **Accessible primitives**: the unified `radix-ui` package (Dialog,
+  DropdownMenu, Tabs, Tooltip, Checkbox, Switch, RadioGroup, Select,
+  Slider) instead of hand-rolling focus-trapping/keyboard nav — that's
+  exactly where accessibility bugs would creep in under time pressure.
+  Wrapped the app in `Direction.Provider` (from `radix-ui`) so these
+  primitives get RTL right automatically.
+- **Toast**: `sonner` (via the `ask-sonner` skill) rather than raw Radix
+  Toast — ergonomic imperative API, less boilerplate for an initially
+  light use case.
+- **Page thumbnails**: `pdfjs-dist` installed now; `FileThumbnail` is
+  icon-based today and will render real PDF page previews once a
+  page-selection tool (Delete/Extract/Reorder/Rotate) actually needs it —
+  no point building that complexity before a consumer exists.
+- Reorganized `components/navigation/` → `components/layout/` (AppHeader,
+  DesktopNav, MobileNav, Footer, PageContainer, Section, Breadcrumbs,
+  LocaleSwitcher) and `components/upload/FileDropzone` →
+  `components/tools/ToolDropzone` to match the requested structure and
+  avoid two overlapping "nav" locations.
+- Extracted `useToolWorkflow` (`components/tools/useToolWorkflow.ts`): the
+  single upload -> job -> poll -> download orchestration hook every tool
+  page will use, generalized out of the original `MergePdfTool`. Tool
+  pages only supply `toolId`, accepted mime type, `multiple`, and their
+  own options UI before calling `start(options)`.
+- Extended `ToolCategory` from `"pdf" | "image"` to the five groups the
+  brief specifies (`organize`/`convert`/`optimize`/`edit`/`security`) and
+  added `icon`/`multipleFiles` to `ToolDefinition`.
+
+**Found via actual screenshots, not just code review**: the homepage's
+scroll-triggered fade-in (`components/ui/Reveal.tsx`, added earlier this
+session) left entire sections (`Why JDpdf`, `How it works`) permanently
+invisible in a full-page capture — the `IntersectionObserver` never fired
+for content outside the initial viewport in that context, and more
+importantly this pattern (hide-by-default until JS says otherwise) is
+fragile for real users too, and wasn't even in the brief's sanctioned
+animation list (upload/drag/processing/success/hover). Deleted it;
+homepage content now always renders and only uses hover/interaction-driven
+motion. Lesson: screenshot the actual result for visual/UI work — code
+review alone would not have caught this.
+
+Verified after the rewrite: `tsc --noEmit`, `eslint`, and the real
+Playwright Merge PDF E2E test all still pass — the refactor didn't touch
+`lib/`, `app/api/`, or `workers/pdf/`.
+
 ## Template for future entries
 
 ```
