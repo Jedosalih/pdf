@@ -1,0 +1,28 @@
+{
+  "hero": {
+    "title": "Every PDF tool you need, in one place",
+    "subtitle": "Merge, split, compress and convert PDFs directly in your browser — fast, private, and free to start.",
+    "cta": "Explore tools"
+  },
+  "popularTools": {
+    "title": "Popular tools"
+  },
+  "whyUs": {
+    "title": "Why JDpdf",
+    "items": [
+      { "title": "Fast", "description": "Most operations finish in seconds." },
+      {
+        "title": "Private",
+        "description": "Files are processed securely and deleted automatically."
+      },
+      {
+        "title": "No installation",
+        "description": "Everything runs in your browser."
+      }
+    ]
+  },
+  "howItWorks": {
+    "title": "How it works",
+    "steps": ["Upload your file", "Choose your tool", "Download the result"]
+  }
+}

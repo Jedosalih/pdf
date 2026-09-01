@@ -1,0 +1,28 @@
+{
+  "upload": {
+    "dropHere": "Drag & drop your files here",
+    "orBrowse": "or click to browse",
+    "accepts": "Accepts {types}",
+    "maxSize": "Max {size} per file",
+    "maxFiles": "Up to {count} files"
+  },
+  "status": {
+    "uploading": "Uploading…",
+    "queued": "Queued…",
+    "processing": "Processing…",
+    "finalizing": "Finalizing…",
+    "ready": "Ready",
+    "failed": "Processing failed"
+  },
+  "reorder": {
+    "moveUp": "Move up",
+    "moveDown": "Move down"
+  },
+  "result": {
+    "title": "Your file is ready",
+    "download": "Download",
+    "processAnother": "Process another file",
+    "relatedTools": "Related tools"
+  },
+  "privacyNote": "Files are processed securely and deleted automatically after a short time."
+}

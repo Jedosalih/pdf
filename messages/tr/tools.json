@@ -1,0 +1,28 @@
+{
+  "upload": {
+    "dropHere": "Dosyalarınızı buraya sürükleyip bırakın",
+    "orBrowse": "ya da seçmek için tıklayın",
+    "accepts": "{types} kabul edilir",
+    "maxSize": "Dosya başına en fazla {size}",
+    "maxFiles": "En fazla {count} dosya"
+  },
+  "status": {
+    "uploading": "Yükleniyor…",
+    "queued": "Sırada…",
+    "processing": "İşleniyor…",
+    "finalizing": "Tamamlanıyor…",
+    "ready": "Hazır",
+    "failed": "İşlem başarısız oldu"
+  },
+  "reorder": {
+    "moveUp": "Yukarı taşı",
+    "moveDown": "Aşağı taşı"
+  },
+  "result": {
+    "title": "Dosyanız hazır",
+    "download": "İndir",
+    "processAnother": "Başka bir dosya işle",
+    "relatedTools": "İlgili araçlar"
+  },
+  "privacyNote": "Dosyalar güvenli şekilde işlenir ve kısa bir süre sonra otomatik olarak silinir."
+}

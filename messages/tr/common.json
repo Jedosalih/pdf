@@ -1,0 +1,37 @@
+{
+  "brand": "JDpdf",
+  "nav": {
+    "pdfTools": "PDF Araçları",
+    "imageTools": "Görsel Araçları",
+    "pricing": "Fiyatlandırma",
+    "blog": "Blog",
+    "about": "Hakkımızda",
+    "contact": "İletişim"
+  },
+  "footer": {
+    "tagline": "Tarayıcınızda hızlı ve gizli PDF araçları.",
+    "product": "Ürün",
+    "company": "Şirket",
+    "legal": "Yasal",
+    "privacyPolicy": "Gizlilik Politikası",
+    "termsOfService": "Kullanım Şartları",
+    "rights": "Tüm hakları saklıdır."
+  },
+  "buttons": {
+    "upload": "Yükle",
+    "download": "İndir",
+    "cancel": "İptal",
+    "retry": "Tekrar dene",
+    "tryAgain": "Başka bir dosya işle",
+    "removeFile": "Kaldır",
+    "startProcessing": "Başlat"
+  },
+  "errors": {
+    "generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
+    "unsupportedFile": "Bu dosya türü desteklenmiyor.",
+    "fileTooLarge": "Bu dosya izin verilen boyut sınırından büyük.",
+    "tooManyPages": "Bu dosyanın sayfa sayısı izin verilen sınırdan fazla.",
+    "tooManyFiles": "Bu araç için izin verilenden fazla dosya seçtiniz.",
+    "limitReached": "Bugünkü ücretsiz kullanım sınırınıza ulaştınız."
+  }
+}

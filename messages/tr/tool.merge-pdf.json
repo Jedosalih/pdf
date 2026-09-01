@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PDF Dosyalarını Çevrimiçi Birleştir — Ücretsiz ve Güvenli | JDpdf",
+    "description": "Birden fazla PDF dosyasını saniyeler içinde tek bir dosyada birleştirin. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "PDF dosyalarını birleştir",
+  "subtitle": "Birden fazla PDF'i seçtiğiniz sırayla tek bir belgede birleştirin.",
+  "howItWorks": {
+    "title": "PDF dosyaları nasıl birleştirilir",
+    "steps": [
+      "İki veya daha fazla PDF dosyası yükleyin.",
+      "İstediğiniz sıraya göre sürükleyerek düzenleyin.",
+      "Birleştir'e tıklayın ve birleşik PDF'inizi indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "PDF birleştirme ücretsiz mi?",
+        "a": "Evet, yukarıda belirtilen günlük kullanım sınırları dahilinde PDF birleştirme ücretsizdir."
+      },
+      {
+        "q": "Dosyalarım gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      },
+      {
+        "q": "Birleştirebileceğim dosya sayısında bir sınır var mı?",
+        "a": "Misafir kullanıcılar işlem başına en fazla 10, kayıtlı kullanıcılar ise en fazla 20 dosya birleştirebilir."
+      }
+    ]
+  },
+  "relatedTools": ["split-pdf", "compress-pdf", "organize-pdf"]
+}

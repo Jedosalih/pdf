@@ -1,0 +1,28 @@
+{
+  "upload": {
+    "dropHere": "اسحب ملفاتك وأفلتها هنا",
+    "orBrowse": "أو انقر للاختيار من جهازك",
+    "accepts": "يقبل {types}",
+    "maxSize": "بحد أقصى {size} لكل ملف",
+    "maxFiles": "حتى {count} ملفات"
+  },
+  "status": {
+    "uploading": "جارٍ الرفع…",
+    "queued": "في قائمة الانتظار…",
+    "processing": "جارٍ المعالجة…",
+    "finalizing": "جارٍ الإنهاء…",
+    "ready": "جاهز",
+    "failed": "فشلت المعالجة"
+  },
+  "reorder": {
+    "moveUp": "نقل لأعلى",
+    "moveDown": "نقل لأسفل"
+  },
+  "result": {
+    "title": "ملفك جاهز",
+    "download": "تنزيل",
+    "processAnother": "معالجة ملف آخر",
+    "relatedTools": "أدوات ذات صلة"
+  },
+  "privacyNote": "تتم معالجة الملفات بشكل آمن ويتم حذفها تلقائيًا بعد فترة قصيرة."
+}

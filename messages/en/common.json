@@ -1,0 +1,37 @@
+{
+  "brand": "JDpdf",
+  "nav": {
+    "pdfTools": "PDF Tools",
+    "imageTools": "Image Tools",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "about": "About",
+    "contact": "Contact"
+  },
+  "footer": {
+    "tagline": "Fast, private PDF tools in your browser.",
+    "product": "Product",
+    "company": "Company",
+    "legal": "Legal",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "rights": "All rights reserved."
+  },
+  "buttons": {
+    "upload": "Upload",
+    "download": "Download",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "tryAgain": "Try another file",
+    "removeFile": "Remove",
+    "startProcessing": "Start"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "unsupportedFile": "This file type isn't supported.",
+    "fileTooLarge": "This file is larger than the allowed limit.",
+    "tooManyPages": "This file has more pages than the allowed limit.",
+    "tooManyFiles": "You've selected more files than this tool allows.",
+    "limitReached": "You've reached today's free limit."
+  }
+}

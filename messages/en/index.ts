@@ -1,0 +1,15 @@
+import common from "./common.json";
+import home from "./home.json";
+import tools from "./tools.json";
+import mergePdf from "./tool.merge-pdf.json";
+
+const messages = {
+  common,
+  home,
+  tools,
+  tool: {
+    "merge-pdf": mergePdf,
+  },
+};
+
+export default messages;

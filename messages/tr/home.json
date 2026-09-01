@@ -1,0 +1,31 @@
+{
+  "hero": {
+    "title": "İhtiyacınız olan tüm PDF araçları tek bir yerde",
+    "subtitle": "PDF'leri doğrudan tarayıcınızda birleştirin, bölün, sıkıştırın ve dönüştürün — hızlı, gizli ve başlamak ücretsiz.",
+    "cta": "Araçları keşfet"
+  },
+  "popularTools": {
+    "title": "Popüler araçlar"
+  },
+  "whyUs": {
+    "title": "Neden JDpdf",
+    "items": [
+      {
+        "title": "Hızlı",
+        "description": "İşlemlerin çoğu saniyeler içinde tamamlanır."
+      },
+      {
+        "title": "Gizli",
+        "description": "Dosyalar güvenli şekilde işlenir ve otomatik olarak silinir."
+      },
+      {
+        "title": "Kurulum gerektirmez",
+        "description": "Her şey doğrudan tarayıcınızda çalışır."
+      }
+    ]
+  },
+  "howItWorks": {
+    "title": "Nasıl çalışır",
+    "steps": ["Dosyanızı yükleyin", "Aracınızı seçin", "Sonucu indirin"]
+  }
+}

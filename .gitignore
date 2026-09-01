@@ -21,6 +21,8 @@ next-env.d.ts
 # prisma
 prisma/dev.db
 prisma/*.db-journal
+# copied from prisma/schema.prisma by workers/pdf's sync:schema script
+workers/pdf/prisma/
 
 # testing
 coverage/

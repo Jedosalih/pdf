@@ -64,6 +64,91 @@ if a decision is reversed, add a new entry rather than editing the old one.
   minimal tables (so later phases don't require a disruptive migration
   path) but are not yet read/written by any code.
 
+## 2026-09-02 — Known dev-tooling advisory (accepted, monitor)
+
+`npm audit` flags 4 high-severity advisories (lodash prototype pollution,
+deepmerge-ts stack exhaustion, mysql2 auth downgrade) that all trace back
+to the **Prisma CLI's** own dependency tree (`prisma` devDependency, via
+`@prisma/config` and its bundled MySQL connector) — not to `@prisma/client`,
+which is the only Prisma package that actually runs in production. We use
+Postgres, so the vulnerable MySQL connector path is never exercised. The
+only available fix (`npm audit fix --force`) downgrades `prisma` to 6.19.3,
+which would also break the CLI/client version match we just fixed (client
+is pinned at 7.10.0). Accepted for now; re-check when Prisma ships a patch
+release that updates these transitive deps without a major downgrade.
+
+## 2026-09-02 — Prisma 7 configuration model (breaking change from 5/6)
+
+`npm install prisma` resolved to **7.10.0**, which removed
+`datasource { url = env("DATABASE_URL") }` from `schema.prisma` entirely —
+`prisma generate`/`migrate` now read connection info from a root-level
+`prisma.config.ts` (`defineConfig({ datasource: { url: env(...) } })`,
+requires `dotenv/config` to load `.env` since the CLI no longer does this
+implicitly), and **runtime `PrismaClient` instances require a driver
+adapter** (`@prisma/adapter-pg` wrapping `DATABASE_URL`, via `new
+PrismaClient({ adapter })`) — the old `new PrismaClient({ datasourceUrl })`
+constructor option was removed. Both `lib/db/client.ts` (Next.js app) and
+`workers/pdf/src/db.ts` (worker) now construct their own `PrismaPg`
+adapter. Verified against the actual installed CLI (7.10.0), not just
+documentation, after `prisma generate` failed with error code P1012 on the
+old-style schema.
+
+Also: the worker's `prisma generate` resolves its output location by
+walking up from wherever `schema.prisma` physically lives, not from the
+CWD the CLI is invoked from. Pointing `--schema` at the root file (via a
+relative path) generated the client into the **root** `node_modules`, not
+`workers/pdf/node_modules` — silently leaving the worker's own installed
+`@prisma/client` copy unpopulated (Node module resolution finds the
+worker's local, stale copy first). Fixed by having `workers/pdf`'s
+`db:generate` script copy `prisma/schema.prisma` into a local
+`workers/pdf/prisma/schema.prisma` (gitignored — regenerated on demand,
+root schema stays the single source of truth) before running `prisma
+generate`, so the output lands in the worker's own `node_modules` — this
+also matches what the worker's Dockerfile does at image-build time for a
+truly independent deployable.
+
+## 2026-09-02 — react-bits evaluated, not adopted wholesale
+
+Checked reactbits.dev for homepage section/template components per a
+request to use it. Its catalog (Text Animations, Backgrounds, general
+Animations, decorative UI components — often GSAP-dependent) is oriented
+toward flashy marketing sites, which directly conflicts with
+`docs/DESIGN_RESEARCH.md` and blueprint §20 ("avoid decorative
+animation/backgrounds with no functional purpose," "look like a mature
+productivity tool, not an AI SaaS template"). It also doesn't offer full
+page-section templates (hero/feature/pricing blocks) — it's a
+micro-component library.
+
+Instead of pulling in the library (and a GSAP-class dependency) wholesale,
+added one small zero-dependency primitive, `components/ui/Reveal.tsx` — a
+subtle fade + slight upward slide on scroll-into-view (IntersectionObserver
++ CSS transition, respects `prefers-reduced-motion`), applied to homepage
+sections/cards. Gets the "polished, not static" feel the request was after
+without contradicting the calm/restrained direction or adding a dependency.
+
+## 2026-09-02 — eslint-config-next 16 ships native flat config
+
+The initial `eslint.config.mjs` used the legacy pattern
+(`FlatCompat.extends("next/core-web-vitals", "next/typescript")`), which is
+what `create-next-app` has generated for a while — but with the installed
+versions (`eslint-config-next` 16.3.4, `eslint` 9.39.5, `@eslint/eslintrc`
+3.3.7) it crashed with `TypeError: Converting circular structure to JSON`
+while validating the shimmed config. Inspecting
+`node_modules/eslint-config-next/dist/index.js` showed it now
+`module.exports`s a native flat-config array directly (bundling
+core-web-vitals + typescript-eslint rules already), so the fix was to drop
+`@eslint/eslintrc`/`FlatCompat` entirely and `import nextConfig from
+"eslint-config-next"` then spread it — simpler and it's the config this
+version actually ships for flat-config consumers.
+
+## 2026-09-02 — middleware.ts → proxy.ts (Next.js 16 rename)
+
+Next.js 16 deprecated the `middleware.ts` file convention in favor of
+`proxy.ts` (same behavior/signature, default export still supported —
+only the filename changed as far as this project is concerned). Renamed
+per the build's deprecation warning rather than leaving it on a
+deprecated path from day one.
+
 ## Template for future entries
 
 ```

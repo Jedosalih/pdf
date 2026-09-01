@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "Merge PDF Files Online — Free & Secure | JDpdf",
+    "description": "Combine multiple PDF files into one in seconds. Free, fast, and private — no installation required."
+  },
+  "h1": "Merge PDF files",
+  "subtitle": "Combine multiple PDFs into a single document in the order you choose.",
+  "howItWorks": {
+    "title": "How to merge PDF files",
+    "steps": [
+      "Upload two or more PDF files.",
+      "Drag to reorder them the way you want.",
+      "Click Merge and download your combined PDF."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is merging PDFs free?",
+        "a": "Yes, merging PDFs is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will my files be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      },
+      {
+        "q": "Is there a limit to how many files I can merge?",
+        "a": "Guests can merge up to 10 files per job; registered users can merge up to 20."
+      }
+    ]
+  },
+  "relatedTools": ["split-pdf", "compress-pdf", "organize-pdf"]
+}

@@ -1,0 +1,37 @@
+{
+  "brand": "JDpdf",
+  "nav": {
+    "pdfTools": "أدوات PDF",
+    "imageTools": "أدوات الصور",
+    "pricing": "الأسعار",
+    "blog": "المدونة",
+    "about": "من نحن",
+    "contact": "تواصل معنا"
+  },
+  "footer": {
+    "tagline": "أدوات PDF سريعة وخاصة مباشرة من متصفحك.",
+    "product": "المنتج",
+    "company": "الشركة",
+    "legal": "قانوني",
+    "privacyPolicy": "سياسة الخصوصية",
+    "termsOfService": "شروط الاستخدام",
+    "rights": "جميع الحقوق محفوظة."
+  },
+  "buttons": {
+    "upload": "رفع الملف",
+    "download": "تنزيل",
+    "cancel": "إلغاء",
+    "retry": "إعادة المحاولة",
+    "tryAgain": "معالجة ملف آخر",
+    "removeFile": "إزالة",
+    "startProcessing": "بدء"
+  },
+  "errors": {
+    "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+    "unsupportedFile": "نوع هذا الملف غير مدعوم.",
+    "fileTooLarge": "حجم هذا الملف أكبر من الحد المسموح به.",
+    "tooManyPages": "عدد صفحات هذا الملف أكبر من الحد المسموح به.",
+    "tooManyFiles": "لقد اخترت ملفات أكثر مما تسمح به هذه الأداة.",
+    "limitReached": "لقد وصلت إلى الحد المجاني اليومي."
+  }
+}
