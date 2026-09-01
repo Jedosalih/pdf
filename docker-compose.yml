@@ -1,0 +1,89 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jdpdf
+      POSTGRES_PASSWORD: jdpdf
+      POSTGRES_DB: jdpdf
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jdpdf"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # S3-compatible object storage for local dev — same API surface as R2/S3
+  # in production (see lib/storage).
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: jdpdf
+      MINIO_ROOT_PASSWORD: jdpdf12345
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 jdpdf jdpdf12345 &&
+      mc mb --ignore-existing local/jdpdf-dev
+      "
+
+  pdf-worker:
+    build:
+      context: .
+      dockerfile: workers/pdf/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
+      REDIS_URL: redis://redis:6379
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_REGION: auto
+      STORAGE_BUCKET: jdpdf-dev
+      STORAGE_ACCESS_KEY: jdpdf
+      STORAGE_SECRET_KEY: jdpdf12345
+      STORAGE_FORCE_PATH_STYLE: "true"
+      NODE_ENV: production
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
