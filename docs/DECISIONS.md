@@ -149,6 +149,67 @@ only the filename changed as far as this project is concerned). Renamed
 per the build's deprecation warning rather than leaving it on a
 deprecated path from day one.
 
+## 2026-09-02 — Worker Docker build: TypeScript 7 native binary + OpenSSL
+
+First `docker compose up --build` failed two ways, both fixed in
+`workers/pdf/Dockerfile`:
+
+- `npm install --omit=optional` broke `tsc` inside the image with
+  `Unable to resolve @typescript/typescript-linux-x64` — TypeScript 7's
+  compiler ships as a platform-specific native binary distributed as an
+  *optional* dependency (same pattern as esbuild/swc), so omitting
+  optional deps removes the compiler binary entirely. Fixed by installing
+  with optional dependencies included (npm resolves the correct
+  linux-x64 variant since install runs inside the Linux container
+  regardless of the Windows host).
+- Prisma logged a warning that it couldn't detect libssl/OpenSSL in the
+  `node:22-bookworm-slim` base image and defaulted to guessing
+  `openssl-1.1.x`. Installed `openssl` alongside `qpdf` in the image
+  rather than leaving that guess in place for a service that talks to
+  Postgres.
+
+## 2026-09-02 — First real end-to-end verification (Merge PDF) + two bugs found
+
+Brought up the full local stack (`docker compose up`: Postgres, Redis,
+MinIO, the containerized `pdf-worker`), ran `prisma migrate dev` + the
+seed script, and added a real Playwright E2E test
+(`tests/e2e/merge-pdf.spec.ts`, using generated fixtures in
+`docs/fixtures/` via `scripts/generate-fixtures.mjs`) that drives an actual
+browser: upload two real PDFs -> merge -> download -> verify the
+downloaded file is a valid 5-page PDF. This is the blueprint §65 "Guest ->
+Merge PDF -> Download" critical flow, now a permanent regression test, not
+just a one-off manual check.
+
+This surfaced two real bugs that unit tests/typecheck couldn't have caught:
+
+1. **Cookie-write in a Server Component.** `app/[locale]/merge-pdf/page.tsx`
+   called `resolveActor()` (which mints a guest-id cookie) directly in a
+   Server Component render, which Next.js forbids — cookies can only be
+   *set* in a Route Handler or Server Action. Fixed by adding
+   `resolveActorReadOnly()` (`lib/security/actor.ts`), which reads the
+   existing cookie without trying to write one; safe here specifically
+   because `getToolLimits`'s guest branch only checks `actor.type`, never
+   `actor.guestId`.
+2. **Guest-cookie mint race on first visit.** The Merge PDF UI fires all
+   file uploads in parallel (by design — no reason to serialize them).
+   For a brand-new guest with no cookie yet, two concurrent `/api/upload`
+   requests each independently minted their *own* guest id (no
+   coordination), so the two uploaded files ended up owned by two
+   different guest ids — job creation then correctly rejected it as an
+   ownership mismatch (403). Fixed by moving cookie minting into
+   `proxy.ts` (extracted the signing logic into
+   `lib/security/guestIdCore.ts`, shared between the Route Handler helper
+   and the proxy), so the cookie already exists on the page's initial
+   navigation response — before any client-side parallel requests fire.
+
+Also added structured success/failure logging to `workers/pdf/src/index.ts`
+(job id, tool id, result, duration — no file contents) per
+`docs/SECURITY.md` §8, which had only covered the failure path before.
+
+Verified via `docker logs pdf-pdf-worker-1` and a direct Postgres query
+that the `Job` row reached `COMPLETED` with correctly linked input/output
+`File` rows, not just that the HTTP response looked right.
+
 ## Template for future entries
 
 ```

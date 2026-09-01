@@ -21,6 +21,7 @@ const worker = new Worker<ProcessingJobPayload>(
   "pdf-processing",
   async (bullJob: BullJob<ProcessingJobPayload>) => {
     const { jobId } = bullJob.data;
+    const startedAt = Date.now();
 
     const dbJob = await prisma.job.update({
       where: { id: jobId },
@@ -46,6 +47,11 @@ const worker = new Worker<ProcessingJobPayload>(
         where: { id: jobId },
         data: { status: "COMPLETED", completedAt: new Date(), progress: 100 },
       });
+      // Structured, non-sensitive: job id, tool id, duration, result only —
+      // never file contents (docs/SECURITY.md §8).
+      console.log(
+        `[pdf-worker] job=${jobId} tool=${dbJob.toolId} result=completed durationMs=${Date.now() - startedAt}`,
+      );
     } catch (error) {
       const code = error instanceof JobFailure ? error.code : "PROCESSING_FAILED";
       await prisma.job.update({
@@ -53,7 +59,10 @@ const worker = new Worker<ProcessingJobPayload>(
         data: { status: "FAILED", completedAt: new Date(), errorCode: code },
       });
       // Full error is logged server-side only — never surfaced to the client.
-      console.error(`[pdf-worker] job ${jobId} failed:`, error);
+      console.error(
+        `[pdf-worker] job=${jobId} tool=${dbJob.toolId} result=failed errorCode=${code} durationMs=${Date.now() - startedAt}`,
+        error,
+      );
     }
   },
   { connection, concurrency: 4 },

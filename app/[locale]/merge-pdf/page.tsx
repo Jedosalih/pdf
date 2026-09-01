@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { buildLocalizedMetadata } from "@/lib/seo/metadata";
 import { getToolLimits } from "@/lib/entitlements";
-import { resolveActor } from "@/lib/security/actor";
+import { resolveActorReadOnly } from "@/lib/security/actor";
 import { MergePdfTool } from "@/components/tools/merge-pdf/MergePdfTool";
 import type { Locale } from "@/lib/i18n/routing";
 
@@ -26,7 +26,7 @@ export default async function MergePdfPage({ params }: PageProps) {
   setRequestLocale(locale);
   const t = await getTranslations("tool.merge-pdf");
 
-  const actor = await resolveActor();
+  const actor = await resolveActorReadOnly();
   const limits = await getToolLimits(actor, "merge-pdf");
 
   const faqItems = t.raw("faq.items") as { q: string; a: string }[];

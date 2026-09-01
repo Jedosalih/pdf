@@ -4,13 +4,17 @@
 FROM node:22-bookworm-slim
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends qpdf \
+    && apt-get install -y --no-install-recommends qpdf openssl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY workers/pdf/package.json ./
-RUN npm install --omit=optional
+# Do NOT use --omit=optional here: TypeScript 7's compiler ships as a
+# platform-specific native binary via an optional dependency
+# (e.g. @typescript/typescript-linux-x64) — omitting optional deps breaks
+# `tsc` inside the image. See docs/DECISIONS.md.
+RUN npm install
 
 COPY prisma ./prisma
 COPY workers/pdf/tsconfig.json ./

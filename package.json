@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "test:e2e": "playwright test"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -33,6 +34,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.4.1",
     "@types/pg": "^8.23.1",

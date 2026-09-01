@@ -1,57 +1,33 @@
 import { cookies } from "next/headers";
-import crypto from "node:crypto";
-
-const COOKIE_NAME = "jdpdf_guest";
-const MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
-
-function requireSecret(): string {
-  const secret = process.env.GUEST_ID_SECRET;
-  if (!secret) {
-    throw new Error("Missing required environment variable: GUEST_ID_SECRET");
-  }
-  return secret;
-}
-
-function sign(value: string): string {
-  return crypto.createHmac("sha256", requireSecret()).update(value).digest("hex");
-}
-
-function pack(id: string): string {
-  return `${id}.${sign(id)}`;
-}
-
-function unpack(cookieValue: string): string | null {
-  const [id, signature] = cookieValue.split(".");
-  if (!id || !signature) return null;
-
-  const expected = sign(id);
-  const provided = Buffer.from(signature);
-  const expectedBuffer = Buffer.from(expected);
-  if (provided.length !== expectedBuffer.length) return null;
-  if (!crypto.timingSafeEqual(provided, expectedBuffer)) return null;
-
-  return id;
-}
+import {
+  GUEST_COOKIE_NAME,
+  GUEST_COOKIE_MAX_AGE_SECONDS,
+  packGuestId,
+  unpackGuestId,
+  generateGuestId,
+} from "./guestIdCore";
 
 /**
  * Identifies anonymous users via a signed, httpOnly cookie — not browser
  * fingerprinting (blueprint §10, §44). Call only from Route Handlers or
- * Server Actions, where `cookies()` is writable.
+ * Server Actions, where `cookies()` is writable. In practice `proxy.ts`
+ * already ensures this cookie exists by the time a page's client JS runs,
+ * so this mainly just re-reads it — see `lib/security/guestIdCore.ts`.
  */
 export async function getOrCreateGuestId(): Promise<string> {
   const store = await cookies();
-  const existing = store.get(COOKIE_NAME)?.value;
-  const verified = existing ? unpack(existing) : null;
+  const existing = store.get(GUEST_COOKIE_NAME)?.value;
+  const verified = existing ? unpackGuestId(existing) : null;
   if (verified) {
     return verified;
   }
 
-  const id = crypto.randomUUID();
-  store.set(COOKIE_NAME, pack(id), {
+  const id = generateGuestId();
+  store.set(GUEST_COOKIE_NAME, packGuestId(id), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    maxAge: MAX_AGE_SECONDS,
+    maxAge: GUEST_COOKIE_MAX_AGE_SECONDS,
     path: "/",
   });
   return id;
@@ -60,6 +36,6 @@ export async function getOrCreateGuestId(): Promise<string> {
 /** Read-only variant for contexts that can't set cookies (e.g. Server Components). */
 export async function readGuestId(): Promise<string | null> {
   const store = await cookies();
-  const existing = store.get(COOKIE_NAME)?.value;
-  return existing ? unpack(existing) : null;
+  const existing = store.get(GUEST_COOKIE_NAME)?.value;
+  return existing ? unpackGuestId(existing) : null;
 }
