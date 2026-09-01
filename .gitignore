@@ -1,0 +1,48 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next.js
+.next/
+out/
+build/
+dist/
+
+# env
+.env
+.env*.local
+!.env.example
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma
+prisma/dev.db
+prisma/*.db-journal
+
+# testing
+coverage/
+test-results/
+playwright-report/
+
+# logs
+*.log
+npm-debug.log*
+
+# editor/OS
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# local storage/worker temp
+.storage/
+tmp/
+workers/**/tmp/
+
+# claude / agent-skills local state (restore via `npx skills experimental_install`)
+.claude/skills/
+.agents/
