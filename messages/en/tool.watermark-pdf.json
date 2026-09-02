@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "Add a Watermark to a PDF Online — Free & Secure | JDpdf",
+    "description": "Stamp a text watermark across every page of a PDF. Free, fast, and private — no installation required."
+  },
+  "h1": "Watermark PDF",
+  "subtitle": "Add a text watermark across every page of a PDF file.",
+  "options": {
+    "textLabel": "Watermark text",
+    "textPlaceholder": "e.g. CONFIDENTIAL"
+  },
+  "howItWorks": {
+    "title": "How to add a watermark to a PDF",
+    "steps": [
+      "Upload the PDF file you want to watermark.",
+      "Type the text you want stamped on every page.",
+      "Click Add watermark and download the result."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is adding a watermark free?",
+        "a": "Yes, adding a watermark is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Is the watermark added to every page?",
+        "a": "Yes, the same watermark text is stamped diagonally across every page of the file."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["compress-pdf", "merge-pdf"]
+}

@@ -451,6 +451,43 @@ Playwright E2E tests decode the actual downloaded bytes with `sharp`
 JPEG/PNG, and count matches page count exactly (6 outputs for a 6-page
 input, 3 for a 3-page input) — cross-checked in Postgres.
 
+## 2026-09-02 — Watermark PDF shipped (12th tool, verified end-to-end)
+
+Added `workers/pdf/src/handlers/watermarkPdf.ts` (`pdf-lib`, no
+subprocess — same rationale as `imageToPdf.ts`) that stamps a single
+user-supplied text string diagonally (45°) across the center of every
+page, sized relative to the page's smaller dimension so it scales
+sensibly across page sizes. `pdf-lib`'s `drawText` rotates around the
+pre-rotation bottom-left corner of the text, not its visual center, so
+centering a rotated string requires solving for the anchor point that
+puts the text's actual visual center at the page's center post-rotation
+— implemented with the standard 2D rotation-around-a-pivot formula
+rather than eyeballing an offset.
+
+New pattern for this tool vs. prior ones: the first tool whose only
+option is free-text input rather than a Select/degree/mode choice, so
+`WatermarkPdfTool.tsx` uses `components/ui/Input` instead of `Select`,
+with a 100-character client-side cap mirrored by a server-side check in
+the handler (`JobFailure("VALIDATION_ERROR")` on empty or over-length
+text) — the client cap is UX, the server check is the actual boundary
+since `Job.options` is attacker-controlled JSON.
+
+Verified: `tsc --noEmit`/`eslint` clean on both app and worker, worker
+`tsc` build clean, `docker compose up -d --build pdf-worker` rebuilt with
+the new handler registered, reseeded. `tests/e2e/watermark-pdf.spec.ts`
+uploads a 3-page fixture, types a distinctive watermark string, downloads
+the result, and — beyond just checking a valid 3-page PDF — extracts each
+page's actual text via the existing `pdfText.ts` helper and asserts the
+watermark string is present on every page (a broken handler that ignored
+the `text` option or only stamped page 1 would still pass a page-count-only
+check). Full Playwright suite (12/12) green, confirming no regression to
+the 11 previously-shipped tools. Cross-checked directly in Postgres: two
+test-run `Job` rows `COMPLETED` for `watermark-pdf`, each with a linked
+`File` row (`watermarked.pdf`, `application/pdf`, status `READY`). Full
+`next build` production check passed, including the new
+`/[locale]/watermark-pdf` route. Screenshot-verified both `en` (LTR) and
+`ar` (RTL) renders.
+
 ## Template for future entries
 
 ```

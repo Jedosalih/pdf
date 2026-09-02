@@ -8,6 +8,7 @@ import {
   ArrowUpDown,
   FileImage,
   Image,
+  Stamp,
 } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
@@ -335,6 +336,35 @@ export const tools: ToolDefinition[] = [
         maxFileSizeBytes: 50 * MB,
         maxFiles: 1,
         maxPages: 300,
+        dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "watermark-pdf",
+    slug: "watermark-pdf",
+    category: "edit",
+    icon: Stamp,
+    inputTypes: ["application/pdf"],
+    outputType: "application/pdf",
+    processor: "pdf-lib",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.watermark-pdf",
+    relatedTools: ["compress-pdf", "merge-pdf"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 20 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 50 * MB,
+        maxFiles: 1,
+        maxPages: 1000,
         dailyOperations: 30,
       },
     },

@@ -10,6 +10,7 @@ import { handleExtractPages } from "./handlers/extractPages.js";
 import { handleReorderPages } from "./handlers/reorderPages.js";
 import { handleImageToPdf } from "./handlers/imageToPdf.js";
 import { handlePdfToJpg, handlePdfToPng } from "./handlers/pdfToImage.js";
+import { handleWatermarkPdf } from "./handlers/watermarkPdf.js";
 import { JobFailure } from "./errors.js";
 
 const connection = new Redis(
@@ -33,6 +34,7 @@ const handlers: Record<string, (jobId: string) => Promise<void>> = {
   "png-to-pdf": handleImageToPdf,
   "pdf-to-jpg": handlePdfToJpg,
   "pdf-to-png": handlePdfToPng,
+  "watermark-pdf": handleWatermarkPdf,
 };
 
 const worker = new Worker<ProcessingJobPayload>(

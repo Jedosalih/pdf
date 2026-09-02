@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "PDF'e Filigran Ekle — Ücretsiz ve Güvenli | JDpdf",
+    "description": "Bir PDF'in her sayfasına metin filigranı ekleyin. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "PDF'e Filigran Ekle",
+  "subtitle": "Bir PDF dosyasının her sayfasına metin filigranı ekleyin.",
+  "options": {
+    "textLabel": "Filigran metni",
+    "textPlaceholder": "örn. GİZLİ"
+  },
+  "howItWorks": {
+    "title": "Bir PDF'e filigran nasıl eklenir",
+    "steps": [
+      "Filigran eklemek istediğiniz PDF dosyasını yükleyin.",
+      "Her sayfaya damgalanacak metni yazın.",
+      "Filigran ekle'ye tıklayın ve sonucu indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "Filigran eklemek ücretsiz mi?",
+        "a": "Evet, filigran eklemek yukarıda belirtilen günlük kullanım sınırları dahilinde ücretsizdir."
+      },
+      {
+        "q": "Filigran her sayfaya mı eklenir?",
+        "a": "Evet, aynı filigran metni dosyanın her sayfasına çapraz olarak damgalanır."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["compress-pdf", "merge-pdf"]
+}
