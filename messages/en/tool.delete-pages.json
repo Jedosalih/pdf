@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "Delete Pages from a PDF Online — Free & Secure | JDpdf",
+    "description": "Remove specific pages from a PDF file. Free, fast, and private — no installation required."
+  },
+  "h1": "Delete Pages",
+  "subtitle": "Remove specific pages from a PDF file.",
+  "options": {
+    "hint": "Click the pages you want to remove.",
+    "confirmHint": "Selected pages will be deleted from the file."
+  },
+  "howItWorks": {
+    "title": "How to delete pages from a PDF",
+    "steps": [
+      "Upload the PDF file you want to edit.",
+      "Click each page you want to remove.",
+      "Click Delete and download the updated PDF."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is deleting pages free?",
+        "a": "Yes, deleting pages is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Can I remove more than one page at a time?",
+        "a": "Yes, select as many pages as you like before clicking Delete."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["extract-pages", "reorder-pages"]
+}

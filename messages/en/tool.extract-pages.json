@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "Extract Pages from a PDF Online — Free & Secure | JDpdf",
+    "description": "Pull specific pages out of a PDF into a new file. Free, fast, and private — no installation required."
+  },
+  "h1": "Extract Pages",
+  "subtitle": "Pull specific pages out of a PDF into a new file.",
+  "options": {
+    "hint": "Click the pages you want to keep.",
+    "confirmHint": "Only the selected pages will be included in the new file."
+  },
+  "howItWorks": {
+    "title": "How to extract pages from a PDF",
+    "steps": [
+      "Upload the PDF file you want to extract from.",
+      "Click each page you want to keep.",
+      "Click Extract and download the new PDF."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is extracting pages free?",
+        "a": "Yes, extracting pages is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Can I extract more than one page?",
+        "a": "Yes, select as many pages as you like before clicking Extract."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["delete-pages", "reorder-pages"]
+}

@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "PDF'den Sayfa Çıkar — Ücretsiz ve Güvenli | JDpdf",
+    "description": "Bir PDF'ten belirli sayfaları yeni bir dosyaya çıkarın. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "Sayfaları Çıkar",
+  "subtitle": "Bir PDF'ten belirli sayfaları yeni bir dosyaya çıkarın.",
+  "options": {
+    "hint": "Saklamak istediğiniz sayfalara tıklayın.",
+    "confirmHint": "Yeni dosyaya yalnızca seçilen sayfalar dahil edilecek."
+  },
+  "howItWorks": {
+    "title": "Bir PDF'ten sayfalar nasıl çıkarılır",
+    "steps": [
+      "Sayfa çıkarmak istediğiniz PDF dosyasını yükleyin.",
+      "Saklamak istediğiniz her sayfaya tıklayın.",
+      "Çıkar'a tıklayın ve yeni PDF'i indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "Sayfa çıkarma ücretsiz mi?",
+        "a": "Evet, yukarıda belirtilen günlük kullanım sınırları dahilinde sayfa çıkarma ücretsizdir."
+      },
+      {
+        "q": "Birden fazla sayfa çıkarabilir miyim?",
+        "a": "Evet, Çıkar'a tıklamadan önce istediğiniz kadar sayfa seçebilirsiniz."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["delete-pages", "reorder-pages"]
+}

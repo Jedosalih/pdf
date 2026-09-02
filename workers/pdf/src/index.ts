@@ -5,6 +5,9 @@ import { handleMergePdf } from "./handlers/mergePdf.js";
 import { handleSplitPdf } from "./handlers/splitPdf.js";
 import { handleCompressPdf } from "./handlers/compressPdf.js";
 import { handleRotatePdf } from "./handlers/rotatePdf.js";
+import { handleDeletePages } from "./handlers/deletePages.js";
+import { handleExtractPages } from "./handlers/extractPages.js";
+import { handleReorderPages } from "./handlers/reorderPages.js";
 import { JobFailure } from "./errors.js";
 
 const connection = new Redis(
@@ -21,6 +24,9 @@ const handlers: Record<string, (jobId: string) => Promise<void>> = {
   "split-pdf": handleSplitPdf,
   "compress-pdf": handleCompressPdf,
   "rotate-pdf": handleRotatePdf,
+  "delete-pages": handleDeletePages,
+  "extract-pages": handleExtractPages,
+  "reorder-pages": handleReorderPages,
 };
 
 const worker = new Worker<ProcessingJobPayload>(

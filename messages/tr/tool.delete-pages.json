@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "PDF'den Sayfa Sil — Ücretsiz ve Güvenli | JDpdf",
+    "description": "Bir PDF dosyasından belirli sayfaları kaldırın. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "Sayfaları Sil",
+  "subtitle": "Bir PDF dosyasından belirli sayfaları kaldırın.",
+  "options": {
+    "hint": "Kaldırmak istediğiniz sayfalara tıklayın.",
+    "confirmHint": "Seçilen sayfalar dosyadan silinecek."
+  },
+  "howItWorks": {
+    "title": "Bir PDF'den sayfalar nasıl silinir",
+    "steps": [
+      "Düzenlemek istediğiniz PDF dosyasını yükleyin.",
+      "Kaldırmak istediğiniz her sayfaya tıklayın.",
+      "Sil'e tıklayın ve güncellenmiş PDF'i indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "Sayfa silme ücretsiz mi?",
+        "a": "Evet, yukarıda belirtilen günlük kullanım sınırları dahilinde sayfa silme ücretsizdir."
+      },
+      {
+        "q": "Aynı anda birden fazla sayfa silebilir miyim?",
+        "a": "Evet, Sil'e tıklamadan önce istediğiniz kadar sayfa seçebilirsiniz."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["extract-pages", "reorder-pages"]
+}

@@ -1,4 +1,12 @@
-import { Combine, Scissors, Minimize2, RotateCw } from "lucide-react";
+import {
+  Combine,
+  Scissors,
+  Minimize2,
+  RotateCw,
+  FileMinus,
+  FileOutput,
+  ArrowUpDown,
+} from "lucide-react";
 import type { ToolDefinition } from "./types";
 
 const MB = 1024 * 1024;
@@ -111,6 +119,93 @@ export const tools: ToolDefinition[] = [
     multipleFiles: false,
     translationNamespace: "tool.rotate-pdf",
     relatedTools: ["merge-pdf", "split-pdf"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 20 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 50 * MB,
+        maxFiles: 1,
+        maxPages: 1000,
+        dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "delete-pages",
+    slug: "delete-pages",
+    category: "organize",
+    icon: FileMinus,
+    inputTypes: ["application/pdf"],
+    outputType: "application/pdf",
+    processor: "qpdf",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.delete-pages",
+    relatedTools: ["extract-pages", "reorder-pages"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 20 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 50 * MB,
+        maxFiles: 1,
+        maxPages: 1000,
+        dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "extract-pages",
+    slug: "extract-pages",
+    category: "organize",
+    icon: FileOutput,
+    inputTypes: ["application/pdf"],
+    outputType: "application/pdf",
+    processor: "qpdf",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.extract-pages",
+    relatedTools: ["delete-pages", "reorder-pages"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 20 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 50 * MB,
+        maxFiles: 1,
+        maxPages: 1000,
+        dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "reorder-pages",
+    slug: "reorder-pages",
+    category: "organize",
+    icon: ArrowUpDown,
+    inputTypes: ["application/pdf"],
+    outputType: "application/pdf",
+    processor: "qpdf",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.reorder-pages",
+    relatedTools: ["delete-pages", "extract-pages"],
     limits: {
       guest: {
         maxFileSizeBytes: 20 * MB,

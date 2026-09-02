@@ -5,6 +5,9 @@ import mergePdf from "./tool.merge-pdf.json";
 import splitPdf from "./tool.split-pdf.json";
 import compressPdf from "./tool.compress-pdf.json";
 import rotatePdf from "./tool.rotate-pdf.json";
+import deletePages from "./tool.delete-pages.json";
+import extractPages from "./tool.extract-pages.json";
+import reorderPages from "./tool.reorder-pages.json";
 
 const messages = {
   common,
@@ -15,6 +18,9 @@ const messages = {
     "split-pdf": splitPdf,
     "compress-pdf": compressPdf,
     "rotate-pdf": rotatePdf,
+    "delete-pages": deletePages,
+    "extract-pages": extractPages,
+    "reorder-pages": reorderPages,
   },
 };
 

@@ -18,6 +18,15 @@
     "moveUp": "نقل لأعلى",
     "moveDown": "نقل لأسفل"
   },
+  "pages": {
+    "loading": "جارٍ تجهيز معاينات الصفحات…",
+    "error": "تعذّرت قراءة صفحات هذا الملف. يرجى إزالته والمحاولة مرة أخرى.",
+    "selectPage": "تحديد الصفحة {number}",
+    "deselectPage": "إلغاء تحديد الصفحة {number}",
+    "moveEarlier": "نقل الصفحة {number} إلى الأمام",
+    "moveLater": "نقل الصفحة {number} إلى الخلف",
+    "selectedCount": "تم تحديد {count} من {total} صفحة"
+  },
   "result": {
     "title": "ملفك جاهز",
     "download": "تنزيل",

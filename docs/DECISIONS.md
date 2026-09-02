@@ -326,6 +326,56 @@ exactly 90, which is a genuine functional check that the qpdf flag did
 what it claims. Also confirmed via a direct Postgres read that
 `Job.options` stored `{"degrees": 90, ...}` as sent from the UI.
 
+## 2026-09-03 — Delete/Extract/Reorder Pages shipped (5th–7th tools)
+
+First tools needing real page-level interaction rather than file-level.
+Built the shared infrastructure once, reused by all three:
+
+- `usePdfPageThumbnails` (`components/tools/`): renders every page of a
+  locally-selected PDF to a canvas thumbnail entirely client-side via
+  `pdfjs-dist`, no server round trip. Worker URL configured with
+  `new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url)` inside
+  the same client module (the pattern that actually works with Turbopack —
+  confirmed live via a Playwright screenshot with console/page-error
+  capture before building on top of it, not just assumed from docs).
+- `PageGrid` (`components/tools/`): one grid component for both
+  interaction modes — `"select"` (click to toggle, used by Delete/Extract)
+  and `"reorder"` (drag, or move-earlier/later buttons on hover/focus —
+  same accessible-fallback pattern as `FileList`'s file reordering).
+- `workers/pdf/src/handlers/pageSelection.ts`: shared `getPageCount` +
+  `extractPages` (qpdf `--pages <input> <input> <comma-list> -- <output>`)
+  — Delete/Extract/Reorder are all really "produce a new PDF from this
+  exact 1-indexed page list," differing only in how that list is computed
+  (complement of a delete-set, a sorted keep-set, or a user-supplied
+  permutation).
+
+Hit the same `react-hooks/set-state-in-effect` lint rule as the earlier
+`Reveal` component removal: `usePdfPageThumbnails`'s effect was calling
+`setLoading`/`setError`/`setPages` as bare top-level statements before the
+async IIFE, which the rule flags even though it's the standard "start a
+loading state, then fetch" pattern. Fix: move those calls to the first
+lines *inside* the async IIFE instead of before it — functionally
+identical timing, but nested in a function expression satisfies the rule.
+Also avoided a second instance of the same issue in `ReorderPagesTool` by
+never using an effect to mirror `pages` into an `order` state on first
+load — `order` starts `null` and the display value is derived as `order ??
+pages.map(p => p.pageNumber)` during render, only ever set in response to
+a real user action (a page move).
+
+**Verification went beyond page-count checks this time**, deliberately:
+a broken reorder handler that just left the file untouched would still
+pass a "still 6 pages" test. Added
+`tests/e2e/helpers/pdfText.ts` (uses `pdfjs-dist/legacy/build/pdf.mjs`,
+the Node-compatible build, for text extraction only — no `canvas` native
+dependency needed) to read each output page's actual text content, and
+asserted exact page *order* for reorder and exact page *identity* for
+delete/extract. Also caught and fixed a real process gap: added
+`extract-pages`/`reorder-pages` to the tool registry as `enabled: true`
+before their pages/handlers existed, which would have shown broken
+homepage links — caught before it reached a real browser, by remembering
+the API layer's `TOOL_DISABLED` check reads the same `enabled` flag, not
+just the homepage listing.
+
 ## Template for future entries
 
 ```

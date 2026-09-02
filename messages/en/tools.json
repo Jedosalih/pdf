@@ -18,6 +18,15 @@
     "moveUp": "Move up",
     "moveDown": "Move down"
   },
+  "pages": {
+    "loading": "Preparing page previews…",
+    "error": "Couldn't read this file's pages. Please remove it and try again.",
+    "selectPage": "Select page {number}",
+    "deselectPage": "Deselect page {number}",
+    "moveEarlier": "Move page {number} earlier",
+    "moveLater": "Move page {number} later",
+    "selectedCount": "{count} of {total} pages selected"
+  },
   "result": {
     "title": "Your file is ready",
     "download": "Download",

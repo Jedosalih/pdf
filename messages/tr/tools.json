@@ -18,6 +18,15 @@
     "moveUp": "Yukarı taşı",
     "moveDown": "Aşağı taşı"
   },
+  "pages": {
+    "loading": "Sayfa önizlemeleri hazırlanıyor…",
+    "error": "Bu dosyanın sayfaları okunamadı. Lütfen kaldırıp tekrar deneyin.",
+    "selectPage": "{number}. sayfayı seç",
+    "deselectPage": "{number}. sayfa seçimini kaldır",
+    "moveEarlier": "{number}. sayfayı öne taşı",
+    "moveLater": "{number}. sayfayı geriye taşı",
+    "selectedCount": "{total} sayfadan {count} tanesi seçildi"
+  },
   "result": {
     "title": "Dosyanız hazır",
     "download": "İndir",

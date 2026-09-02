@@ -1,0 +1,37 @@
+{
+  "seo": {
+    "title": "Reorder PDF Pages Online — Free & Secure | JDpdf",
+    "description": "Drag pages to change their order in a PDF file. Free, fast, and private — no installation required."
+  },
+  "h1": "Reorder Pages",
+  "subtitle": "Drag pages, or use the arrows, to change their order in a PDF file.",
+  "options": {
+    "hint": "Drag a page to move it, or use the arrow buttons on each page."
+  },
+  "howItWorks": {
+    "title": "How to reorder pages in a PDF",
+    "steps": [
+      "Upload the PDF file you want to reorder.",
+      "Drag pages, or use the arrow buttons, to set the order you want.",
+      "Click Start and download the reordered PDF."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is reordering pages free?",
+        "a": "Yes, reordering pages is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Does this remove any pages?",
+        "a": "No, every page stays in the file — only the order changes."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["delete-pages", "extract-pages"]
+}
