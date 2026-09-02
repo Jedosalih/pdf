@@ -69,9 +69,11 @@ gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 \
    -dNOPAUSE -dBATCH -sOutputFile=<out.pdf> <in.pdf>
 ```
 
-`/screen` (basic/strong), `/ebook` (balanced), `/printer` (light/high
-quality) map to the "Basic / Balanced / Strong" levels in the blueprint.
-Report actual before/after size — never a fabricated estimate.
+`/printer` → Basic, `/ebook` → Balanced, `/screen` → Strong (lowest
+quality, smallest size). Implemented in
+`workers/pdf/src/handlers/compressPdf.ts`. Report actual before/after
+size — never a fabricated estimate (done in `CompressPdfTool` via the
+real `outputFiles[0].size` returned by the job).
 
 ### PDF → JPG / PNG (`pdf-to-jpg`, `pdf-to-png`) — Poppler (`pdftoppm`)
 

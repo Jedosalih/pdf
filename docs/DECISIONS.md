@@ -289,6 +289,29 @@ confirms each is a genuinely valid 2-page PDF. Cross-checked directly in
 Postgres: one `COMPLETED` Job with three linked output `File` rows
 (`split-part-1/2/3.pdf`).
 
+## 2026-09-02 — Compress PDF shipped (third tool, verified end-to-end)
+
+Added Ghostscript to the worker image (`workers/pdf/Dockerfile`) and
+`workers/pdf/src/handlers/compressPdf.ts`, mapping the three UI levels to
+Ghostscript's own presets: Basic → `/printer`, Balanced → `/ebook`,
+Strong → `/screen` (lowest quality/smallest size). Corrected
+`docs/PDF_ENGINE.md`, which had this mapping garbled from before the tool
+was actually built.
+
+`CompressPdfTool` reports genuine before/after size (`formatFileSize` on
+the original upload vs. the real `outputFiles[0].size`) — confirmed this
+matters in practice: compressing the tiny vector-only test fixture
+(1.4 KB) through Ghostscript's `pdfwrite` re-encoding actually produced a
+*larger* file (3.4 KB, verified in Postgres), which is expected for small
+files with no images. The UI shows this honestly (`1.4 KB → 3.4 KB`)
+rather than assuming compression always shrinks — matches blueprint's
+"never show a fabricated estimate."
+
+Verified: `docker compose up -d --build pdf-worker` (confirmed `gs
+--version` inside the running container), reseeded, all three Playwright
+E2E tests (merge/split/compress) green, direct Postgres check of the
+Job/File rows, and a full `next build`.
+
 ## Template for future entries
 
 ```

@@ -1,0 +1,45 @@
+{
+  "seo": {
+    "title": "Compress PDF Online — Reduce File Size for Free | JDpdf",
+    "description": "Reduce the file size of your PDF while keeping it usable. Free, fast, and private — no installation required."
+  },
+  "h1": "Compress PDF",
+  "subtitle": "Reduce the file size of a PDF so it's easier to share and store.",
+  "options": {
+    "levelLabel": "Compression level",
+    "levels": {
+      "basic": "Basic — smallest quality loss",
+      "balanced": "Balanced — recommended for most files",
+      "strong": "Strong — smallest file size"
+    }
+  },
+  "result": {
+    "sizeSummary": "{before} → {after}"
+  },
+  "howItWorks": {
+    "title": "How to compress a PDF file",
+    "steps": [
+      "Upload the PDF file you want to shrink.",
+      "Choose a compression level.",
+      "Click Compress and download the smaller file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is compressing PDFs free?",
+        "a": "Yes, compressing PDFs is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will compression reduce quality?",
+        "a": "Stronger compression reduces image quality more; Basic keeps quality closer to the original while still reducing size where possible."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["merge-pdf", "split-pdf"]
+}

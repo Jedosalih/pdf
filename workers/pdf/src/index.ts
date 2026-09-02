@@ -3,6 +3,7 @@ import { Redis } from "ioredis";
 import { prisma } from "./db.js";
 import { handleMergePdf } from "./handlers/mergePdf.js";
 import { handleSplitPdf } from "./handlers/splitPdf.js";
+import { handleCompressPdf } from "./handlers/compressPdf.js";
 import { JobFailure } from "./errors.js";
 
 const connection = new Redis(
@@ -17,6 +18,7 @@ interface ProcessingJobPayload {
 const handlers: Record<string, (jobId: string) => Promise<void>> = {
   "merge-pdf": handleMergePdf,
   "split-pdf": handleSplitPdf,
+  "compress-pdf": handleCompressPdf,
 };
 
 const worker = new Worker<ProcessingJobPayload>(

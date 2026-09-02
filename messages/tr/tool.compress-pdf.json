@@ -1,0 +1,45 @@
+{
+  "seo": {
+    "title": "PDF Sıkıştır — Dosya Boyutunu Ücretsiz Küçült | JDpdf",
+    "description": "PDF dosyanızın boyutunu kullanılabilir kalacak şekilde küçültün. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "PDF Sıkıştır",
+  "subtitle": "Bir PDF'in dosya boyutunu küçülterek paylaşmayı ve depolamayı kolaylaştırın.",
+  "options": {
+    "levelLabel": "Sıkıştırma düzeyi",
+    "levels": {
+      "basic": "Temel — en az kalite kaybı",
+      "balanced": "Dengeli — çoğu dosya için önerilir",
+      "strong": "Güçlü — en küçük dosya boyutu"
+    }
+  },
+  "result": {
+    "sizeSummary": "{before} → {after}"
+  },
+  "howItWorks": {
+    "title": "Bir PDF dosyası nasıl sıkıştırılır",
+    "steps": [
+      "Küçültmek istediğiniz PDF dosyasını yükleyin.",
+      "Bir sıkıştırma düzeyi seçin.",
+      "Sıkıştır'a tıklayın ve daha küçük dosyayı indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "PDF sıkıştırma ücretsiz mi?",
+        "a": "Evet, yukarıda belirtilen günlük kullanım sınırları dahilinde PDF sıkıştırma ücretsizdir."
+      },
+      {
+        "q": "Sıkıştırma kaliteyi düşürür mü?",
+        "a": "Güçlü sıkıştırma görüntü kalitesini daha fazla azaltır; Temel düzey, mümkün olduğunda boyutu küçültürken kaliteyi orijinaline daha yakın tutar."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["merge-pdf", "split-pdf"]
+}
