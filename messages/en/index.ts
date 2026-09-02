@@ -13,6 +13,7 @@ import pngToPdf from "./tool.png-to-pdf.json";
 import pdfToJpg from "./tool.pdf-to-jpg.json";
 import pdfToPng from "./tool.pdf-to-png.json";
 import watermarkPdf from "./tool.watermark-pdf.json";
+import pageNumbers from "./tool.page-numbers.json";
 
 const messages = {
   common,
@@ -31,6 +32,7 @@ const messages = {
     "pdf-to-jpg": pdfToJpg,
     "pdf-to-png": pdfToPng,
     "watermark-pdf": watermarkPdf,
+    "page-numbers": pageNumbers,
   },
 };
 

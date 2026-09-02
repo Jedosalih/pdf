@@ -1,0 +1,46 @@
+{
+  "seo": {
+    "title": "PDF'e Sayfa Numarası Ekle — Ücretsiz ve Güvenli | JDpdf",
+    "description": "Bir PDF'in her sayfasına sayfa numarası ekleyin. Konumu ve başlangıç numarasını seçin. Ücretsiz, hızlı ve gizli."
+  },
+  "h1": "Sayfa Numarası Ekle",
+  "subtitle": "Bir PDF dosyasının her sayfasını numaralandırın.",
+  "options": {
+    "positionLabel": "Konum",
+    "position": {
+      "bottom-center": "Alt orta",
+      "bottom-left": "Alt sol",
+      "bottom-right": "Alt sağ",
+      "top-center": "Üst orta",
+      "top-left": "Üst sol",
+      "top-right": "Üst sağ"
+    },
+    "startAtLabel": "Başlangıç"
+  },
+  "howItWorks": {
+    "title": "Bir PDF'e sayfa numarası nasıl eklenir",
+    "steps": [
+      "Numaralandırmak istediğiniz PDF dosyasını yükleyin.",
+      "Numaranın nerede görüneceğini ve hangi numaradan başlayacağını seçin.",
+      "Sayfa numarası ekle'ye tıklayın ve sonucu indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "Sayfa numarası eklemek ücretsiz mi?",
+        "a": "Evet, sayfa numarası eklemek yukarıda belirtilen günlük kullanım sınırları dahilinde ücretsizdir."
+      },
+      {
+        "q": "Numaraların nerede görüneceğini seçebilir miyim?",
+        "a": "Evet, herhangi bir köşeyi veya üst/alt kenar boşluğunun ortasını seçebilirsiniz."
+      },
+      {
+        "q": "Numaralandırmaya 1'den farklı bir sayıyla başlayabilir miyim?",
+        "a": "Evet, istediğiniz başlangıç numarasını belirleyin; her sonraki sayfa birer birer artar."
+      }
+    ]
+  },
+  "relatedTools": ["watermark-pdf", "merge-pdf"]
+}

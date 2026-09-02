@@ -488,6 +488,40 @@ test-run `Job` rows `COMPLETED` for `watermark-pdf`, each with a linked
 `/[locale]/watermark-pdf` route. Screenshot-verified both `en` (LTR) and
 `ar` (RTL) renders.
 
+## 2026-09-02 — Page Numbers shipped (13th tool, verified end-to-end)
+
+Added `workers/pdf/src/handlers/pageNumbers.ts` (`pdf-lib`, same
+in-process rationale as watermark/image-to-pdf). Draws a plain
+incrementing label (`startAt + pageIndex`) at one of six fixed
+positions (`{top,bottom}-{left,center,right}`), computed from a fixed
+margin plus the label's own measured width (`font.widthOfTextAtSize`)
+so right/center-aligned numbers stay properly inset instead of
+overflowing the page edge. Both `position` and `startAt` are validated
+against an explicit allow-set/range on the server
+(`JobFailure("VALIDATION_ERROR")`) exactly like `rotate-pdf`'s degree
+enum — the client UI constrains the same values, but `Job.options` is
+attacker-controlled JSON so the server check is the real boundary.
+
+`PageNumbersTool.tsx` is the first tool combining a `Select` (position)
+and a numeric `Input` (start number) side by side — reused both
+existing controls rather than adding a new one.
+
+Verified: `tsc --noEmit`/`eslint` clean on app and worker, worker `tsc`
+build clean, `docker compose up -d --build pdf-worker` rebuilt with the
+handler registered, reseeded. `tests/e2e/page-numbers.spec.ts` uploads
+the 6-page fixture, sets a non-default start number (5), downloads the
+result, and — beyond a page-count check — extracts each page's actual
+text via `pdfText.ts` and asserts the exact expected number
+(5, 6, 7, ... 10) appears on the correct page; a handler that ignored
+`startAt` or mislabeled a page would fail this. Full Playwright suite
+(13/13) green, no regressions to the 12 previously-shipped tools.
+Cross-checked directly in Postgres: `Job.options` stored
+`{"startAt": 5, "position": "bottom-center", ...}` exactly as sent, two
+`COMPLETED` Job rows each with a linked `File` row (`numbered.pdf`,
+`application/pdf`, status `READY`). Full `next build` production check
+passed, including the new `/[locale]/page-numbers` route.
+Screenshot-verified both `en` (LTR) and `ar` (RTL) renders.
+
 ## Template for future entries
 
 ```

@@ -9,6 +9,7 @@ import {
   FileImage,
   Image,
   Stamp,
+  Hash,
 } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
@@ -354,6 +355,35 @@ export const tools: ToolDefinition[] = [
     multipleFiles: false,
     translationNamespace: "tool.watermark-pdf",
     relatedTools: ["compress-pdf", "merge-pdf"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 20 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 50 * MB,
+        maxFiles: 1,
+        maxPages: 1000,
+        dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "page-numbers",
+    slug: "page-numbers",
+    category: "edit",
+    icon: Hash,
+    inputTypes: ["application/pdf"],
+    outputType: "application/pdf",
+    processor: "pdf-lib",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.page-numbers",
+    relatedTools: ["watermark-pdf", "merge-pdf"],
     limits: {
       guest: {
         maxFileSizeBytes: 20 * MB,

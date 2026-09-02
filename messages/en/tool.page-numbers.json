@@ -1,0 +1,46 @@
+{
+  "seo": {
+    "title": "Add Page Numbers to a PDF — Free & Secure | JDpdf",
+    "description": "Add page numbers to every page of a PDF. Choose the position and starting number. Free, fast, and private."
+  },
+  "h1": "Add Page Numbers",
+  "subtitle": "Number every page of a PDF file.",
+  "options": {
+    "positionLabel": "Position",
+    "position": {
+      "bottom-center": "Bottom center",
+      "bottom-left": "Bottom left",
+      "bottom-right": "Bottom right",
+      "top-center": "Top center",
+      "top-left": "Top left",
+      "top-right": "Top right"
+    },
+    "startAtLabel": "Start at"
+  },
+  "howItWorks": {
+    "title": "How to add page numbers to a PDF",
+    "steps": [
+      "Upload the PDF file you want to number.",
+      "Choose where the number should appear and what number to start at.",
+      "Click Add page numbers and download the result."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is adding page numbers free?",
+        "a": "Yes, adding page numbers is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Can I choose where the numbers appear?",
+        "a": "Yes, pick any corner or the center of the top or bottom margin."
+      },
+      {
+        "q": "Can I start numbering from a number other than 1?",
+        "a": "Yes, set any starting number and each following page increases by one."
+      }
+    ]
+  },
+  "relatedTools": ["watermark-pdf", "merge-pdf"]
+}
