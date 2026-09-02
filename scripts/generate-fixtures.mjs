@@ -20,8 +20,10 @@ async function makePdf(label, pageCount, color) {
 
 const a = await makePdf("Fixture-A", 2, rgb(0.1, 0.3, 0.8));
 const b = await makePdf("Fixture-B", 3, rgb(0.8, 0.2, 0.2));
+const c = await makePdf("Fixture-C", 6, rgb(0.1, 0.6, 0.3));
 
 await writeFile("docs/fixtures/sample-a-2page.pdf", a);
 await writeFile("docs/fixtures/sample-b-3page.pdf", b);
+await writeFile("docs/fixtures/sample-c-6page.pdf", c);
 
-console.log("done", a.byteLength, b.byteLength);
+console.log("done", a.byteLength, b.byteLength, c.byteLength);

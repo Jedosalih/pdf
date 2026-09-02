@@ -47,7 +47,7 @@ export default async function HomePage({ params }: PageProps) {
       });
       const item: ToolGridItem & { category: typeof tool.category } = {
         slug: tool.slug,
-        icon: <tool.icon className="h-5 w-5" aria-hidden="true" />,
+        icon: tool.icon,
         title: toolT("h1"),
         description: toolT("subtitle"),
         category: tool.category,

@@ -260,6 +260,35 @@ Verified after the rewrite: `tsc --noEmit`, `eslint`, and the real
 Playwright Merge PDF E2E test all still pass — the refactor didn't touch
 `lib/`, `app/api/`, or `workers/pdf/`.
 
+## 2026-09-02 — Split PDF shipped (second tool, verified end-to-end)
+
+Implemented "split every N pages" as the V1 split mode (page-range/
+individual-page modes deferred — see blueprint §12 lists all three, but
+range selection needs visible page thumbnails to be usable, which
+`FileThumbnail` doesn't do yet). Each split chunk becomes its own `File`
+row linked via `outputJobId` — the existing multi-output-file support
+(`Job.outputFiles`, `ResultState` mapping over `outputFiles`) needed zero
+changes, so no ZIP step was necessary.
+
+Added `runCommandCapture` (`workers/pdf/src/exec.ts`) alongside
+`runCommand` for engines that report data via stdout (`qpdf
+--show-npages`) rather than writing a file.
+
+Also added `getRelatedToolCards` (`lib/tools/relatedTools.ts`) and wired
+it into `ToolPage` — cross-linking (blueprint §74–75) was designed into
+the registry (`relatedTools: string[]`) from the start but never actually
+rendered anywhere until now. Changed `ToolGridItem`/`ToolCard` to accept
+the `LucideIcon` component reference instead of a pre-rendered `ReactNode`
+so both the homepage and this helper can share one icon-rendering path
+instead of every caller repeating `<Icon className="h-5 w-5" />`.
+
+Verified for real: `docker compose up -d --build pdf-worker`, reseeded,
+then a Playwright test (`tests/e2e/split-pdf.spec.ts`) uploads a generated
+6-page fixture, splits every 2 pages, downloads all 3 resulting files, and
+confirms each is a genuinely valid 2-page PDF. Cross-checked directly in
+Postgres: one `COMPLETED` Job with three linked output `File` rows
+(`split-part-1/2/3.pdf`).
+
 ## Template for future entries
 
 ```

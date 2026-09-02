@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "PDF Dosyalarını Çevrimiçi Böl — Ücretsiz ve Güvenli | JDpdf",
+    "description": "Bir PDF'i sayfa sayısına göre birden fazla küçük dosyaya bölün. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "PDF dosyasını böl",
+  "subtitle": "Tek bir PDF'i, her seferinde sabit sayıda sayfa içeren birden fazla küçük dosyaya bölün.",
+  "options": {
+    "pagesPerFileLabel": "Dosya başına sayfa sayısı",
+    "pagesPerFileHint": "örn. 2, 10 sayfalık bir PDF'i 5 dosyaya böler"
+  },
+  "howItWorks": {
+    "title": "Bir PDF dosyası nasıl bölünür",
+    "steps": [
+      "Bölmek istediğiniz PDF dosyasını yükleyin.",
+      "Her dosyanın kaç sayfa içereceğini seçin.",
+      "Böl'e tıklayın ve ortaya çıkan her PDF'i indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "PDF bölme ücretsiz mi?",
+        "a": "Evet, yukarıda belirtilen günlük kullanım sınırları dahilinde PDF bölme ücretsizdir."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      },
+      {
+        "q": "Kaç dosya elde edeceğim?",
+        "a": "Seçtiğiniz her sayfa grubu için bir dosya — örneğin, 10 sayfalık bir PDF'i her 2 sayfada bölmek 5 dosya üretir."
+      }
+    ]
+  },
+  "relatedTools": ["merge-pdf"]
+}

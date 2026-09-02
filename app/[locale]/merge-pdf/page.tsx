@@ -4,6 +4,7 @@ import { buildLocalizedMetadata } from "@/lib/seo/metadata";
 import { getToolLimits } from "@/lib/entitlements";
 import { resolveActorReadOnly } from "@/lib/security/actor";
 import { getToolById } from "@/lib/tools/registry";
+import { getRelatedToolCards } from "@/lib/tools/relatedTools";
 import { MergePdfTool } from "@/components/tools/merge-pdf/MergePdfTool";
 import { ToolPage } from "@/components/tools/ToolPage";
 import type { Locale } from "@/lib/i18n/routing";
@@ -28,6 +29,7 @@ export default async function MergePdfPage({ params }: PageProps) {
   setRequestLocale(locale);
   const t = await getTranslations("tool.merge-pdf");
   const tCommon = await getTranslations("common");
+  const tTools = await getTranslations("tools");
 
   const tool = getToolById("merge-pdf")!;
   const Icon = tool.icon;
@@ -37,6 +39,7 @@ export default async function MergePdfPage({ params }: PageProps) {
 
   const faqItems = t.raw("faq.items") as { q: string; a: string }[];
   const steps = t.raw("howItWorks.steps") as string[];
+  const relatedTools = await getRelatedToolCards(locale, tool.relatedTools);
 
   const faqStructuredData = {
     "@context": "https://schema.org",
@@ -64,6 +67,8 @@ export default async function MergePdfPage({ params }: PageProps) {
       faqTitle={t("faq.title")}
       faqItems={faqItems}
       faqStructuredData={faqStructuredData}
+      relatedToolsTitle={tTools("result.relatedTools")}
+      relatedTools={relatedTools}
     />
   );
 }

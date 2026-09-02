@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "Split PDF Files Online — Free & Secure | JDpdf",
+    "description": "Split a PDF into multiple smaller files by page count. Free, fast, and private — no installation required."
+  },
+  "h1": "Split PDF file",
+  "subtitle": "Split one PDF into several smaller files, a fixed number of pages at a time.",
+  "options": {
+    "pagesPerFileLabel": "Pages per file",
+    "pagesPerFileHint": "e.g. 2 splits a 10-page PDF into 5 files"
+  },
+  "howItWorks": {
+    "title": "How to split a PDF file",
+    "steps": [
+      "Upload the PDF file you want to split.",
+      "Choose how many pages each file should contain.",
+      "Click Split and download each resulting PDF."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is splitting PDFs free?",
+        "a": "Yes, splitting PDFs is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      },
+      {
+        "q": "How many files will I get?",
+        "a": "One file for every group of pages you choose — for example, splitting a 10-page PDF every 2 pages produces 5 files."
+      }
+    ]
+  },
+  "relatedTools": ["merge-pdf"]
+}

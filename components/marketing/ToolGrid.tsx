@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { ToolCard } from "./ToolCard";
 
 export interface ToolGridItem {
   slug: string;
-  icon: ReactNode;
+  icon: LucideIcon;
   title: string;
   description: string;
 }

@@ -1,4 +1,4 @@
-import { Combine } from "lucide-react";
+import { Combine, Scissors } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
 const MB = 1024 * 1024;
@@ -23,7 +23,7 @@ export const tools: ToolDefinition[] = [
     guestEnabled: true,
     multipleFiles: true,
     translationNamespace: "tool.merge-pdf",
-    relatedTools: [],
+    relatedTools: ["split-pdf"],
     limits: {
       guest: {
         maxFileSizeBytes: 20 * MB,
@@ -34,6 +34,35 @@ export const tools: ToolDefinition[] = [
       free: {
         maxFileSizeBytes: 50 * MB,
         maxFiles: 20,
+        maxPages: 1000,
+        dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "split-pdf",
+    slug: "split-pdf",
+    category: "organize",
+    icon: Scissors,
+    inputTypes: ["application/pdf"],
+    outputType: "application/pdf",
+    processor: "qpdf",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.split-pdf",
+    relatedTools: ["merge-pdf"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 20 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 50 * MB,
+        maxFiles: 1,
         maxPages: 1000,
         dailyOperations: 30,
       },

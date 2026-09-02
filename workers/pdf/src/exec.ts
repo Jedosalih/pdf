@@ -18,3 +18,19 @@ export async function runCommand(
     killSignal: "SIGKILL",
   });
 }
+
+/** Same safety contract as `runCommand`, but returns stdout for engines
+ * that report information rather than write a file (e.g. `qpdf
+ * --show-npages`). */
+export async function runCommandCapture(
+  command: string,
+  args: string[],
+  options?: { timeoutMs?: number; cwd?: string },
+): Promise<string> {
+  const { stdout } = await execFileAsync(command, args, {
+    timeout: options?.timeoutMs ?? 60_000,
+    cwd: options?.cwd,
+    killSignal: "SIGKILL",
+  });
+  return stdout.toString().trim();
+}
