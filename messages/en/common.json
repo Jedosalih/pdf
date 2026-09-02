@@ -41,6 +41,7 @@
     "fileTooLarge": "This file is larger than the allowed limit.",
     "tooManyPages": "This file has more pages than the allowed limit.",
     "tooManyFiles": "You've selected more files than this tool allows.",
-    "limitReached": "You've reached today's free limit."
+    "limitReached": "You've reached today's free limit.",
+    "invalidPassword": "That password is incorrect."
   }
 }

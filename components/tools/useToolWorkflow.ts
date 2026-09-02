@@ -43,6 +43,8 @@ export function errorMessageKey(code: string | undefined): string {
       return "tooManyPages";
     case "DAILY_LIMIT_REACHED":
       return "limitReached";
+    case "INVALID_PASSWORD":
+      return "invalidPassword";
     default:
       return "generic";
   }

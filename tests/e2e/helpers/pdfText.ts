@@ -11,9 +11,13 @@ import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
  * extraction here, not font-accurate rendering, so it's not worth wiring
  * up for a test helper.
  */
-export async function extractFirstLinePerPage(bytes: Buffer): Promise<string[]> {
+export async function extractFirstLinePerPage(
+  bytes: Buffer,
+  password?: string,
+): Promise<string[]> {
   const doc = await getDocument({
     data: new Uint8Array(bytes),
+    password,
     useWorkerFetch: false,
   }).promise;
 

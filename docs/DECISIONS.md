@@ -522,6 +522,87 @@ Cross-checked directly in Postgres: `Job.options` stored
 passed, including the new `/[locale]/page-numbers` route.
 Screenshot-verified both `en` (LTR) and `ar` (RTL) renders.
 
+## 2026-09-02 — Protect/Unlock PDF shipped (14th–15th tools, verified end-to-end)
+
+First tools using qpdf's `--encrypt`/`--decrypt` rather than `pdf-lib` —
+`pdf-lib` has no encryption support at all (read or write), so
+`workers/pdf/src/handlers/protectPdf.ts` and `unlockPdf.ts` follow the
+same `runCommand` + `withTempDir` subprocess pattern as `rotatePdf.ts`.
+Protect uses the same password for both the qpdf "user" and "owner"
+slots (AES-256, `--encrypt <pw> <pw> 256 --`) since this tool only
+promises "requires this password to open," not owner-permission
+restrictions — a distinct owner password would add no real protection
+here while confusing what "the password" means to the user. Unlock
+requires the password to already be known (`--password=<pw>
+--decrypt`), matching the blueprint's explicit "known password only"
+scope — this is not a password-cracking/recovery tool.
+
+Added a new shared error code, `INVALID_PASSWORD`, plumbed through the
+whole existing error path rather than a one-off: `errorMessageKey`
+(`components/tools/useToolWorkflow.ts`) maps it to a new
+`common.errors.invalidPassword` string in all three locales.
+`unlockPdf.ts` distinguishes it from other failures by checking qpdf's
+stderr for the substring "password" (its own wrong-password message)
+before falling back to the generic `PROCESSING_FAILED`.
+
+`ProtectPdfTool`/`UnlockPdfTool` are the first tools using
+`<Input type="password">` — otherwise identical single-file-plus-Input
+shape as `WatermarkPdfTool`. New `security` tool category (already
+present in `ToolCategory`/translations from Phase A, never previously
+used by a real tool).
+
+**Verification here needed a different approach than page-count/text
+checks**, since the whole point is that the output requires (or no
+longer requires) a password:
+- Protect PDF's E2E test opens the downloaded file with `pdfjs-dist`'s
+  `getDocument({ data, password })` — first asserting the *wrong*
+  password throws (proving it's genuinely encrypted, not just renamed),
+  then that the *chosen* password successfully decrypts and the
+  original page text is intact.
+- Unlock PDF's E2E test needed a genuinely encrypted input fixture that
+  didn't exist yet. Rather than fabricate one (impossible without qpdf,
+  which only runs inside the worker container) or add throwaway
+  fixture-generation code, it drives the real, already-verified Protect
+  PDF flow first to produce one, then feeds that real encrypted output
+  into Unlock PDF — with the wrong password first (asserting the actual
+  "That password is incorrect." UI message backed by the real
+  `INVALID_PASSWORD` job failure, not a mocked error state), then the
+  correct password, and finally confirms the result opens with **no**
+  password at all and the original page text survived.
+- Extended `tests/e2e/helpers/pdfText.ts` with an optional `password`
+  parameter (passed straight through to `pdfjs-dist`'s `getDocument`)
+  instead of writing a separate encrypted-content-extraction helper.
+
+**Found and fixed a real test-infrastructure bug while wiring the
+Unlock test's two-step flow**: Playwright's `download.path()` points at
+its internal download cache under a generated filename with no `.pdf`
+extension. Re-uploading that path made the browser send an empty/
+`application/octet-stream` declared MIME type on the second upload,
+which `validateUploadedFile`'s declared-MIME check correctly rejected
+as `UNSUPPORTED_FILE` — silently leaving the file in an `error` state
+and permanently disabling the Start button (the test failed on a
+30-second timeout waiting for a button that could never become
+enabled). Root-caused by inspecting the actual upload failure via the
+UI state rather than assuming the test's own logic was fine. Fixed by
+`download.saveAs()` to an explicit temp path ending in `.pdf` before
+reusing it as the next step's input — a real user re-uploading a
+downloaded file always has a proper extension, so this makes the test
+represent that path accurately, not a workaround for a product bug.
+
+Verified: `tsc --noEmit`/`eslint` clean on app and worker, worker `tsc`
+build clean, `docker compose up -d --build pdf-worker` rebuilt with both
+handlers registered, reseeded. Full Playwright suite (15/15) green, no
+regressions to the 13 previously-shipped tools. Cross-checked directly
+in Postgres: both `COMPLETED` and a real `FAILED`/`INVALID_PASSWORD`
+`Job` row exist for `unlock-pdf` (from the deliberate wrong-password
+step), and both `COMPLETED` protect/unlock jobs have linked `File` rows
+(`protected.pdf`/`unlocked.pdf`, status `READY`). Full `next build`
+production check passed, including the new `/[locale]/protect-pdf` and
+`/[locale]/unlock-pdf` routes. Screenshot-verified both `en` (LTR) and
+`ar` (RTL) renders for both tools.
+
+This completes all 15 tools from the "Next Phase" ordered list.
+
 ## Template for future entries
 
 ```

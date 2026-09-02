@@ -41,6 +41,7 @@
     "fileTooLarge": "Bu dosya izin verilen boyut sınırından büyük.",
     "tooManyPages": "Bu dosyanın sayfa sayısı izin verilen sınırdan fazla.",
     "tooManyFiles": "Bu araç için izin verilenden fazla dosya seçtiniz.",
-    "limitReached": "Bugünkü ücretsiz kullanım sınırınıza ulaştınız."
+    "limitReached": "Bugünkü ücretsiz kullanım sınırınıza ulaştınız.",
+    "invalidPassword": "Bu şifre yanlış."
   }
 }

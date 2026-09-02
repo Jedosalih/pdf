@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "Unlock a Password-Protected PDF — Free & Secure | JDpdf",
+    "description": "Remove a known password from a PDF so it opens without one. Free, fast, and private."
+  },
+  "h1": "Unlock PDF",
+  "subtitle": "Remove a password from a PDF you already know the password to.",
+  "options": {
+    "passwordLabel": "Current password",
+    "passwordPlaceholder": "Enter the PDF's password"
+  },
+  "howItWorks": {
+    "title": "How to unlock a PDF",
+    "steps": [
+      "Upload the password-protected PDF file.",
+      "Type the password the file currently uses.",
+      "Click Unlock PDF and download the result."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is unlocking a PDF free?",
+        "a": "Yes, unlocking a PDF is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Do I need to already know the password?",
+        "a": "Yes. This tool removes a password you already know — it doesn't recover or crack unknown passwords."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["protect-pdf", "merge-pdf"]
+}

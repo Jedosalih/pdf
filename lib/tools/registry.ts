@@ -10,6 +10,8 @@ import {
   Image,
   Stamp,
   Hash,
+  Lock,
+  LockOpen,
 } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
@@ -384,6 +386,64 @@ export const tools: ToolDefinition[] = [
     multipleFiles: false,
     translationNamespace: "tool.page-numbers",
     relatedTools: ["watermark-pdf", "merge-pdf"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 20 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 50 * MB,
+        maxFiles: 1,
+        maxPages: 1000,
+        dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "protect-pdf",
+    slug: "protect-pdf",
+    category: "security",
+    icon: Lock,
+    inputTypes: ["application/pdf"],
+    outputType: "application/pdf",
+    processor: "qpdf",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.protect-pdf",
+    relatedTools: ["unlock-pdf", "merge-pdf"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 20 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 50 * MB,
+        maxFiles: 1,
+        maxPages: 1000,
+        dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "unlock-pdf",
+    slug: "unlock-pdf",
+    category: "security",
+    icon: LockOpen,
+    inputTypes: ["application/pdf"],
+    outputType: "application/pdf",
+    processor: "qpdf",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.unlock-pdf",
+    relatedTools: ["protect-pdf", "merge-pdf"],
     limits: {
       guest: {
         maxFileSizeBytes: 20 * MB,

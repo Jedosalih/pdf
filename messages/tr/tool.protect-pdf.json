@@ -1,0 +1,39 @@
+{
+  "seo": {
+    "title": "PDF'i Şifreyle Koru — Ücretsiz ve Güvenli | JDpdf",
+    "description": "Bir PDF'e yalnızca şifreyi bilenlerin açabilmesi için şifre ekleyin. Ücretsiz, hızlı ve gizli."
+  },
+  "h1": "PDF'i Koru",
+  "subtitle": "Bu PDF'i yalnızca şifreyi bilenlerin açabilmesi için bir şifre ekleyin.",
+  "options": {
+    "passwordLabel": "Şifre",
+    "passwordPlaceholder": "Bir şifre belirleyin",
+    "passwordHint": "En az 4 karakter."
+  },
+  "howItWorks": {
+    "title": "Bir PDF nasıl şifreyle korunur",
+    "steps": [
+      "Korumak istediğiniz PDF dosyasını yükleyin.",
+      "Bir şifre belirleyin.",
+      "PDF'i koru'ya tıklayın ve sonucu indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "PDF'i korumak ücretsiz mi?",
+        "a": "Evet, PDF'i korumak yukarıda belirtilen günlük kullanım sınırları dahilinde ücretsizdir."
+      },
+      {
+        "q": "Dosyayı daha sonra açmak için bu şifreye ihtiyacım olacak mı?",
+        "a": "Evet. Güvenli bir yerde saklayın — kaybederseniz dosya şifresiz açılamaz."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["unlock-pdf", "merge-pdf"]
+}

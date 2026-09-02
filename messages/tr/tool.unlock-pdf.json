@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "Şifreli PDF'in Kilidini Aç — Ücretsiz ve Güvenli | JDpdf",
+    "description": "Bildiğiniz bir şifreyi PDF'ten kaldırın, böylece şifresiz açılsın. Ücretsiz, hızlı ve gizli."
+  },
+  "h1": "PDF Kilidini Aç",
+  "subtitle": "Şifresini zaten bildiğiniz bir PDF'ten şifreyi kaldırın.",
+  "options": {
+    "passwordLabel": "Mevcut şifre",
+    "passwordPlaceholder": "PDF'in şifresini girin"
+  },
+  "howItWorks": {
+    "title": "Bir PDF'in kilidi nasıl açılır",
+    "steps": [
+      "Şifreyle korunan PDF dosyasını yükleyin.",
+      "Dosyanın şu anda kullandığı şifreyi yazın.",
+      "PDF kilidini aç'a tıklayın ve sonucu indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "PDF kilidini açmak ücretsiz mi?",
+        "a": "Evet, PDF kilidini açmak yukarıda belirtilen günlük kullanım sınırları dahilinde ücretsizdir."
+      },
+      {
+        "q": "Şifreyi önceden bilmem gerekiyor mu?",
+        "a": "Evet. Bu araç zaten bildiğiniz bir şifreyi kaldırır — bilinmeyen şifreleri kurtarmaz veya kırmaz."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["protect-pdf", "merge-pdf"]
+}

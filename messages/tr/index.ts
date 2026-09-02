@@ -14,6 +14,8 @@ import pdfToJpg from "./tool.pdf-to-jpg.json";
 import pdfToPng from "./tool.pdf-to-png.json";
 import watermarkPdf from "./tool.watermark-pdf.json";
 import pageNumbers from "./tool.page-numbers.json";
+import protectPdf from "./tool.protect-pdf.json";
+import unlockPdf from "./tool.unlock-pdf.json";
 
 const messages = {
   common,
@@ -33,6 +35,8 @@ const messages = {
     "pdf-to-png": pdfToPng,
     "watermark-pdf": watermarkPdf,
     "page-numbers": pageNumbers,
+    "protect-pdf": protectPdf,
+    "unlock-pdf": unlockPdf,
   },
 };
 

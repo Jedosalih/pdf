@@ -1,0 +1,39 @@
+{
+  "seo": {
+    "title": "Protect a PDF with a Password — Free & Secure | JDpdf",
+    "description": "Add a password to a PDF so only people who know it can open it. Free, fast, and private."
+  },
+  "h1": "Protect PDF",
+  "subtitle": "Add a password so only people who know it can open this PDF.",
+  "options": {
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Choose a password",
+    "passwordHint": "At least 4 characters."
+  },
+  "howItWorks": {
+    "title": "How to password-protect a PDF",
+    "steps": [
+      "Upload the PDF file you want to protect.",
+      "Choose a password.",
+      "Click Protect PDF and download the result."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is protecting a PDF free?",
+        "a": "Yes, protecting a PDF is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will I need this password to open the file later?",
+        "a": "Yes. Keep it safe — if you lose it, the file can't be opened without it."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["unlock-pdf", "merge-pdf"]
+}
