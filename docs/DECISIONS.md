@@ -604,6 +604,49 @@ production check passed, including the new `/[locale]/protect-pdf` and
 This is the 14th and 15th tool shipped overall; one tool remains from
 the "Next Phase" ordered list (PDF Metadata).
 
+## 2026-09-02 — PDF Metadata shipped (16th tool, verified end-to-end) — all 15 ordered tools complete
+
+Final tool from the "Next Phase" ordered list. Uses `pdf-lib`'s
+existing `setTitle`/`setAuthor`/`setSubject`/`setKeywords` (in-process,
+no subprocess). Behaves as an editor, not a reset: each of the four
+fields is only written if the user supplied a non-empty value —
+`PDFDocument.load` already has the file's current metadata in memory,
+so leaving a field blank naturally keeps whatever the file already had,
+with no separate read-then-diff step needed. At least one field must be
+non-empty or the job is rejected as a no-op
+(`JobFailure("VALIDATION_ERROR")`) — same "must actually do something"
+rule as `watermark-pdf`'s non-empty-text requirement. Keywords are
+comma-separated in the UI but `pdf-lib.setKeywords` takes an array and
+internally joins with spaces (not commas) when writing the PDF
+`/Keywords` entry — the E2E test asserts the exact space-joined string
+pdf-lib actually produces, not the comma-separated input, so a future
+change to that join behavior would be caught rather than silently
+passing.
+
+`PdfMetadataTool` is the first tool with four options fields at once
+(2x2 `Input` grid) — still just composing the existing `Input`
+component, no new control needed.
+
+Verified: `tsc --noEmit`/`eslint` clean on app and worker, worker `tsc`
+build clean, `docker compose up -d --build pdf-worker` rebuilt with the
+handler registered, reseeded. `tests/e2e/pdf-metadata.spec.ts` uploads a
+fixture, sets all four fields, downloads the result, and reads them
+back via `pdf-lib`'s own `getTitle`/`getAuthor`/`getSubject`/
+`getKeywords` — a handler that silently dropped an option (e.g. only
+title) would fail this, unlike a page-count-only check. Full Playwright
+suite (16/16) green — every tool from the ordered list plus Merge PDF,
+no regressions. Cross-checked directly in Postgres: `Job.options`
+stored all four fields exactly as sent, `COMPLETED` status, linked
+`File` row (`metadata.pdf`, `application/pdf`, status `READY`). Full
+`next build` production check passed, including the new
+`/[locale]/pdf-metadata` route. Screenshot-verified `en` (LTR, both
+empty and file-selected states showing the 2x2 field grid) and `ar`
+(RTL) renders.
+
+This completes all 15 tools from the "Next Phase" ordered list (Split
+PDF through PDF Metadata), on top of the Merge PDF flow verified in the
+earlier phase.
+
 ## Template for future entries
 
 ```

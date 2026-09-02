@@ -14,6 +14,7 @@ import { handleWatermarkPdf } from "./handlers/watermarkPdf.js";
 import { handlePageNumbers } from "./handlers/pageNumbers.js";
 import { handleProtectPdf } from "./handlers/protectPdf.js";
 import { handleUnlockPdf } from "./handlers/unlockPdf.js";
+import { handlePdfMetadata } from "./handlers/pdfMetadata.js";
 import { JobFailure } from "./errors.js";
 
 const connection = new Redis(
@@ -41,6 +42,7 @@ const handlers: Record<string, (jobId: string) => Promise<void>> = {
   "page-numbers": handlePageNumbers,
   "protect-pdf": handleProtectPdf,
   "unlock-pdf": handleUnlockPdf,
+  "pdf-metadata": handlePdfMetadata,
 };
 
 const worker = new Worker<ProcessingJobPayload>(

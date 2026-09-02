@@ -1,0 +1,46 @@
+{
+  "seo": {
+    "title": "PDF Meta Verilerini Düzenle — Ücretsiz ve Güvenli | JDpdf",
+    "description": "Bir PDF'in başlığını, yazarını, konusunu ve anahtar kelimelerini düzenleyin. Ücretsiz, hızlı ve gizli."
+  },
+  "h1": "PDF Meta Verilerini Düzenle",
+  "subtitle": "Bir PDF dosyasının içinde saklanan başlık, yazar, konu ve anahtar kelimeleri değiştirin.",
+  "options": {
+    "titleLabel": "Başlık",
+    "titlePlaceholder": "Belge başlığı",
+    "authorLabel": "Yazar",
+    "authorPlaceholder": "Belge yazarı",
+    "subjectLabel": "Konu",
+    "subjectPlaceholder": "Belge konusu",
+    "keywordsLabel": "Anahtar kelimeler",
+    "keywordsPlaceholder": "örn. fatura, 2026, gizli",
+    "keywordsHint": "Birden fazla anahtar kelimeyi virgülle ayırın.",
+    "hint": "Bir alanı boş bırakırsanız mevcut değeri korunur."
+  },
+  "howItWorks": {
+    "title": "Bir PDF'in meta verileri nasıl düzenlenir",
+    "steps": [
+      "Düzenlemek istediğiniz PDF dosyasını yükleyin.",
+      "Başlık, yazar, konu veya anahtar kelime alanlarından herhangi birini doldurun.",
+      "Meta verileri kaydet'e tıklayın ve sonucu indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "PDF meta verilerini düzenlemek ücretsiz mi?",
+        "a": "Evet, PDF meta verilerini düzenlemek yukarıda belirtilen günlük kullanım sınırları dahilinde ücretsizdir."
+      },
+      {
+        "q": "Boş bıraktığım alanlara ne olur?",
+        "a": "Boş bıraktığınız her alan dosyanın mevcut değerini korur — yalnızca değiştirmek istediğinizi doldurmanız yeterlidir."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["watermark-pdf", "merge-pdf"]
+}

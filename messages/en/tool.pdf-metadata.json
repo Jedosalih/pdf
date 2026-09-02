@@ -1,0 +1,46 @@
+{
+  "seo": {
+    "title": "Edit PDF Metadata — Free & Secure | JDpdf",
+    "description": "Edit a PDF's title, author, subject, and keywords. Free, fast, and private."
+  },
+  "h1": "Edit PDF Metadata",
+  "subtitle": "Change the title, author, subject, and keywords stored inside a PDF file.",
+  "options": {
+    "titleLabel": "Title",
+    "titlePlaceholder": "Document title",
+    "authorLabel": "Author",
+    "authorPlaceholder": "Document author",
+    "subjectLabel": "Subject",
+    "subjectPlaceholder": "Document subject",
+    "keywordsLabel": "Keywords",
+    "keywordsPlaceholder": "e.g. invoice, 2026, confidential",
+    "keywordsHint": "Separate multiple keywords with commas.",
+    "hint": "Leave a field blank to keep its current value."
+  },
+  "howItWorks": {
+    "title": "How to edit a PDF's metadata",
+    "steps": [
+      "Upload the PDF file you want to edit.",
+      "Fill in any of the title, author, subject, or keyword fields.",
+      "Click Save metadata and download the result."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is editing PDF metadata free?",
+        "a": "Yes, editing PDF metadata is free within the daily usage limits shown above."
+      },
+      {
+        "q": "What happens to fields I leave blank?",
+        "a": "Any field left blank keeps the file's existing value — you only need to fill in what you want to change."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["watermark-pdf", "merge-pdf"]
+}

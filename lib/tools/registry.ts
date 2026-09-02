@@ -12,6 +12,7 @@ import {
   Hash,
   Lock,
   LockOpen,
+  Tags,
 } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
@@ -444,6 +445,35 @@ export const tools: ToolDefinition[] = [
     multipleFiles: false,
     translationNamespace: "tool.unlock-pdf",
     relatedTools: ["protect-pdf", "merge-pdf"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 20 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 50 * MB,
+        maxFiles: 1,
+        maxPages: 1000,
+        dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "pdf-metadata",
+    slug: "pdf-metadata",
+    category: "edit",
+    icon: Tags,
+    inputTypes: ["application/pdf"],
+    outputType: "application/pdf",
+    processor: "pdf-lib",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.pdf-metadata",
+    relatedTools: ["watermark-pdf", "merge-pdf"],
     limits: {
       guest: {
         maxFileSizeBytes: 20 * MB,

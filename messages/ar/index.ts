@@ -16,6 +16,7 @@ import watermarkPdf from "./tool.watermark-pdf.json";
 import pageNumbers from "./tool.page-numbers.json";
 import protectPdf from "./tool.protect-pdf.json";
 import unlockPdf from "./tool.unlock-pdf.json";
+import pdfMetadata from "./tool.pdf-metadata.json";
 
 const messages = {
   common,
@@ -37,6 +38,7 @@ const messages = {
     "page-numbers": pageNumbers,
     "protect-pdf": protectPdf,
     "unlock-pdf": unlockPdf,
+    "pdf-metadata": pdfMetadata,
   },
 };
 
