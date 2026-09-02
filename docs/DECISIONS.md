@@ -424,6 +424,33 @@ unaffected because qpdf/Ghostscript read from files written via
 direct in-memory binary parsing was exposed. Worth remembering for any
 future in-process binary parsing (Sharp for PDF→image, etc.).
 
+## 2026-09-03 — PDF-to-JPG/PDF-to-PNG shipped (10th–11th tools)
+
+Added `poppler-utils` to the worker image and one shared handler,
+`workers/pdf/src/handlers/pdfToImage.ts`, backing both `pdf-to-jpg` and
+`pdf-to-png` via `pdftoppm -jpeg|-png -r 150` — same "one handler, two
+registry entries" pattern as `imageToPdf.ts`. Output files are discovered
+by reading the temp output directory back (`pdftoppm`'s exact zero-padding
+width isn't guaranteed across versions) and sorted numerically by the
+page number extracted from the filename, not lexicographically (avoids
+"page-10" sorting before "page-2").
+
+**Improved `ResultState` while here**: it previously rendered one
+identically-labeled "Download" button per output file, which was already
+mediocre for Split PDF's 2–3 outputs and would have been genuinely bad
+for a PDF-to-JPG result on a 20+ page document (20 buttons all saying
+"Download" with no way to tell them apart without hovering). Now: a
+single result still gets the original big download button; multiple
+results render a compact list with filename, size, and a small download
+icon per row. Retroactively improves Split PDF's result screen too, not
+just these two new tools.
+
+Verified: `docker exec ... pdftoppm` confirmed present, reseeded,
+Playwright E2E tests decode the actual downloaded bytes with `sharp`
+(not just check magic bytes) to confirm each is a genuinely valid
+JPEG/PNG, and count matches page count exactly (6 outputs for a 6-page
+input, 3 for a 3-page input) — cross-checked in Postgres.
+
 ## Template for future entries
 
 ```

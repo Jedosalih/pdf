@@ -18,6 +18,9 @@ interface MultiFileToolProps {
    * produce a valid result from just 1. */
   minFiles?: number;
   reorderable?: boolean;
+  /** False for single-file tools (PDF-to-JPG/PNG) so the native file
+   * picker doesn't offer multi-select for a tool that only accepts one. */
+  multiple?: boolean;
 }
 
 /**
@@ -33,6 +36,7 @@ export function MultiFileTool({
   maxFiles,
   minFiles = 1,
   reorderable = true,
+  multiple = true,
 }: MultiFileToolProps) {
   const t = useTranslations("tools");
   const tCommon = useTranslations("common");
@@ -90,14 +94,14 @@ export function MultiFileTool({
         items={items}
         reorderable={reorderable}
         accept={accept}
-        multiple
+        multiple={multiple}
         maxFiles={maxFiles}
         onFilesSelected={handleFilesSelected}
         onReorder={handleReorder}
         onRemove={handleRemove}
         dropzoneLabel={t("upload.dropHere")}
         browseLabel={t("upload.orBrowse")}
-        hint={t("upload.maxFiles", { count: maxFiles })}
+        hint={maxFiles > 1 ? t("upload.maxFiles", { count: maxFiles }) : undefined}
         addMoreLabel={t("upload.orBrowse")}
       />
 

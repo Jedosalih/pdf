@@ -10,6 +10,8 @@ import extractPages from "./tool.extract-pages.json";
 import reorderPages from "./tool.reorder-pages.json";
 import jpgToPdf from "./tool.jpg-to-pdf.json";
 import pngToPdf from "./tool.png-to-pdf.json";
+import pdfToJpg from "./tool.pdf-to-jpg.json";
+import pdfToPng from "./tool.pdf-to-png.json";
 
 const messages = {
   common,
@@ -25,6 +27,8 @@ const messages = {
     "reorder-pages": reorderPages,
     "jpg-to-pdf": jpgToPdf,
     "png-to-pdf": pngToPdf,
+    "pdf-to-jpg": pdfToJpg,
+    "pdf-to-png": pdfToPng,
   },
 };
 

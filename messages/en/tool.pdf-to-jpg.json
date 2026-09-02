@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PDF to JPG Converter — Free & Secure | JDpdf",
+    "description": "Convert every page of a PDF into a JPG image. Free, fast, and private — no installation required."
+  },
+  "h1": "PDF to JPG",
+  "subtitle": "Convert every page of a PDF into a separate JPG image.",
+  "howItWorks": {
+    "title": "How to convert PDF to JPG",
+    "steps": [
+      "Upload the PDF file you want to convert.",
+      "Click Convert to render every page.",
+      "Download each page as a JPG image."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is converting PDF to JPG free?",
+        "a": "Yes, converting PDF to JPG is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Do I get one image per page?",
+        "a": "Yes, every page in the PDF becomes its own downloadable JPG image."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-png", "compress-pdf"]
+}

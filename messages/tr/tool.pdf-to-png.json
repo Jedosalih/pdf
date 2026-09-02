@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PDF'den PNG'ye Dönüştürücü — Ücretsiz ve Güvenli | JDpdf",
+    "description": "Bir PDF'in her sayfasını PNG görseline dönüştürün. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "PDF'den PNG'ye",
+  "subtitle": "Bir PDF'in her sayfasını ayrı bir PNG görseline dönüştürün.",
+  "howItWorks": {
+    "title": "PDF nasıl PNG'ye dönüştürülür",
+    "steps": [
+      "Dönüştürmek istediğiniz PDF dosyasını yükleyin.",
+      "Her sayfayı oluşturmak için Dönüştür'e tıklayın.",
+      "Her sayfayı PNG görseli olarak indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "PDF'den PNG'ye dönüştürme ücretsiz mi?",
+        "a": "Evet, yukarıda belirtilen günlük kullanım sınırları dahilinde PDF'den PNG'ye dönüştürme ücretsizdir."
+      },
+      {
+        "q": "Her sayfa için bir görsel mi elde ederim?",
+        "a": "Evet, PDF'teki her sayfa kendi indirilebilir PNG görseli olur."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-jpg", "compress-pdf"]
+}
