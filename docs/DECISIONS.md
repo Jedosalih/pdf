@@ -601,7 +601,8 @@ production check passed, including the new `/[locale]/protect-pdf` and
 `/[locale]/unlock-pdf` routes. Screenshot-verified both `en` (LTR) and
 `ar` (RTL) renders for both tools.
 
-This completes all 15 tools from the "Next Phase" ordered list.
+This is the 14th and 15th tool shipped overall; one tool remains from
+the "Next Phase" ordered list (PDF Metadata).
 
 ## Template for future entries
 
