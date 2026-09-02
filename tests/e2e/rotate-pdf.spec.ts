@@ -1,0 +1,46 @@
+import { test, expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { PDFDocument } from "pdf-lib";
+
+const fixture = path.join(__dirname, "../../docs/fixtures/sample-b-3page.pdf");
+
+/**
+ * Real pipeline end to end: upload a 3-page PDF, rotate 90°, download the
+ * result, and verify every page actually carries a 90° rotation (not just
+ * that the file is a valid PDF) via pdf-lib's page.getRotation().
+ */
+test("guest can rotate a real PDF and every page reflects the new angle", async ({
+  page,
+}) => {
+  await page.goto("/en/rotate-pdf");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  const fileInput = page.locator('input[type="file"]');
+  await fileInput.setInputFiles([fixture]);
+
+  await expect(page.getByText("Uploading…")).toHaveCount(0, { timeout: 20_000 });
+
+  // Default selection is "90° clockwise" — start directly.
+  const startButton = page.getByRole("button", { name: "Start" });
+  await expect(startButton).toBeEnabled();
+  await startButton.click();
+
+  const downloadLink = page.getByRole("link", { name: "Download" });
+  await expect(downloadLink).toBeVisible({ timeout: 30_000 });
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    downloadLink.click(),
+  ]);
+
+  const downloadPath = await download.path();
+  expect(downloadPath).not.toBeNull();
+
+  const bytes = await readFile(downloadPath as string);
+  const rotated = await PDFDocument.load(bytes);
+  expect(rotated.getPageCount()).toBe(3);
+  for (const pdfPage of rotated.getPages()) {
+    expect(pdfPage.getRotation().angle).toBe(90);
+  }
+});

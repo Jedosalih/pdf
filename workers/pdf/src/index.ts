@@ -4,6 +4,7 @@ import { prisma } from "./db.js";
 import { handleMergePdf } from "./handlers/mergePdf.js";
 import { handleSplitPdf } from "./handlers/splitPdf.js";
 import { handleCompressPdf } from "./handlers/compressPdf.js";
+import { handleRotatePdf } from "./handlers/rotatePdf.js";
 import { JobFailure } from "./errors.js";
 
 const connection = new Redis(
@@ -19,6 +20,7 @@ const handlers: Record<string, (jobId: string) => Promise<void>> = {
   "merge-pdf": handleMergePdf,
   "split-pdf": handleSplitPdf,
   "compress-pdf": handleCompressPdf,
+  "rotate-pdf": handleRotatePdf,
 };
 
 const worker = new Worker<ProcessingJobPayload>(

@@ -312,6 +312,20 @@ Verified: `docker compose up -d --build pdf-worker` (confirmed `gs
 E2E tests (merge/split/compress) green, direct Postgres check of the
 Job/File rows, and a full `next build`.
 
+## 2026-09-03 — Rotate PDF shipped (fourth tool, verified end-to-end)
+
+Rotates every page in the file by a fixed angle (90/180/270°) via `qpdf
+--rotate=+<degrees>`. Per-page rotation (as opposed to whole-document) is
+deferred with the other page-selection tools until real page thumbnails
+exist (`pdfjs-dist` is installed but still unused).
+
+Verified more precisely than previous tools: the E2E test doesn't just
+check the output is a valid PDF with the right page count — it reads
+`page.getRotation().angle` via pdf-lib on every page and asserts it's
+exactly 90, which is a genuine functional check that the qpdf flag did
+what it claims. Also confirmed via a direct Postgres read that
+`Job.options` stored `{"degrees": 90, ...}` as sent from the UI.
+
 ## Template for future entries
 
 ```

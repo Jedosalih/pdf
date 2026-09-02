@@ -1,0 +1,42 @@
+{
+  "seo": {
+    "title": "Rotate PDF Online — Free & Secure | JDpdf",
+    "description": "Rotate every page in a PDF by 90, 180, or 270 degrees. Free, fast, and private — no installation required."
+  },
+  "h1": "Rotate PDF",
+  "subtitle": "Rotate every page of a PDF file to the correct orientation.",
+  "options": {
+    "degreesLabel": "Rotation",
+    "degrees": {
+      "90": "90° clockwise",
+      "180": "180°",
+      "270": "270° clockwise"
+    }
+  },
+  "howItWorks": {
+    "title": "How to rotate a PDF file",
+    "steps": [
+      "Upload the PDF file you want to rotate.",
+      "Choose the rotation angle.",
+      "Click Rotate and download the corrected PDF."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is rotating PDFs free?",
+        "a": "Yes, rotating PDFs is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Does this rotate every page?",
+        "a": "Yes, the chosen rotation is applied to every page in the file."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["merge-pdf", "split-pdf"]
+}

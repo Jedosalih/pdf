@@ -1,0 +1,42 @@
+{
+  "seo": {
+    "title": "PDF Döndür — Ücretsiz ve Güvenli | JDpdf",
+    "description": "Bir PDF'teki her sayfayı 90, 180 veya 270 derece döndürün. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "PDF Döndür",
+  "subtitle": "Bir PDF dosyasındaki tüm sayfaları doğru yöne döndürün.",
+  "options": {
+    "degreesLabel": "Döndürme açısı",
+    "degrees": {
+      "90": "90° saat yönünde",
+      "180": "180°",
+      "270": "270° saat yönünde"
+    }
+  },
+  "howItWorks": {
+    "title": "Bir PDF dosyası nasıl döndürülür",
+    "steps": [
+      "Döndürmek istediğiniz PDF dosyasını yükleyin.",
+      "Döndürme açısını seçin.",
+      "Döndür'e tıklayın ve düzeltilmiş PDF'i indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "PDF döndürme ücretsiz mi?",
+        "a": "Evet, yukarıda belirtilen günlük kullanım sınırları dahilinde PDF döndürme ücretsizdir."
+      },
+      {
+        "q": "Bu işlem tüm sayfaları mı döndürür?",
+        "a": "Evet, seçilen döndürme açısı dosyadaki tüm sayfalara uygulanır."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["merge-pdf", "split-pdf"]
+}
