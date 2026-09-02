@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PNG to PDF Converter — Free & Secure | JDpdf",
+    "description": "Convert one or more PNG images into a single PDF file. Free, fast, and private — no installation required."
+  },
+  "h1": "PNG to PDF",
+  "subtitle": "Combine one or more PNG images into a single PDF document.",
+  "howItWorks": {
+    "title": "How to convert PNG to PDF",
+    "steps": [
+      "Upload one or more PNG images.",
+      "Drag to reorder them the way you want.",
+      "Click Convert and download your PDF."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is converting PNG to PDF free?",
+        "a": "Yes, converting images to PDF is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Can I convert multiple images at once?",
+        "a": "Yes, each image becomes one page in the resulting PDF, in the order you choose."
+      },
+      {
+        "q": "Will my files be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["jpg-to-pdf", "merge-pdf"]
+}

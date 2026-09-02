@@ -8,6 +8,8 @@ import rotatePdf from "./tool.rotate-pdf.json";
 import deletePages from "./tool.delete-pages.json";
 import extractPages from "./tool.extract-pages.json";
 import reorderPages from "./tool.reorder-pages.json";
+import jpgToPdf from "./tool.jpg-to-pdf.json";
+import pngToPdf from "./tool.png-to-pdf.json";
 
 const messages = {
   common,
@@ -21,6 +23,8 @@ const messages = {
     "delete-pages": deletePages,
     "extract-pages": extractPages,
     "reorder-pages": reorderPages,
+    "jpg-to-pdf": jpgToPdf,
+    "png-to-pdf": pngToPdf,
   },
 };
 

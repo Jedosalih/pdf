@@ -8,6 +8,7 @@ import { handleRotatePdf } from "./handlers/rotatePdf.js";
 import { handleDeletePages } from "./handlers/deletePages.js";
 import { handleExtractPages } from "./handlers/extractPages.js";
 import { handleReorderPages } from "./handlers/reorderPages.js";
+import { handleImageToPdf } from "./handlers/imageToPdf.js";
 import { JobFailure } from "./errors.js";
 
 const connection = new Redis(
@@ -27,6 +28,8 @@ const handlers: Record<string, (jobId: string) => Promise<void>> = {
   "delete-pages": handleDeletePages,
   "extract-pages": handleExtractPages,
   "reorder-pages": handleReorderPages,
+  "jpg-to-pdf": handleImageToPdf,
+  "png-to-pdf": handleImageToPdf,
 };
 
 const worker = new Worker<ProcessingJobPayload>(

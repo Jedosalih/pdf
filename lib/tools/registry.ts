@@ -6,6 +6,7 @@ import {
   FileMinus,
   FileOutput,
   ArrowUpDown,
+  FileImage,
 } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
@@ -216,6 +217,64 @@ export const tools: ToolDefinition[] = [
       free: {
         maxFileSizeBytes: 50 * MB,
         maxFiles: 1,
+        maxPages: 1000,
+        dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "jpg-to-pdf",
+    slug: "jpg-to-pdf",
+    category: "convert",
+    icon: FileImage,
+    inputTypes: ["image/jpeg"],
+    outputType: "application/pdf",
+    processor: "pdf-lib",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: true,
+    translationNamespace: "tool.jpg-to-pdf",
+    relatedTools: ["png-to-pdf", "merge-pdf"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 15 * MB,
+        maxFiles: 20,
+        maxPages: 300,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 30 * MB,
+        maxFiles: 50,
+        maxPages: 1000,
+        dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "png-to-pdf",
+    slug: "png-to-pdf",
+    category: "convert",
+    icon: FileImage,
+    inputTypes: ["image/png"],
+    outputType: "application/pdf",
+    processor: "pdf-lib",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: true,
+    translationNamespace: "tool.png-to-pdf",
+    relatedTools: ["jpg-to-pdf", "merge-pdf"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 15 * MB,
+        maxFiles: 20,
+        maxPages: 300,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 30 * MB,
+        maxFiles: 50,
         maxPages: 1000,
         dailyOperations: 30,
       },

@@ -376,6 +376,54 @@ homepage links — caught before it reached a real browser, by remembering
 the API layer's `TOOL_DISABLED` check reads the same `enabled` flag, not
 just the homepage listing.
 
+## 2026-09-03 — JPG-to-PDF/PNG-to-PDF shipped (8th–9th tools) + a real storage-layer bug
+
+First tools using `pdf-lib` in the worker (no subprocess — per
+`docs/PDF_ENGINE.md`, image-to-PDF assembly is cheaper in-process than
+shelling out). One shared handler,
+`workers/pdf/src/handlers/imageToPdf.ts`, backs both `jpg-to-pdf` and
+`png-to-pdf` (registered twice in the `handlers` map) since the only
+difference is which `pdf-lib` embed method runs. Each image becomes a
+page sized to A4 in the image's own orientation, scaled to fit and
+centered — using raw pixel dimensions as PDF points directly would produce
+absurdly large pages (a 3000px-wide photo would be a 41-inch-wide PDF
+page at 72pt/inch).
+
+Also generalized `MergePdfTool` into a shared `MultiFileTool`
+(`components/tools/MultiFileTool.tsx`) parameterized by `toolId`/`accept`/
+`maxFiles`/`minFiles` — Merge, JPG-to-PDF, and PNG-to-PDF are all "upload
+N files, optionally reorder, click Start, get one result" with zero
+tool-specific options, so with a third consumer this was clearly a real
+pattern, not a premature abstraction. `MergePdfTool`/`JpgToPdfTool`/
+`PngToPdfTool` are now thin wrappers supplying just their own config.
+
+**Found a real, non-obvious storage-layer bug** while writing the E2E
+test for JPG-to-PDF (PNG-to-PDF passed first try, which is what made this
+worth digging into rather than assuming a fixture problem): `pdf-lib`'s
+JPEG embedder threw `"SOI not found in JPEG"` on a file that was
+byte-for-byte identical (verified via direct `Buffer.compare` against a
+copy pulled straight from MinIO) to a fixture that embedded fine when
+read via `fs.readFile`. Root cause: `workers/pdf/src/storage.ts`'s
+`downloadToBuffer` did `Buffer.from(uint8Array)` — for inputs under
+Node's buffer-pooling threshold (~4KB), this copies the bytes correctly
+but allocates the destination from Node's shared internal buffer pool,
+producing a `Buffer` whose `.byteOffset` is non-zero into a larger,
+unrelated `ArrayBuffer` (confirmed: a 640-byte file landed at
+`byteOffset: 5224` inside an 8192-byte pool). `pdf-lib`'s JPEG parser
+reads `.buffer` directly without honoring `byteOffset`, so it silently
+read the wrong region of memory instead of throwing on a content
+mismatch. Its PNG parser doesn't have this sensitivity, which is why only
+JPEG was affected. Fixed by wrapping the already-correctly-sized
+`ArrayBuffer` explicitly instead of copying:
+`Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength)` — applied
+to both `workers/pdf/src/storage.ts` and the mirrored `lib/storage/s3.ts`
+(same latent bug, not yet hit there only because nothing currently reads
+raw file bytes from the Next.js app directly). Every prior tool was
+unaffected because qpdf/Ghostscript read from files written via
+`fs.writeFile`, which correctly respects buffer offsets — only
+direct in-memory binary parsing was exposed. Worth remembering for any
+future in-process binary parsing (Sharp for PDF→image, etc.).
+
 ## Template for future entries
 
 ```

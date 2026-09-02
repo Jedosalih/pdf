@@ -32,7 +32,14 @@ export async function downloadToBuffer(key: string): Promise<Buffer> {
   if (!bytes) {
     throw new Error(`Storage object not found: ${key}`);
   }
-  return Buffer.from(bytes);
+  // `Buffer.from(uint8Array)` copies bytes correctly, but for small inputs
+  // Node allocates the copy from its shared internal buffer pool, giving a
+  // Buffer with a non-zero `byteOffset` into a larger, unrelated
+  // ArrayBuffer. Some consumers (pdf-lib's JPEG embedder, notably) read
+  // `.buffer` directly without honoring `byteOffset`, which silently reads
+  // the wrong bytes. Wrapping the already-correctly-sized ArrayBuffer
+  // directly (no extra copy) avoids that entire class of bug.
+  return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 }
 
 export async function uploadBuffer(

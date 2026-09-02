@@ -47,7 +47,9 @@ export function createS3StorageProvider(): StorageProvider {
       if (!bytes) {
         throw new Error(`Storage object not found: ${key}`);
       }
-      return Buffer.from(bytes);
+      // See workers/pdf/src/storage.ts for why this avoids Buffer.from's
+      // pooled-allocation byteOffset gotcha.
+      return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     },
 
     async deleteObject(key) {
