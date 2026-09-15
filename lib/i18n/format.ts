@@ -18,6 +18,28 @@ export function formatDate(value: Date, locale: Locale): string {
   }).format(value);
 }
 
+const RELATIVE_UNITS: { unit: Intl.RelativeTimeFormatUnit; ms: number }[] = [
+  { unit: "year", ms: 365 * 24 * 60 * 60 * 1000 },
+  { unit: "month", ms: 30 * 24 * 60 * 60 * 1000 },
+  { unit: "day", ms: 24 * 60 * 60 * 1000 },
+  { unit: "hour", ms: 60 * 60 * 1000 },
+  { unit: "minute", ms: 60 * 1000 },
+];
+
+/** "2 minutes ago" style strings for workspace/history rows — native
+ * Intl.RelativeTimeFormat, zero dependency. */
+export function formatRelativeTime(value: Date, locale: Locale): string {
+  const diffMs = value.getTime() - Date.now();
+  const formatter = new Intl.RelativeTimeFormat(localeTags[locale], { numeric: "auto" });
+
+  for (const { unit, ms } of RELATIVE_UNITS) {
+    if (Math.abs(diffMs) >= ms) {
+      return formatter.format(Math.round(diffMs / ms), unit);
+    }
+  }
+  return formatter.format(Math.round(diffMs / 1000), "second");
+}
+
 export function formatFileSize(bytes: number, locale: Locale): string {
   const units = ["B", "KB", "MB", "GB"];
   let size = bytes;

@@ -6,6 +6,7 @@ import { downloadToBuffer, uploadBuffer } from "../storage.js";
 import { runCommand } from "../exec.js";
 import { withTempDir } from "../tempDir.js";
 import { JobFailure } from "../errors.js";
+import { computeFileExpiry } from "../retention.js";
 
 interface UnlockOptions {
   password?: string;
@@ -71,7 +72,7 @@ export async function handleUnlockPdf(jobId: string): Promise<void> {
         size: outputBuffer.byteLength,
         status: "READY",
         outputJobId: job.id,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        expiresAt: computeFileExpiry(job.userId),
       },
     });
   });

@@ -647,6 +647,105 @@ This completes all 15 tools from the "Next Phase" ordered list (Split
 PDF through PDF Metadata), on top of the Merge PDF flow verified in the
 earlier phase.
 
+## 2026-09-15 — Auth foundation + workspace backend shipped (schema, sessions, retention, guest migration, My Documents/History APIs)
+
+First phase of the Master Product Redesign & Expansion Blueprint's Priority
+1 (Product/UI Foundation) + Priority 2 (Auth Foundation + Document
+Workspace Shell). This entry covers the backend/data layer; the UI layer
+(header, homepage, tools directory, workspace pages) follows in subsequent
+commits.
+
+- **Schema**: `File` gains `starred: Boolean @default(false)` and
+  `deletedAt: DateTime?` (+ `@@index([userId, deletedAt])`); `Job` gains
+  `hiddenAt: DateTime?`. Star/Trash operate at the File level, not Job,
+  because a Job can have N input + M output Files — trashing/starring is
+  inherently per-file. "Delete" a history entry sets `Job.hiddenAt` rather
+  than actually deleting the row, because `Job.inputFiles`/`outputFiles`
+  are `onDelete: Cascade` *from* Job — a real delete would silently
+  cascade-destroy the user's actual files, including ones already
+  downloaded and expected to persist.
+- **Auth mechanism**: custom email+password auth built directly on the
+  existing `User`/`Session` models (`lib/auth/session.ts`,
+  `lib/auth/password.ts`) — no NextAuth/Auth.js. `Session.tokenHash` was
+  already a hand-designed DB-session-with-hashed-token shape (not JWT, not
+  NextAuth's adapter shape), so adopting a library would mean either
+  reshaping an already-reviewed schema or bypassing its adapter entirely,
+  at which point it adds nothing. Session cookie signing mirrors the
+  existing `jdpdf_guest` HMAC pattern (`lib/security/guestIdCore.ts`) —
+  same primitive, reused rather than duplicated.
+- **Password hashing**: `bcryptjs` (pure JS), not `bcrypt`/`argon2`. This
+  project already has a documented scar from a native-binding dependency
+  breaking a build (TypeScript 7's platform-specific compiler under
+  `--omit=optional`, see the worker Dockerfile entry above) — hashing runs
+  in the Next.js app itself here, an even less controlled environment than
+  the worker container. Password length is validated by *UTF-8 byte
+  length* (`new TextEncoder().encode(password).length <= 72`), not string
+  length — a zod `.max(72)` counts UTF-16 code units, which under-counts
+  multi-byte characters (Arabic/Turkish passwords), and bcrypt's real limit
+  is 72 *bytes*.
+- **`resolveActor()`/`resolveActorReadOnly()`** (`lib/security/actor.ts`)
+  now check `getSessionUser()` first, exactly as the functions' own
+  docblock predicted when they were written — zero other call site changed,
+  since `lib/entitlements/index.ts` and every existing API route already
+  branched generically on `actor.type`. Also extracted the
+  previously-duplicated ownership-check expression into a shared
+  `isOwnedByActor()` helper.
+- **Retention fix**: every File/Job creation site (`app/api/upload`,
+  `app/api/jobs`, all 14 worker handlers) stamped an unconditional 24h
+  `expiresAt` regardless of actor type. Without a fix, a signed-up user's
+  "My Documents" files would still be silently scheduled for guest-style
+  expiry. New `computeExpiry(actor)` (app, `lib/entitlements/retention.ts`)
+  / `computeFileExpiry(userId)` (worker, `workers/pdf/src/retention.ts` —
+  duplicated rather than imported, since `workers/pdf` is a fully separate
+  package) return `null` for user-owned rows, keep the existing 24h for
+  guests. Audited every consumer of `expiresAt` across `app/`, `lib/`, and
+  `workers/pdf/src/` before rolling this out: the field is only ever
+  written, never read/filtered/compared anywhere in application code today
+  (no cleanup worker exists yet to misinterpret `null` — that's a separate,
+  pre-existing, unaffected gap), so introducing `null` is safe.
+- **Guest→user migration**: `lib/auth/migrateGuestData.ts` reassigns a
+  guest's `Job`/`File` rows (`guestId→userId`, `guestId:null`,
+  `expiresAt:null`) on both register and login, called with the actor
+  resolved *before* the new session is established. Deliberately does
+  **not** migrate `UsageRecord` — the free tier's higher daily limits are
+  part of the signup incentive; carrying over guest usage counts would
+  undermine that. Idempotent on an already-migrated (now-null) guestId, so
+  it's safe to run unconditionally on every login, not just first login.
+- **My Documents / Starred / Trash / History APIs**: `GET /api/files`
+  (view=documents|starred|trash, search, sort, cursor pagination — chosen
+  over offset pagination so results stay stable if rows move between views
+  mid-scroll), `PATCH`/`DELETE /api/files/[id]`, `POST
+  .../trash|restore`, `GET /api/jobs` (history) + `POST
+  /api/jobs/[id]/hide`. Permanent delete only succeeds once a file is
+  already trashed (`409 NOT_TRASHED` otherwise) — forces the two-step
+  trash-then-delete flow so it's never one accidental click from
+  Documents. Rename/star blocked while trashed (`409 FILE_TRASHED`) —
+  restore first.
+- **Rate limiting**: new `lib/security/rateLimit.ts`, a Redis
+  `INCR`/`EXPIRE` counter on the already-provisioned queue Redis
+  connection — no new infrastructure. Applied to register (by IP) and
+  login (by IP and by normalized email).
+
+**Verified**: `tsc --noEmit`/ESLint clean on both app and worker; worker
+`tsc` build clean; `docker compose up -d --build pdf-worker` rebuilt with
+the retention change; full Playwright suite (16/16) green (confirmed
+serialized — a parallel run showed transient failures from local dev
+Postgres contention under concurrent workers, not a real regression: the
+worker log showed every job completing successfully in both runs).
+Direct manual verification of the entire auth/workspace flow via curl
+(kept out of the Playwright suite for now — formal E2E coverage for these
+flows lands with the workspace UI in a follow-up commit): guest upload →
+register → file migrated (`userId` set, `guestId` null, `expiresAt` null)
+→ appears in `/api/files`; star/rename/trash/restore/permanent-delete all
+behave correctly including both 409 guards; a second registered user
+receives `403 FORBIDDEN` attempting to read, download, patch, or trash the
+first user's file; logout destroys the `Session` row (confirmed via direct
+Postgres check, not just cookie clearing) and subsequent workspace
+requests correctly fall back to guest and return `401 AUTH_REQUIRED`;
+wrong-password login returns generic `401 INVALID_CREDENTIALS`; duplicate
+registration returns `409 EMAIL_TAKEN`; login rate limiting triggers
+`429 RATE_LIMITED` on the 6th attempt against a 5-attempt/15-minute limit.
+
 ## Template for future entries
 
 ```

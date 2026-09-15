@@ -3,6 +3,7 @@ import { PDFDocument, StandardFonts, rgb, degrees } from "pdf-lib";
 import { prisma } from "../db.js";
 import { downloadToBuffer, uploadBuffer } from "../storage.js";
 import { JobFailure } from "../errors.js";
+import { computeFileExpiry } from "../retention.js";
 
 interface WatermarkOptions {
   text?: string;
@@ -82,7 +83,7 @@ export async function handleWatermarkPdf(jobId: string): Promise<void> {
       size: outputBuffer.byteLength,
       status: "READY",
       outputJobId: job.id,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      expiresAt: computeFileExpiry(job.userId),
     },
   });
 }

@@ -6,6 +6,7 @@ import { downloadToBuffer, uploadBuffer } from "../storage.js";
 import { runCommand } from "../exec.js";
 import { withTempDir } from "../tempDir.js";
 import { JobFailure } from "../errors.js";
+import { computeFileExpiry } from "../retention.js";
 
 const RESOLUTION_DPI = 150;
 
@@ -80,7 +81,7 @@ async function handlePdfToImage(jobId: string, format: "jpeg" | "png"): Promise<
           size: imageBuffer.byteLength,
           status: "READY",
           outputJobId: job.id,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          expiresAt: computeFileExpiry(job.userId),
         },
       });
     }

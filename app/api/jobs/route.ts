@@ -3,9 +3,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/client";
 import { getToolById } from "@/lib/tools/registry";
 import { canUseTool, getToolLimits, recordToolUsage } from "@/lib/entitlements";
+import { computeExpiry } from "@/lib/entitlements/retention";
 import { resolveActor } from "@/lib/security/actor";
 import { enqueueProcessingJob } from "@/lib/queue/queues";
 import { apiError } from "@/lib/api/errors";
+import { listRecentJobs } from "@/lib/workspace/jobs";
 
 export const runtime = "nodejs";
 
@@ -14,6 +16,30 @@ const createJobSchema = z.object({
   fileIds: z.array(z.string().min(1)).min(1),
   options: z.record(z.string(), z.unknown()).optional(),
 });
+
+const listJobsQuerySchema = z.object({
+  cursor: z.string().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+/** History listing — requires a real signed-in user (guests have no
+ * persistent workspace). */
+export async function GET(request: NextRequest) {
+  const actor = await resolveActor();
+  if (actor.type !== "user") {
+    return apiError("AUTH_REQUIRED");
+  }
+
+  const parsed = listJobsQuerySchema.safeParse(
+    Object.fromEntries(request.nextUrl.searchParams),
+  );
+  if (!parsed.success) {
+    return apiError("VALIDATION_ERROR");
+  }
+
+  const result = await listRecentJobs({ userId: actor.userId, ...parsed.data });
+  return NextResponse.json(result);
+}
 
 /**
  * Validates entitlements and file ownership, then enqueues the job and
@@ -66,7 +92,7 @@ export async function POST(request: NextRequest) {
       // `fileOrder` is the source of truth for input ordering (relevant for
       // merge order) — relational `connect` order is not guaranteed on read.
       options: { ...options, fileOrder: fileIds },
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      expiresAt: computeExpiry(actor),
       inputFiles: {
         connect: fileIds.map((id) => ({ id })),
       },

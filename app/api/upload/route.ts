@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db/client";
 import { getToolById } from "@/lib/tools/registry";
 import { getToolLimits } from "@/lib/entitlements";
+import { computeExpiry } from "@/lib/entitlements/retention";
 import { resolveActor } from "@/lib/security/actor";
 import { validateUploadedFile } from "@/lib/security/validateUpload";
 import { generateStorageKey, getStorage } from "@/lib/storage";
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
       mimeType: file.type,
       size: buffer.byteLength,
       status: "UPLOADED",
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      expiresAt: computeExpiry(actor),
     },
   });
 

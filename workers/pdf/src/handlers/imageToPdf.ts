@@ -3,6 +3,7 @@ import { PDFDocument } from "pdf-lib";
 import { prisma } from "../db.js";
 import { downloadToBuffer, uploadBuffer } from "../storage.js";
 import { JobFailure } from "../errors.js";
+import { computeFileExpiry } from "../retention.js";
 
 // A4 at 72pt/inch — pages take the image's own orientation, image is
 // scaled to fit and centered (see docs/DECISIONS.md for why raw pixel
@@ -82,7 +83,7 @@ export async function handleImageToPdf(jobId: string): Promise<void> {
       size: outputBuffer.byteLength,
       status: "READY",
       outputJobId: job.id,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      expiresAt: computeFileExpiry(job.userId),
     },
   });
 }

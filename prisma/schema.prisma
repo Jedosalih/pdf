@@ -221,6 +221,8 @@ model Job {
   completedAt DateTime?
   expiresAt   DateTime?
 
+  hiddenAt    DateTime?
+
   inputFiles  File[]     @relation("JobInputFiles")
   outputFiles File[]     @relation("JobOutputFiles")
   events      JobEvent[]
@@ -255,6 +257,8 @@ model File {
   status       FileStatus @default(UPLOADING)
   createdAt    DateTime   @default(now())
   expiresAt    DateTime?
+  starred      Boolean    @default(false)
+  deletedAt    DateTime?
 
   inputJob   Job? @relation("JobInputFiles", fields: [inputJobId], references: [id], onDelete: Cascade)
   inputJobId String?
@@ -264,6 +268,7 @@ model File {
 
   @@index([userId])
   @@index([guestId])
+  @@index([userId, deletedAt])
 }
 
 // --- Commerce extras (schema only — unused until a real promotion exists) ---

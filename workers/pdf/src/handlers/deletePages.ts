@@ -5,6 +5,7 @@ import { prisma } from "../db.js";
 import { downloadToBuffer, uploadBuffer } from "../storage.js";
 import { withTempDir } from "../tempDir.js";
 import { JobFailure } from "../errors.js";
+import { computeFileExpiry } from "../retention.js";
 import { getPageCount, extractPages } from "./pageSelection.js";
 
 interface DeletePagesOptions {
@@ -67,7 +68,7 @@ export async function handleDeletePages(jobId: string): Promise<void> {
         size: outputBuffer.byteLength,
         status: "READY",
         outputJobId: job.id,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        expiresAt: computeFileExpiry(job.userId),
       },
     });
   });
