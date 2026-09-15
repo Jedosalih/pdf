@@ -10,6 +10,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { Footer } from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/Toast";
 import { TooltipProvider } from "@/components/ui/Tooltip";
+import { PendingUploadProvider } from "@/components/upload/PendingUploadProvider";
 import "../globals.css";
 
 const inter = Inter({
@@ -61,10 +62,12 @@ export default async function LocaleLayout({
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Direction.Provider dir={dir}>
             <TooltipProvider>
-              <AppHeader />
-              <main className="flex-1">{children}</main>
-              <Footer />
-              <Toaster />
+              <PendingUploadProvider>
+                <AppHeader />
+                <main className="flex-1">{children}</main>
+                <Footer />
+                <Toaster />
+              </PendingUploadProvider>
             </TooltipProvider>
           </Direction.Provider>
         </NextIntlClientProvider>

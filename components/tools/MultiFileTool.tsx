@@ -46,6 +46,7 @@ export function MultiFileTool({
     flow,
     errorCode,
     outputFiles,
+    jobId,
     uploadedCount,
     hasErrors,
     handleFilesSelected,
@@ -66,6 +67,7 @@ export function MultiFileTool({
         title={t("result.title")}
         outputFiles={outputFiles}
         downloadLabel={t("result.download")}
+        jobId={jobId}
       >
         <StartOverButton label={t("result.processAnother")} onClick={reset} />
       </ResultState>

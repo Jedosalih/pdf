@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import type { DragEvent } from "react";
 import { UploadCloud } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -11,6 +11,10 @@ interface ToolDropzoneProps {
   multiple?: boolean;
   disabled?: boolean;
   onFilesSelected: (files: File[]) => void;
+  /** Called with any dropped/selected files whose type doesn't match
+   * `accept` — the server's magic-byte validation is the real security
+   * boundary, this is just earlier, clearer UX feedback. */
+  onRejectedFiles?: (files: File[]) => void;
   label: string;
   hint?: string;
   browseLabel: string;
@@ -24,6 +28,7 @@ export function ToolDropzone({
   multiple = true,
   disabled,
   onFilesSelected,
+  onRejectedFiles,
   label,
   hint,
   browseLabel,
@@ -31,12 +36,26 @@ export function ToolDropzone({
   const inputId = useId();
   const [isDragging, setIsDragging] = useState(false);
 
+  const acceptedTypes = useMemo(
+    () => accept.split(",").map((type) => type.trim()).filter(Boolean),
+    [accept],
+  );
+
   const handleFiles = useCallback(
     (fileList: FileList | null) => {
       if (!fileList || fileList.length === 0) return;
-      onFilesSelected(Array.from(fileList));
+      const files = Array.from(fileList);
+      if (!onRejectedFiles || acceptedTypes.length === 0) {
+        onFilesSelected(files);
+        return;
+      }
+
+      const accepted = files.filter((file) => acceptedTypes.includes(file.type));
+      const rejected = files.filter((file) => !acceptedTypes.includes(file.type));
+      if (accepted.length > 0) onFilesSelected(accepted);
+      if (rejected.length > 0) onRejectedFiles(rejected);
     },
-    [onFilesSelected],
+    [onFilesSelected, onRejectedFiles, acceptedTypes],
   );
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {

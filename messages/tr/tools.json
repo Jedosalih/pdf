@@ -30,6 +30,7 @@
   "result": {
     "title": "Dosyanız hazır",
     "download": "İndir",
+    "downloadZip": "Tümünü ZIP olarak indir",
     "processAnother": "Başka bir dosya işle",
     "relatedTools": "İlgili araçlar"
   },

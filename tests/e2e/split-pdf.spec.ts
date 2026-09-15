@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { PDFDocument } from "pdf-lib";
+import JSZip from "jszip";
 
 const fixture = path.join(__dirname, "../../docs/fixtures/sample-c-6page.pdf");
 
@@ -26,7 +27,9 @@ test("guest can split a real PDF into multiple valid files", async ({ page }) =>
   await expect(startButton).toBeEnabled();
   await startButton.click();
 
-  const downloadLinks = page.getByRole("link", { name: "Download" });
+  // Scoped to end in ".pdf" so this doesn't also match the "Download all as
+  // ZIP" link below (both accessible names contain the substring "Download").
+  const downloadLinks = page.getByRole("link", { name: /\.pdf$/ });
   await expect(downloadLinks).toHaveCount(3, { timeout: 30_000 });
 
   for (let i = 0; i < 3; i += 1) {
@@ -39,6 +42,25 @@ test("guest can split a real PDF into multiple valid files", async ({ page }) =>
 
     const bytes = await readFile(downloadPath as string);
     const part = await PDFDocument.load(bytes);
+    expect(part.getPageCount()).toBe(2);
+  }
+
+  // "Download all as ZIP" — verify the archive is real (decodable, exact
+  // entry count) and each entry is itself a genuinely valid 2-page PDF, not
+  // just that the HTTP request for the archive succeeded.
+  const zipLink = page.getByRole("link", { name: "Download all as ZIP" });
+  const [zipDownload] = await Promise.all([page.waitForEvent("download"), zipLink.click()]);
+  const zipPath = await zipDownload.path();
+  expect(zipPath).not.toBeNull();
+
+  const zipBytes = await readFile(zipPath as string);
+  const zip = await JSZip.loadAsync(zipBytes);
+  const entries = Object.values(zip.files).filter((entry) => !entry.dir);
+  expect(entries).toHaveLength(3);
+
+  for (const entry of entries) {
+    const entryBytes = await entry.async("nodebuffer");
+    const part = await PDFDocument.load(entryBytes);
     expect(part.getPageCount()).toBe(2);
   }
 });

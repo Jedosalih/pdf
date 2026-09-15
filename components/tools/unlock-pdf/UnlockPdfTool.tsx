@@ -30,6 +30,7 @@ export function UnlockPdfTool({ maxFiles }: UnlockPdfToolProps) {
     flow,
     errorCode,
     outputFiles,
+    jobId,
     uploadedCount,
     hasErrors,
     handleFilesSelected,
@@ -51,6 +52,7 @@ export function UnlockPdfTool({ maxFiles }: UnlockPdfToolProps) {
       <ResultState
         title={t("result.title")}
         outputFiles={outputFiles}
+        jobId={jobId}
         downloadLabel={t("result.download")}
       >
         <StartOverButton label={t("result.processAnother")} onClick={reset} />

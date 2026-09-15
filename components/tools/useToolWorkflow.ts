@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatFileSize } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/routing";
+import { usePendingUpload } from "@/components/upload/PendingUploadProvider";
 import type { FileListItem } from "./FileList";
 
 const POLL_INTERVAL_MS = 1500;
@@ -72,6 +73,7 @@ export function useToolWorkflow({ toolId, maxFiles }: UseToolWorkflowOptions) {
   const [flow, setFlow] = useState<FlowState>("selecting");
   const [errorCode, setErrorCode] = useState<string | undefined>(undefined);
   const [outputFiles, setOutputFiles] = useState<JobOutputFile[]>([]);
+  const [jobId, setJobId] = useState<string | null>(null);
   const pollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const items: FileListItem[] = useMemo(
@@ -208,6 +210,7 @@ export function useToolWorkflow({ toolId, maxFiles }: UseToolWorkflowOptions) {
           return;
         }
         const data = (await response.json()) as { jobId: string };
+        setJobId(data.jobId);
         setFlow("processing");
         pollJob(data.jobId);
       } catch {
@@ -224,7 +227,27 @@ export function useToolWorkflow({ toolId, maxFiles }: UseToolWorkflowOptions) {
     setFlow("selecting");
     setErrorCode(undefined);
     setOutputFiles([]);
+    setJobId(null);
   }, []);
+
+  const pendingUpload = usePendingUpload();
+  const hasConsumedPendingUpload = useRef(false);
+
+  // Picks up a file dropped on the homepage's hero dropzone before this
+  // tool was chosen (see PendingUploadProvider) — runs at most once per
+  // mount regardless of how often `handleFilesSelected`'s identity changes.
+  // The state update is deferred to a microtask (not called synchronously
+  // in the effect body) to satisfy eslint-plugin-react-hooks's
+  // set-state-in-effect rule — same timing, just not a bare top-level
+  // setState call directly inside the effect.
+  useEffect(() => {
+    if (hasConsumedPendingUpload.current) return;
+    hasConsumedPendingUpload.current = true;
+    const file = pendingUpload.consume();
+    if (file) {
+      void Promise.resolve().then(() => handleFilesSelected([file]));
+    }
+  }, [pendingUpload, handleFilesSelected]);
 
   const uploadedCount = files.filter((f) => f.status === "uploaded").length;
   const hasErrors = files.some((f) => f.status === "error");
@@ -235,6 +258,7 @@ export function useToolWorkflow({ toolId, maxFiles }: UseToolWorkflowOptions) {
     flow,
     errorCode,
     outputFiles,
+    jobId,
     uploadedCount,
     hasErrors,
     handleFilesSelected,

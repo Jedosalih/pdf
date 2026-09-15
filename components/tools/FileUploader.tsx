@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useId } from "react";
+import { useCallback, useId, useState } from "react";
 import type { ChangeEvent } from "react";
 import { Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Alert } from "@/components/ui/Alert";
 import { ToolDropzone } from "./ToolDropzone";
 import { FileList, type FileListItem as FileListItemData } from "./FileList";
 
@@ -45,28 +47,48 @@ export function FileUploader({
   addMoreLabel,
 }: FileUploaderProps) {
   const addMoreInputId = useId();
+  const tCommon = useTranslations("common");
+  const [hasRejectedFile, setHasRejectedFile] = useState(false);
 
-  const handleAddMoreChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      if (event.target.files) {
-        onFilesSelected(Array.from(event.target.files));
-      }
-      event.target.value = "";
+  const handleFilesSelected = useCallback(
+    (files: File[]) => {
+      setHasRejectedFile(false);
+      onFilesSelected(files);
     },
     [onFilesSelected],
   );
 
+  const handleRejectedFiles = useCallback(() => {
+    setHasRejectedFile(true);
+  }, []);
+
+  const handleAddMoreChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      if (event.target.files) {
+        handleFilesSelected(Array.from(event.target.files));
+      }
+      event.target.value = "";
+    },
+    [handleFilesSelected],
+  );
+
   if (items.length === 0) {
     return (
-      <ToolDropzone
-        accept={accept}
-        multiple={multiple}
-        disabled={disabled}
-        onFilesSelected={onFilesSelected}
-        label={dropzoneLabel}
-        browseLabel={browseLabel}
-        hint={hint}
-      />
+      <div className="flex flex-col gap-3">
+        <ToolDropzone
+          accept={accept}
+          multiple={multiple}
+          disabled={disabled}
+          onFilesSelected={handleFilesSelected}
+          onRejectedFiles={handleRejectedFiles}
+          label={dropzoneLabel}
+          browseLabel={browseLabel}
+          hint={hint}
+        />
+        {hasRejectedFile ? (
+          <Alert variant="error">{tCommon("errors.unsupportedFile")}</Alert>
+        ) : null}
+      </div>
     );
   }
 

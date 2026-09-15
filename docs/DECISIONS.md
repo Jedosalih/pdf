@@ -746,6 +746,83 @@ wrong-password login returns generic `401 INVALID_CREDENTIALS`; duplicate
 registration returns `409 EMAIL_TAKEN`; login rate limiting triggers
 `429 RATE_LIMITED` on the 6th attempt against a 5-attempt/15-minute limit.
 
+## 2026-09-16 — Brand mark + shared upload/result upgrades shipped (Priority 1 foundation, part 1)
+
+First UI-layer commit of the Master Product Redesign Blueprint's Priority
+1 work, building on the auth/workspace backend from the previous entry.
+
+- **Brand mark**: `components/layout/BrandMark.tsx`, a plain inline SVG
+  (rounded document tile + folded corner + "J" glyph), wired into
+  `AppHeader.tsx` next to the existing text wordmark; `app/icon.svg` for
+  the browser favicon (simplified, no fold detail — disappears below
+  ~32px anyway). Kept `--color-primary` (`#1d4ed8`) as-is rather than
+  matching a reference mockup's `#2563EB` exactly — one step apart,
+  already contrast-verified, not worth re-auditing 18 primitives for an
+  imperceptible difference (blueprint §6: consolidate an approved system
+  rather than replace it). Screenshot-verified in both `en` and `ar`
+  (mirrors correctly).
+- **Homepage → tool handoff mechanism**: `components/upload/
+  PendingUploadProvider.tsx`, a context mounted once in
+  `app/[locale]/layout.tsx`. Exists now as inert plumbing — nothing calls
+  `setFile()` yet, since the homepage hero dropzone itself lands in a
+  follow-up commit — but `useToolWorkflow` already consumes it on mount
+  (guarded to run at most once via a ref, deferred into a microtask rather
+  than called synchronously in the effect body to satisfy
+  `eslint-plugin-react-hooks`'s `set-state-in-effect` rule — same pattern
+  as the project's prior fix for this rule, see the entry above on
+  `set-state-in-effect`). Relies on `app/[locale]/layout.tsx` being the
+  only layout above every route (confirmed no root `app/layout.tsx`
+  exists), so a client-side nav from `/` to `/{locale}/{tool-slug}` via
+  `router.push` doesn't remount the provider — a hard reload loses the
+  in-memory `File`, an accepted trade-off with no fallback storage
+  (a `File` object can't be serialized into `sessionStorage`).
+- **`useToolWorkflow`** now tracks and returns `jobId` (previously fetched
+  in `start()` and immediately discarded).
+- **Inline upload-rejection feedback**: `ToolDropzone` gained an optional
+  `onRejectedFiles` callback (splits dropped/selected files by exact MIME
+  match against `accept`); `FileUploader` wires it to an inline `Alert`
+  reusing the existing `common.errors.unsupportedFile` string — no new
+  translation key needed. Fully backward-compatible (optional prop).
+- **"Download all as ZIP"** for multi-output results (Split PDF today):
+  new `app/api/jobs/[id]/download-zip/route.ts` (added `jszip` dependency —
+  no zip capability existed anywhere in the repo). `StorageProvider` only
+  exposes whole-buffer reads, so true end-to-end streaming isn't possible
+  without a bigger interface change touching every worker handler; instead
+  output files are fetched **sequentially** (never `Promise.all`) to avoid
+  an N-way concurrent memory spike, guarded by a hard cap (100 files /
+  200MB combined) that returns `FILE_TOO_LARGE` rather than risking an
+  unbounded memory spike on a pathological result. The *output* side is
+  genuinely streamed: `JSZip.generateNodeStream` writes into the HTTP
+  response as it compresses rather than buffering the whole archive
+  first. `ResultState` gained an optional `jobId` prop to render this link
+  when `outputFiles.length > 1`.
+- **Scope trim**: dropped the originally-planned "contextual related
+  tools row inside `ResultState`" — `ToolPage` already renders a full,
+  always-visible related-tools section on every tool page, and a second,
+  smaller version inside the result state would be a near-duplicate UI
+  element for marginal benefit, contradicting the blueprint's own
+  restraint principle (§5, §77: avoid "more cards" as a proxy for
+  "professional"). This also meant the `jobId` fan-out only needed to
+  touch `MultiFileTool.tsx` (which alone backs 5 of the 16 tools —
+  merge/jpg-to-pdf/png-to-pdf/pdf-to-jpg/pdf-to-png) plus the 11 bespoke
+  tool components, not all 16 `page.tsx` files as originally scoped.
+
+**Verified**: `tsc --noEmit`/ESLint clean, full `next build` production
+check passed (confirmed all new API routes present in the route manifest).
+Full Playwright suite (16/16) green, run serialized (`--workers=1`) after
+confirming in the previous session that parallel-worker runs produce
+transient, environment-only failures against a single local dev Postgres
+(the worker log always showed every job completing regardless — not a
+real regression, see the previous entry). `tests/e2e/split-pdf.spec.ts`
+updated: its "Download" link locator now matches on a `.pdf$` suffix
+(the new ZIP link's accessible name, "Download all as ZIP", otherwise
+also substring-matched the old bare `"Download"` name query, inflating
+the expected count from 3 to 4) and gained real ZIP verification —
+downloads the archive, decodes it with `JSZip.loadAsync`, asserts exactly
+3 entries, and validates each entry is itself a genuine 2-page PDF via
+`pdf-lib`, not just that the HTTP request succeeded. Screenshot-verified
+the new ZIP button on Split PDF's result screen (`en`).
+
 ## Template for future entries
 
 ```

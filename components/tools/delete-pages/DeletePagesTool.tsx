@@ -31,6 +31,7 @@ export function DeletePagesTool({ maxFiles }: DeletePagesToolProps) {
     flow,
     errorCode,
     outputFiles,
+    jobId,
     uploadedCount,
     hasErrors,
     handleFilesSelected,
@@ -75,6 +76,7 @@ export function DeletePagesTool({ maxFiles }: DeletePagesToolProps) {
       <ResultState
         title={t("result.title")}
         outputFiles={outputFiles}
+        jobId={jobId}
         downloadLabel={t("result.download")}
       >
         <StartOverButton label={t("result.processAnother")} onClick={handleReset} />

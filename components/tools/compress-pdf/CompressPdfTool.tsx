@@ -34,6 +34,7 @@ export function CompressPdfTool({ maxFiles }: CompressPdfToolProps) {
     flow,
     errorCode,
     outputFiles,
+    jobId,
     uploadedCount,
     hasErrors,
     handleFilesSelected,
@@ -58,6 +59,7 @@ export function CompressPdfTool({ maxFiles }: CompressPdfToolProps) {
       <ResultState
         title={t("result.title")}
         outputFiles={outputFiles}
+        jobId={jobId}
         downloadLabel={t("result.download")}
       >
         {originalSize !== undefined && resultSize !== undefined ? (

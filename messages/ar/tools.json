@@ -30,6 +30,7 @@
   "result": {
     "title": "ملفك جاهز",
     "download": "تنزيل",
+    "downloadZip": "تنزيل الكل كملف ZIP",
     "processAnother": "معالجة ملف آخر",
     "relatedTools": "أدوات ذات صلة"
   },

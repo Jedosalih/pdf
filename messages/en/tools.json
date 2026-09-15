@@ -30,6 +30,7 @@
   "result": {
     "title": "Your file is ready",
     "download": "Download",
+    "downloadZip": "Download all as ZIP",
     "processAnother": "Process another file",
     "relatedTools": "Related tools"
   },
