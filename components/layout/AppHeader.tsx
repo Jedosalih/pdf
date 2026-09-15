@@ -1,17 +1,20 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/lib/i18n/navigation";
+import { HeaderAuthSlot } from "@/components/auth/HeaderAuthSlot";
 import { PageContainer } from "./PageContainer";
 import { BrandMark } from "./BrandMark";
 import { DesktopNav, type NavItem } from "./DesktopNav";
 import { MobileNav } from "./MobileNav";
 import { LocaleSwitcher } from "./LocaleSwitcher";
+import { SearchTrigger } from "./SearchTrigger";
 
 export async function AppHeader() {
   const t = await getTranslations("common");
 
-  // Only link to routes that exist yet — Pricing/Blog/About/Contact join
-  // this list once their pages ship (docs/DECISIONS.md).
-  const navItems: readonly NavItem[] = [{ href: "/#tools", label: t("nav.pdfTools") }];
+  const navItems: readonly NavItem[] = [
+    { href: "/tools", label: t("nav.tools") },
+    { href: "/workspace", label: t("nav.workspace") },
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
@@ -26,11 +29,15 @@ export async function AppHeader() {
 
         <DesktopNav items={navItems} />
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
+          <SearchTrigger />
           <div className="hidden md:block">
             <LocaleSwitcher />
           </div>
-          <MobileNav items={navItems} />
+          <div className="hidden md:block">
+            <HeaderAuthSlot />
+          </div>
+          <MobileNav items={navItems} authSlot={<HeaderAuthSlot />} />
         </div>
       </PageContainer>
     </header>

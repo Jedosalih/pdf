@@ -5,12 +5,19 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Inter, Cairo } from "next/font/google";
 import { Direction } from "radix-ui";
+import { getTranslations } from "next-intl/server";
 import { routing, isRtl, type Locale } from "@/lib/i18n/routing";
+import { getEnabledTools } from "@/lib/tools/registry";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Footer } from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/Toast";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { PendingUploadProvider } from "@/components/upload/PendingUploadProvider";
+import { CommandPaletteProvider } from "@/components/layout/CommandPaletteProvider";
+import {
+  GlobalCommandPalette,
+  type CommandPaletteToolItem,
+} from "@/components/layout/GlobalCommandPalette";
 import "../globals.css";
 
 const inter = Inter({
@@ -52,6 +59,24 @@ export default async function LocaleLayout({
   const dir = isRtl(locale as Locale) ? "rtl" : "ltr";
   const fontClassName = locale === "ar" ? cairo.className : inter.className;
 
+  const toolItems: CommandPaletteToolItem[] = await Promise.all(
+    getEnabledTools().map(async (tool) => {
+      const t = await getTranslations({ locale, namespace: tool.translationNamespace });
+      const Icon = tool.icon;
+      return {
+        slug: tool.slug,
+        title: t("h1"),
+        description: t("subtitle"),
+        category: tool.category,
+        // Rendered here (a Server Component) rather than passed as a bare
+        // component reference — a function/component reference can't cross
+        // the Server->Client prop boundary into GlobalCommandPalette, only
+        // an already-rendered element can.
+        icon: <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />,
+      };
+    }),
+  );
+
   return (
     <html
       lang={locale}
@@ -63,10 +88,13 @@ export default async function LocaleLayout({
           <Direction.Provider dir={dir}>
             <TooltipProvider>
               <PendingUploadProvider>
-                <AppHeader />
-                <main className="flex-1">{children}</main>
-                <Footer />
-                <Toaster />
+                <CommandPaletteProvider>
+                  <AppHeader />
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                  <Toaster />
+                  <GlobalCommandPalette toolItems={toolItems} />
+                </CommandPaletteProvider>
               </PendingUploadProvider>
             </TooltipProvider>
           </Direction.Provider>

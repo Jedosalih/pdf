@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "home": "الرئيسية",
+    "documents": "مستنداتي",
+    "recent": "الأحدث",
+    "starred": "المفضلة",
+    "trash": "سلة المحذوفات",
+    "allTools": "جميع الأدوات",
+    "categories": "التصنيفات",
+    "settings": "الإعدادات"
+  },
+  "mobileNav": {
+    "home": "الرئيسية",
+    "tools": "الأدوات",
+    "files": "الملفات",
+    "profile": "الحساب"
+  },
+  "greeting": {
+    "morning": "صباح الخير",
+    "afternoon": "مساء الخير",
+    "evening": "مساء الخير",
+    "subtitle": "ماذا تريد أن تفعل اليوم؟"
+  },
+  "quickActions": {
+    "title": "إجراءات سريعة",
+    "merge": "دمج PDF",
+    "compress": "ضغط PDF",
+    "split": "تقسيم PDF",
+    "watermark": "علامة مائية"
+  },
+  "recent": {
+    "title": "المستندات الأخيرة",
+    "viewAll": "عرض الكل",
+    "emptyTitle": "لا يوجد نشاط بعد",
+    "emptyDescription": "ستظهر هنا المستندات التي تعالجها.",
+    "emptyCta": "رفع ملف",
+    "hide": "إزالة من السجل",
+    "statusCompleted": "مكتمل",
+    "statusFailed": "فشل",
+    "statusProcessing": "قيد المعالجة"
+  },
+  "documents": {
+    "title": "مستنداتي",
+    "searchPlaceholder": "ابحث في المستندات…",
+    "sortDate": "التاريخ",
+    "sortName": "الاسم",
+    "sortSize": "الحجم",
+    "emptyTitle": "لا توجد مستندات بعد",
+    "emptyDescription": "ارفع مستندًا لتبدأ العمل.",
+    "emptyCta": "رفع ملف"
+  },
+  "starred": {
+    "title": "المفضلة",
+    "emptyTitle": "لا توجد مستندات مفضلة",
+    "emptyDescription": "أضف مستندًا إلى المفضلة لتجده هنا بسرعة.",
+    "emptyCta": "الذهاب إلى مستنداتي"
+  },
+  "trash": {
+    "title": "سلة المحذوفات",
+    "emptyTitle": "سلة المحذوفات فارغة",
+    "emptyDescription": "تظهر هنا المستندات التي تحذفها قبل إزالتها نهائيًا.",
+    "emptyCta": "الذهاب إلى مستنداتي"
+  },
+  "fileActions": {
+    "rename": "إعادة تسمية",
+    "moreActions": "المزيد من الإجراءات",
+    "star": "إضافة إلى المفضلة",
+    "unstar": "إزالة من المفضلة",
+    "moveToTrash": "نقل إلى سلة المحذوفات",
+    "restore": "استعادة",
+    "deletePermanently": "حذف نهائي",
+    "download": "تنزيل"
+  },
+  "storage": {
+    "usedOfTotal": "تم استخدام {used} من {total}"
+  },
+  "confirmDelete": {
+    "title": "حذف نهائي؟",
+    "description": "لا يمكن التراجع عن هذا الإجراء.",
+    "confirm": "حذف",
+    "cancel": "إلغاء"
+  },
+  "renameDialog": {
+    "title": "إعادة تسمية الملف",
+    "label": "اسم الملف",
+    "save": "حفظ",
+    "cancel": "إلغاء"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "profileTitle": "الملف الشخصي",
+    "nameLabel": "الاسم",
+    "emailLabel": "البريد الإلكتروني",
+    "save": "حفظ",
+    "saved": "تم الحفظ",
+    "changePasswordTitle": "تغيير كلمة المرور",
+    "currentPasswordLabel": "كلمة المرور الحالية",
+    "newPasswordLabel": "كلمة المرور الجديدة",
+    "changePassword": "تغيير كلمة المرور",
+    "passwordChanged": "تم تحديث كلمة المرور",
+    "logout": "تسجيل الخروج"
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "home": "Home",
+    "documents": "My Documents",
+    "recent": "Recent",
+    "starred": "Starred",
+    "trash": "Trash",
+    "allTools": "All Tools",
+    "categories": "Categories",
+    "settings": "Settings"
+  },
+  "mobileNav": {
+    "home": "Home",
+    "tools": "Tools",
+    "files": "Files",
+    "profile": "Profile"
+  },
+  "greeting": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening",
+    "subtitle": "What would you like to do today?"
+  },
+  "quickActions": {
+    "title": "Quick actions",
+    "merge": "Merge PDF",
+    "compress": "Compress PDF",
+    "split": "Split PDF",
+    "watermark": "Watermark PDF"
+  },
+  "recent": {
+    "title": "Recent documents",
+    "viewAll": "View all",
+    "emptyTitle": "No activity yet",
+    "emptyDescription": "Documents you process will show up here.",
+    "emptyCta": "Upload a file",
+    "hide": "Remove from history",
+    "statusCompleted": "Completed",
+    "statusFailed": "Failed",
+    "statusProcessing": "Processing"
+  },
+  "documents": {
+    "title": "My Documents",
+    "searchPlaceholder": "Search documents…",
+    "sortDate": "Date",
+    "sortName": "Name",
+    "sortSize": "Size",
+    "emptyTitle": "No documents yet",
+    "emptyDescription": "Upload a document to start working.",
+    "emptyCta": "Upload a file"
+  },
+  "starred": {
+    "title": "Starred",
+    "emptyTitle": "No starred documents",
+    "emptyDescription": "Star a document to find it here quickly.",
+    "emptyCta": "Go to My Documents"
+  },
+  "trash": {
+    "title": "Trash",
+    "emptyTitle": "Trash is empty",
+    "emptyDescription": "Documents you delete will appear here before they're removed for good.",
+    "emptyCta": "Go to My Documents"
+  },
+  "fileActions": {
+    "rename": "Rename",
+    "moreActions": "More actions",
+    "star": "Star",
+    "unstar": "Unstar",
+    "moveToTrash": "Move to trash",
+    "restore": "Restore",
+    "deletePermanently": "Delete permanently",
+    "download": "Download"
+  },
+  "storage": {
+    "usedOfTotal": "{used} of {total} used"
+  },
+  "confirmDelete": {
+    "title": "Delete permanently?",
+    "description": "This can't be undone.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  },
+  "renameDialog": {
+    "title": "Rename file",
+    "label": "File name",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "settings": {
+    "title": "Settings",
+    "profileTitle": "Profile",
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "save": "Save",
+    "saved": "Saved",
+    "changePasswordTitle": "Change password",
+    "currentPasswordLabel": "Current password",
+    "newPasswordLabel": "New password",
+    "changePassword": "Change password",
+    "passwordChanged": "Password updated",
+    "logout": "Log out"
+  }
+}

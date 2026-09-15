@@ -12,7 +12,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").re
  * automatically — no manual sitemap maintenance (blueprint §27).
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const staticPaths = ["", ...getEnabledTools().map((tool) => `/${tool.slug}`)];
+  const staticPaths = ["", "/tools", ...getEnabledTools().map((tool) => `/${tool.slug}`)];
 
   return staticPaths.flatMap((path) =>
     locales.map((locale) => ({

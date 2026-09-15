@@ -8,7 +8,17 @@
     "about": "من نحن",
     "contact": "تواصل معنا",
     "menu": "فتح القائمة",
-    "close": "إغلاق القائمة"
+    "close": "إغلاق القائمة",
+    "tools": "الأدوات",
+    "workspace": "مساحة العمل",
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "search": "بحث"
+  },
+  "commandPalette": {
+    "placeholder": "ابحث عن أداة…",
+    "emptyState": "لا توجد أدوات مطابقة.",
+    "toolsGroup": "الأدوات"
   },
   "categories": {
     "organize": "تنظيم PDF",

@@ -1,0 +1,7 @@
+{
+  "title": "جميع الأدوات",
+  "subtitle": "كل ما تحتاجه للتعامل مع ملفات PDF، في مكان واحد.",
+  "searchPlaceholder": "ابحث عن أداة…",
+  "searchEmptyState": "لا توجد أدوات مطابقة لبحثك.",
+  "categoryCount": "{count, plural, zero {بدون أدوات} one {أداة واحدة} two {أداتان} few {# أدوات} many {# أداة} other {# أداة}}"
+}

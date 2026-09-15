@@ -823,6 +823,87 @@ downloads the archive, decodes it with `JSZip.loadAsync`, asserts exactly
 `pdf-lib`, not just that the HTTP request succeeded. Screenshot-verified
 the new ZIP button on Split PDF's result screen (`en`).
 
+## 2026-09-16 — Header auth menu, global search/command palette, tools directory, and full workspace shell shipped
+
+Completes the UI layer for Priority 1 + Priority 2. Auth pages
+(`/login`, `/signup`), the session-aware header (`HeaderAuthSlot` ->
+`AuthButtons`/`UserMenu`), the redesigned nav (`Tools`/`Workspace` +
+`Ctrl/Cmd+K` command palette), a dedicated `/tools` directory, and the
+full `/workspace` dashboard (Home, My Documents, Recent, Starred, Trash,
+Settings, mobile bottom nav) are now live and wired to the real
+auth/workspace backend from the previous entry.
+
+- **Command palette**: hand-rolled on the existing `Modal`/Radix `Dialog`
+  primitive (`components/ui/CommandPalette.tsx`) rather than a `cmdk`
+  dependency — 16 static tools is well within scope for a ~150-line
+  listbox. `lib/tools/search.ts`'s `searchTools()` is shared by both the
+  palette and the `/tools` directory search (one implementation, per
+  blueprint §59).
+- **Real RSC bug caught and fixed**: `lucide-react` icon *component
+  references* (`LucideIcon`) were being passed as plain data props from
+  Server Components into two Client Components
+  (`GlobalCommandPalette`/`ToolsDirectorySearch`) — React can only
+  serialize already-rendered elements across that boundary, not bare
+  function/component references, and this crashed every single page
+  (`Functions cannot be passed directly to Client Components`) the moment
+  the dev server actually ran, despite `tsc`/ESLint being fully clean
+  (TypeScript's structural typing has no way to flag this — it's a
+  runtime-only RSC serialization rule). Fixed by pre-rendering the icon
+  into JSX (`<Icon className="..." />`) in the Server Component before
+  handing it down, and re-typing the relevant props as `ReactNode`
+  instead of `LucideIcon`. Caught by actually starting the dev server and
+  loading pages, not by typecheck/lint/build alone — reinforces why a
+  real visual/runtime pass is mandatory before calling UI work done, not
+  optional once static checks pass.
+- **Tools directory** (`/tools`): category cards link to real `#category`
+  anchors, which required grouping the "all tools" list by category
+  (with real anchor ids) instead of a single flat alphabetized list as
+  originally sketched — the flat-list version had no matching anchor
+  targets for the category cards to scroll to.
+- **`getSessionUser()` wrapped in React's `cache()`** — both
+  `app/[locale]/workspace/layout.tsx` (route protection) and each
+  workspace page call it; caching dedupes the cookie+DB read to once per
+  request instead of once per call site.
+- **Workspace quick actions use only real, shipped tools** (Merge/
+  Compress/Split/Watermark) — the blueprint's suggested "Edit PDF" and
+  "Convert" quick actions don't correspond to any actual tool yet (no
+  unified editor, no single "convert" tool exists among the 16 shipped
+  tools), so linking to them would be exactly the fake/aspirational UI
+  the blueprint itself bans.
+- **`Greeting` computes the time-of-day from the browser's local clock**,
+  not the server's — defaults to "morning" on the very first render (same
+  value server and client) to avoid a hydration mismatch, then corrects
+  itself post-mount.
+- **New shared primitive**: `components/ui/Skeleton.tsx` (loading
+  placeholder for the fetch-driven Documents/Starred/Trash/Recent views).
+- **Homepage/all pages lost per-locale static prerendering** (`● /en` ->
+  `ƒ /[locale]`) once the header started reading the session cookie via
+  `HeaderAuthSlot` on every page — an accepted, documented trade-off:
+  every tool page was already dynamic (each already calls
+  `resolveActorReadOnly()` for entitlement limits), so only the
+  previously-static homepage's caching is newly affected, and there's no
+  committed hosting target yet where this cost is concretely measured.
+  Revisit with Next.js Partial Prerendering once it's stable/adopted,
+  rather than adding it as an experimental feature mid-plan for a caching
+  gain with no measured need.
+
+**Verified**: `tsc --noEmit`/ESLint clean, full `next build` production
+check passed. Full Playwright suite (16/16) green, run serialized after
+confirming (again) that parallel-worker runs are flaky against the local
+dev Postgres, not a real regression. Manually smoke-tested the entire new
+UI via a real signup flow in the browser (not just curl this time):
+registered a user, screenshotted Workspace Home, `/tools`, My Documents,
+Trash, and Settings in `en`, plus Workspace Home and `/tools` in `ar`
+(sidebar/header/category cards/scroll-arrows all mirror correctly) and
+Workspace Home at mobile width (bottom nav renders correctly) — zero
+console/page errors across all of them post-fix. Added
+`tests/e2e/auth-signup-migrates-guest.spec.ts` (drives the real Compress
+PDF pipeline as a guest, signs up, confirms the result file appears in
+My Documents) to the permanent suite; the rest of this phase's planned
+E2E coverage (cross-user isolation across every mutating route, star/
+trash/restore, history-hide-preserves-file, session-expiry-redirects)
+is written next.
+
 ## Template for future entries
 
 ```

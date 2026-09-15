@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { Menu } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/lib/i18n/navigation";
@@ -11,9 +12,10 @@ import type { NavItem } from "./DesktopNav";
 
 interface MobileNavProps {
   items: readonly NavItem[];
+  authSlot?: ReactNode;
 }
 
-export function MobileNav({ items }: MobileNavProps) {
+export function MobileNav({ items, authSlot }: MobileNavProps) {
   const t = useTranslations("common");
   const [open, setOpen] = useState(false);
 
@@ -41,8 +43,9 @@ export function MobileNav({ items }: MobileNavProps) {
             </Link>
           ))}
         </nav>
-        <div className="mt-6 border-t border-border pt-4">
+        <div className="mt-6 flex flex-col gap-4 border-t border-border pt-4">
           <LocaleSwitcher />
+          {authSlot}
         </div>
       </Drawer>
     </div>

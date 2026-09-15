@@ -1,0 +1,7 @@
+{
+  "title": "Tüm araçlar",
+  "subtitle": "PDF'lerinizle çalışmak için ihtiyacınız olan her şey, tek yerde.",
+  "searchPlaceholder": "Araç ara…",
+  "searchEmptyState": "Aramanızla eşleşen araç yok.",
+  "categoryCount": "{count, plural, other {# araç}}"
+}

@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "home": "Ana Sayfa",
+    "documents": "Belgelerim",
+    "recent": "Son",
+    "starred": "Yıldızlı",
+    "trash": "Çöp Kutusu",
+    "allTools": "Tüm Araçlar",
+    "categories": "Kategoriler",
+    "settings": "Ayarlar"
+  },
+  "mobileNav": {
+    "home": "Ana Sayfa",
+    "tools": "Araçlar",
+    "files": "Dosyalar",
+    "profile": "Profil"
+  },
+  "greeting": {
+    "morning": "Günaydın",
+    "afternoon": "İyi günler",
+    "evening": "İyi akşamlar",
+    "subtitle": "Bugün ne yapmak istersiniz?"
+  },
+  "quickActions": {
+    "title": "Hızlı işlemler",
+    "merge": "PDF Birleştir",
+    "compress": "PDF Sıkıştır",
+    "split": "PDF Böl",
+    "watermark": "Filigran Ekle"
+  },
+  "recent": {
+    "title": "Son belgeler",
+    "viewAll": "Tümünü gör",
+    "emptyTitle": "Henüz etkinlik yok",
+    "emptyDescription": "İşlediğiniz belgeler burada görünecek.",
+    "emptyCta": "Dosya yükle",
+    "hide": "Geçmişten kaldır",
+    "statusCompleted": "Tamamlandı",
+    "statusFailed": "Başarısız",
+    "statusProcessing": "İşleniyor"
+  },
+  "documents": {
+    "title": "Belgelerim",
+    "searchPlaceholder": "Belgelerde ara…",
+    "sortDate": "Tarih",
+    "sortName": "Ad",
+    "sortSize": "Boyut",
+    "emptyTitle": "Henüz belge yok",
+    "emptyDescription": "Çalışmaya başlamak için bir belge yükleyin.",
+    "emptyCta": "Dosya yükle"
+  },
+  "starred": {
+    "title": "Yıldızlı",
+    "emptyTitle": "Yıldızlı belge yok",
+    "emptyDescription": "Hızlıca bulmak için bir belgeyi yıldızlayın.",
+    "emptyCta": "Belgelerime git"
+  },
+  "trash": {
+    "title": "Çöp Kutusu",
+    "emptyTitle": "Çöp kutusu boş",
+    "emptyDescription": "Sildiğiniz belgeler kalıcı olarak kaldırılmadan önce burada görünür.",
+    "emptyCta": "Belgelerime git"
+  },
+  "fileActions": {
+    "rename": "Yeniden adlandır",
+    "moreActions": "Diğer işlemler",
+    "star": "Yıldızla",
+    "unstar": "Yıldızı kaldır",
+    "moveToTrash": "Çöp kutusuna taşı",
+    "restore": "Geri yükle",
+    "deletePermanently": "Kalıcı olarak sil",
+    "download": "İndir"
+  },
+  "storage": {
+    "usedOfTotal": "{total} alanın {used} kullanıldı"
+  },
+  "confirmDelete": {
+    "title": "Kalıcı olarak silinsin mi?",
+    "description": "Bu işlem geri alınamaz.",
+    "confirm": "Sil",
+    "cancel": "İptal"
+  },
+  "renameDialog": {
+    "title": "Dosyayı yeniden adlandır",
+    "label": "Dosya adı",
+    "save": "Kaydet",
+    "cancel": "İptal"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "profileTitle": "Profil",
+    "nameLabel": "Ad",
+    "emailLabel": "E-posta",
+    "save": "Kaydet",
+    "saved": "Kaydedildi",
+    "changePasswordTitle": "Şifreyi değiştir",
+    "currentPasswordLabel": "Mevcut şifre",
+    "newPasswordLabel": "Yeni şifre",
+    "changePassword": "Şifreyi değiştir",
+    "passwordChanged": "Şifre güncellendi",
+    "logout": "Çıkış yap"
+  }
+}

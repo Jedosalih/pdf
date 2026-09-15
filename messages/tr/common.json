@@ -8,7 +8,17 @@
     "about": "Hakkımızda",
     "contact": "İletişim",
     "menu": "Menüyü aç",
-    "close": "Menüyü kapat"
+    "close": "Menüyü kapat",
+    "tools": "Araçlar",
+    "workspace": "Çalışma Alanı",
+    "login": "Giriş yap",
+    "signup": "Kaydol",
+    "search": "Ara"
+  },
+  "commandPalette": {
+    "placeholder": "Araç ara…",
+    "emptyState": "Eşleşen araç bulunamadı.",
+    "toolsGroup": "Araçlar"
   },
   "categories": {
     "organize": "Sayfaları Düzenle",

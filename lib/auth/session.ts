@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db/client";
 
@@ -81,7 +82,7 @@ export async function clearSessionCookie(): Promise<void> {
  * fall through to guest behavior silently, matching the existing
  * `resolveActorReadOnly` contract.
  */
-export async function getSessionUser(): Promise<SessionUser | null> {
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
@@ -100,7 +101,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     name: session.user.name,
     role: session.user.role,
   };
-}
+});
 
 /** Used by logout — deletes by the raw token's hash. Idempotent (safe to call twice). */
 export async function destroySessionByToken(token: string): Promise<void> {

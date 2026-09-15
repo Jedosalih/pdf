@@ -1,4 +1,7 @@
 import common from "./common.json";
+import auth from "./auth.json";
+import workspace from "./workspace.json";
+import toolsDirectory from "./tools-directory.json";
 import home from "./home.json";
 import tools from "./tools.json";
 import mergePdf from "./tool.merge-pdf.json";
@@ -20,6 +23,9 @@ import pdfMetadata from "./tool.pdf-metadata.json";
 
 const messages = {
   common,
+  auth,
+  workspace,
+  toolsDirectory,
   home,
   tools,
   tool: {

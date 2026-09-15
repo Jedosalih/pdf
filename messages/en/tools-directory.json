@@ -1,0 +1,7 @@
+{
+  "title": "All tools",
+  "subtitle": "Everything you need to work with your PDFs, in one place.",
+  "searchPlaceholder": "Search tools…",
+  "searchEmptyState": "No tools match your search.",
+  "categoryCount": "{count, plural, one {# tool} other {# tools}}"
+}

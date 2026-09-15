@@ -8,7 +8,17 @@
     "about": "About",
     "contact": "Contact",
     "menu": "Open menu",
-    "close": "Close menu"
+    "close": "Close menu",
+    "tools": "Tools",
+    "workspace": "Workspace",
+    "login": "Log in",
+    "signup": "Sign up",
+    "search": "Search"
+  },
+  "commandPalette": {
+    "placeholder": "Search tools…",
+    "emptyState": "No matching tools found.",
+    "toolsGroup": "Tools"
   },
   "categories": {
     "organize": "Organize PDF",
