@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { ShieldCheck, Zap, Globe2 } from "lucide-react";
+import { ShieldCheck, Zap, Globe2, Trash2, Lock } from "lucide-react";
 import { buildLocalizedMetadata } from "@/lib/seo/metadata";
-import { getEnabledTools } from "@/lib/tools/registry";
-import type { ToolCategory } from "@/lib/tools/types";
+import { getPopularTools } from "@/lib/tools/popular";
 import { Section } from "@/components/layout/Section";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Hero } from "@/components/marketing/Hero";
-import { CategorySection } from "@/components/marketing/CategorySection";
-import { ToolGrid, type ToolGridItem } from "@/components/marketing/ToolGrid";
+import { HeroDropzoneCard } from "@/components/marketing/HeroDropzoneCard";
+import { PopularToolsRow } from "@/components/marketing/PopularToolsRow";
 import { FeatureSection } from "@/components/marketing/FeatureSection";
 import { HowItWorks } from "@/components/marketing/HowItWorks";
+import { FAQ } from "@/components/marketing/FAQ";
+import { Link } from "@/lib/i18n/navigation";
 import type { Locale } from "@/lib/i18n/routing";
 
 interface PageProps {
@@ -28,66 +29,74 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 }
 
-const categoryOrder: ToolCategory[] = ["organize", "convert", "optimize", "edit", "security"];
-
 const featureIcons = [Zap, ShieldCheck, Globe2];
+const securityIcons = [ShieldCheck, Trash2, Lock];
 
 export default async function HomePage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("home");
-  const tCommon = await getTranslations("common");
 
-  const tools = getEnabledTools();
-  const toolCards = await Promise.all(
-    tools.map(async (tool) => {
-      const toolT = await getTranslations({
-        locale,
-        namespace: tool.translationNamespace,
-      });
-      const item: ToolGridItem & { category: typeof tool.category } = {
+  const popularTools = await Promise.all(
+    getPopularTools().map(async (tool) => {
+      const toolT = await getTranslations({ locale, namespace: tool.translationNamespace });
+      const Icon = tool.icon;
+      return {
         slug: tool.slug,
-        icon: tool.icon,
+        // Rendered here (a Server Component), not passed as a bare
+        // component reference, since it crosses into PopularToolsRow (a
+        // Client Component) below.
+        icon: <Icon className="h-5 w-5" aria-hidden="true" />,
         title: toolT("h1"),
         description: toolT("subtitle"),
-        category: tool.category,
       };
-      return item;
     }),
   );
 
-  const categories = categoryOrder
-    .map((category) => ({
-      category,
-      label: tCommon(`categories.${category}`),
-      items: toolCards.filter((tool) => tool.category === category),
-    }))
-    .filter((group) => group.items.length > 0);
-
   const whyUsItems = t.raw("whyUs.items") as { title: string; description: string }[];
   const steps = t.raw("howItWorks.steps") as string[];
+  const securityItems = t.raw("security.items") as { title: string; description: string }[];
+  const faqItems = t.raw("faq.items") as { q: string; a: string }[];
+
+  const faqStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqItems.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
 
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
+      />
+
       <div className="border-b border-border bg-surface">
-        <PageContainer>
-          <Hero
-            title={t("hero.title")}
-            subtitle={t("hero.subtitle")}
-            ctaLabel={t("hero.cta")}
-            ctaHref="/#tools"
-          />
+        <PageContainer className="flex flex-col items-center gap-8">
+          <Hero eyebrow={t("hero.eyebrow")} title={t("hero.title")} subtitle={t("hero.subtitle")} />
+          <div className="w-full max-w-xl pb-16 sm:pb-20">
+            <HeroDropzoneCard />
+          </div>
         </PageContainer>
       </div>
 
-      <Section id="tools">
-        <div className="flex flex-col gap-10">
-          <h2 className="text-h2 font-semibold text-foreground">{t("popularTools.title")}</h2>
-          {categories.map((group) => (
-            <CategorySection key={group.category} title={group.label}>
-              <ToolGrid tools={group.items} />
-            </CategorySection>
-          ))}
+      <Section>
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-h2 font-semibold text-foreground">{t("popularTools.title")}</h2>
+            <Link href="/tools" className="text-small font-medium text-primary hover:underline">
+              {t("popularTools.browseAll")}
+            </Link>
+          </div>
+          <PopularToolsRow
+            tools={popularTools}
+            scrollLeftLabel={t("popularTools.scrollLeft")}
+            scrollRightLabel={t("popularTools.scrollRight")}
+          />
         </div>
       </Section>
 
@@ -107,6 +116,24 @@ export default async function HomePage({ params }: PageProps) {
 
       <Section>
         <HowItWorks title={t("howItWorks.title")} steps={steps} />
+      </Section>
+
+      <Section>
+        <FeatureSection
+          title={t("security.title")}
+          features={securityItems.map((item, index) => {
+            const Icon = securityIcons[index % securityIcons.length]!;
+            return {
+              icon: <Icon className="h-5 w-5" aria-hidden="true" />,
+              title: item.title,
+              description: item.description,
+            };
+          })}
+        />
+      </Section>
+
+      <Section>
+        <FAQ title={t("faq.title")} items={faqItems} />
       </Section>
     </div>
   );

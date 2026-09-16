@@ -904,6 +904,87 @@ E2E coverage (cross-user isolation across every mutating route, star/
 trash/restore, history-hide-preserves-file, session-expiry-redirects)
 is written next.
 
+## 2026-09-16 — Homepage redesign shipped, completing Priority 1 + Priority 2; full planned E2E coverage added
+
+Final piece of the Master Product Redesign Blueprint's Priority 1
+(Product/UI Foundation) + Priority 2 (Auth Foundation + Document
+Workspace Shell): the homepage now has a functional hero dropzone that
+hands a file directly into a chosen tool via the `PendingUploadProvider`
+built earlier, a curated "Popular tools" row, and new security/FAQ
+sections — replacing the old hero-CTA-scrolls-to-a-full-tool-grid layout.
+
+- **Hero dropzone -> tool picker -> handoff, end to end**: `HeroDropzoneCard`
+  reuses the existing `ToolDropzone` (scoped honestly to
+  `application/pdf,image/jpeg,image/png` — not the DOCX/XLSX/PPTX list a
+  generic "document workspace" mockup might suggest, since no tool
+  handles those formats). Matching tools are resolved client-side via
+  `tool.inputTypes.includes(file.type)`; zero matches shows an inline
+  warning instead of an empty picker. Verified with an actual screenshot
+  sequence (drop -> picker shows only PDF-capable tools -> click Compress
+  PDF -> the tool page loads with `sample-a-2page.pdf` already present,
+  never re-selected) and a matching Playwright spec
+  (`homepage-upload-handoff.spec.ts`, 3 cases: PDF/image/unsupported)
+  that drives the flow through to a real downloaded, page-count-verified
+  result — not just that navigation happened.
+- **Same RSC icon-serialization bug, same fix, one more time**:
+  `PopularToolsRow` is a Client Component and was about to receive raw
+  `LucideIcon` component references from the homepage's Server Component
+  — caught before it ever hit the running server this time (recognized
+  the pattern from the tools-directory/command-palette fixes earlier
+  today) by pre-rendering the icon into JSX server-side and typing the
+  prop as `ReactNode`. Worth noting as a now-established rule for this
+  codebase: **any data crossing from a Server Component into a Client
+  Component's props must have its icons already rendered**, never passed
+  as bare component references.
+- **A real bug found by the E2E suite, not by inspection**: writing
+  `workspace-star-trash-restore.spec.ts` surfaced that My Documents was
+  listing *two* rows for one Compress PDF run — the original uploaded
+  input (`sample-a-2page.pdf`) alongside the actual result
+  (`compressed.pdf`) — because the retention fix (previous entries) made
+  every authenticated user's `File` row persist indefinitely, including
+  raw job-input uploads that were never meant to be user-facing
+  "documents." Fixed in `lib/workspace/files.ts`'s `listFiles()`: added
+  `inputJobId: null` to the query, so a file that's been consumed as some
+  job's input drops out of every workspace view (Documents/Starred/
+  Trash) once that job exists — the meaningful artifact going forward is
+  the job's *output*, not the input that produced it. A freshly uploaded
+  file not yet attached to any job still shows (nothing to hide yet).
+  This is exactly the kind of gap the project's "real E2E test, not just
+  eyeballing" standard exists to catch — confirmed via a direct Postgres
+  check first (`inputJobId`/`outputJobId` on the two rows) before writing
+  the fix, then confirmed the fix by re-running the spec.
+- **Scope note**: `PopularToolsRow`'s scroll-arrow buttons use
+  `scrollBy({left: ±300})` with `rtl:rotate-180` on the chevron icons —
+  the icons visually flip for RTL but the actual scroll direction wasn't
+  independently verified per-browser for `dir="rtl"` containers (a known
+  cross-browser inconsistency area). Low-stakes: native swipe/trackpad
+  scrolling already works correctly in both directions regardless, this
+  is only a progressive-enhancement nav aid for an 8-card row. Revisit if
+  ever reported as backwards in a real RTL browser session.
+
+**Verified**: `tsc --noEmit`/ESLint clean, full `next build` production
+check passed. **Full Playwright suite: 24/24 green** (16 original tools +
+`homepage-upload-handoff` ×3 + `auth-signup-migrates-guest` +
+`auth-cross-user-isolation` + `auth-session-expiry` +
+`workspace-star-trash-restore` + `workspace-history-hide`), run
+serialized — confirmed once more that parallel-worker runs against the
+single local dev Postgres/worker produce transient failures unrelated to
+the code (this is now a well-established, understood characteristic of
+this local dev setup, not something to keep re-investigating). This
+completes every E2E case called for in this phase's original test plan.
+Screenshot-verified: homepage hero/dropzone/popular-tools/security/FAQ
+sections and the full picker->handoff sequence (`en`), full homepage +
+`/tools` (`ar`, correct mirroring including the popular-tools scroll
+arrows swapping sides), homepage (mobile), the command palette open with
+a live search query (`en` and `ar`), and the login/signup pages (`en`
+and `ar`).
+
+This completes the Master Product Redesign Blueprint's Priority 1 +
+Priority 2 scope as planned. Remaining blueprint priorities (PDF editor,
+Office conversions/OCR, SaaS/billing, AI) are explicitly deferred —
+not started, per the blueprint's own phase sequencing and this project's
+standing "don't build ahead of the current phase" convention.
+
 ## Template for future entries
 
 ```

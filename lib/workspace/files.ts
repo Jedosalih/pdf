@@ -49,6 +49,15 @@ export async function listFiles(params: ListFilesParams): Promise<ListFilesResul
   const where: Prisma.FileWhereInput = {
     userId,
     deletedAt: view === "trash" ? { not: null } : null,
+    // Once a file has been consumed as a job's input, the meaningful
+    // artifact going forward is the job's *output* — without this, every
+    // tool run would leave both the original upload and the result
+    // sitting in My Documents as two separate "documents" (confirmed via
+    // a real E2E run: compressing one file produced both
+    // sample-a-2page.pdf and compressed.pdf in the listing). A fresh
+    // upload not yet attached to any job (inputJobId still null) still
+    // shows, since the user hasn't chosen a tool for it yet.
+    inputJobId: null,
     ...(view === "starred" ? { starred: true } : {}),
     ...(q ? { originalName: { contains: q, mode: "insensitive" } } : {}),
   };

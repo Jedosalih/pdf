@@ -1,31 +1,75 @@
 {
   "hero": {
-    "title": "İhtiyacınız olan tüm PDF araçları tek bir yerde",
-    "subtitle": "PDF'leri doğrudan tarayıcınızda birleştirin, bölün, sıkıştırın ve dönüştürün — hızlı, gizli ve başlamak ücretsiz.",
-    "cta": "Araçları keşfet"
+    "eyebrow": "Hepsi bir arada PDF çalışma alanı",
+    "title": "İhtiyacınız olan tüm PDF araçları, tek yerde",
+    "subtitle": "PDF'leri tarayıcınızda doğrudan birleştirin, bölün, sıkıştırın ve dönüştürün — hızlı, gizli ve başlamak ücretsiz.",
+    "browseAllCta": "Tüm araçlara göz atın"
+  },
+  "dropzone": {
+    "title": "Dosyanızı buraya bırakın",
+    "hint": "PDF, JPG veya PNG — güvenle işlenir, otomatik olarak silinir",
+    "browse": "Dosya seçin",
+    "unsupportedType": "Bu dosya türü için henüz bir aracımız yok. Bir PDF, JPG veya PNG dosyası deneyin."
+  },
+  "picker": {
+    "title": "{fileName} ile ne yapmak istersiniz?"
   },
   "popularTools": {
-    "title": "Popüler araçlar"
+    "title": "Popüler araçlar",
+    "browseAll": "Tüm araçlara göz atın",
+    "scrollLeft": "Sola kaydır",
+    "scrollRight": "Sağa kaydır"
   },
   "whyUs": {
     "title": "Neden JDpdf",
     "items": [
-      {
-        "title": "Hızlı",
-        "description": "İşlemlerin çoğu saniyeler içinde tamamlanır."
-      },
+      { "title": "Hızlı", "description": "Çoğu işlem saniyeler içinde tamamlanır." },
       {
         "title": "Gizli",
-        "description": "Dosyalar güvenli şekilde işlenir ve otomatik olarak silinir."
+        "description": "Dosyalar güvenle işlenir ve otomatik olarak silinir."
       },
       {
         "title": "Kurulum gerektirmez",
-        "description": "Her şey doğrudan tarayıcınızda çalışır."
+        "description": "Her şey tarayıcınızda çalışır."
       }
     ]
   },
   "howItWorks": {
     "title": "Nasıl çalışır",
     "steps": ["Dosyanızı yükleyin", "Aracınızı seçin", "Sonucu indirin"]
+  },
+  "security": {
+    "title": "Gizlilik gözetilerek tasarlandı",
+    "items": [
+      {
+        "title": "Güvenli işleme",
+        "description": "Her dosya doğrulanır ve izole bir ortamda işlenir — asla körü körüne güvenilmez."
+      },
+      {
+        "title": "Otomatik temizlik",
+        "description": "Yüklenen dosyalar ve sonuçlar geçicidir ve kısa bir süre içinde kaldırılır."
+      },
+      {
+        "title": "Şifreli aktarım",
+        "description": "Her yükleme ve indirme şifreli bir bağlantı üzerinden gerçekleşir."
+      }
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "JDpdf kullanımı ücretsiz mi?",
+        "a": "Evet — her araç, cömert bir günlük limitle misafir olarak ücretsiz kullanılabilir. Ücretsiz bir hesap oluşturmak bu limitleri artırır ve belgelerinizi tek bir yerde tutar."
+      },
+      {
+        "q": "Bir şey yüklemem gerekiyor mu?",
+        "a": "Hayır. Her şey tarayıcınızda çalışır — indirilecek veya kurulacak hiçbir şey yok."
+      },
+      {
+        "q": "Dosyalarım gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenle işlenir ve kısa bir süre sonra otomatik olarak silinir — yukarıdaki güvenlik bölümüne bakın."
+      }
+    ]
   }
 }

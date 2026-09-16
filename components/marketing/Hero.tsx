@@ -1,23 +1,17 @@
-import { Link } from "@/lib/i18n/navigation";
-import { buttonVariants } from "@/components/ui/Button";
-
 interface HeroProps {
+  eyebrow: string;
   title: string;
   subtitle: string;
-  ctaLabel: string;
-  ctaHref: string;
 }
 
-export function Hero({ title, subtitle, ctaLabel, ctaHref }: HeroProps) {
+export function Hero({ eyebrow, title, subtitle }: HeroProps) {
   return (
-    <div className="flex flex-col items-center gap-5 py-16 text-center sm:py-24">
+    <div className="flex flex-col items-center gap-4 py-16 text-center sm:py-20">
+      <p className="text-small font-semibold uppercase tracking-wide text-primary">{eyebrow}</p>
       <h1 className="max-w-3xl text-h1 font-bold tracking-tight text-foreground sm:text-display">
         {title}
       </h1>
       <p className="max-w-xl text-body text-muted-foreground">{subtitle}</p>
-      <Link href={ctaHref} className={buttonVariants({ size: "lg" })}>
-        {ctaLabel}
-      </Link>
     </div>
   );
 }
