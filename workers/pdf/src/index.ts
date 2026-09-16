@@ -15,6 +15,10 @@ import { handlePageNumbers } from "./handlers/pageNumbers.js";
 import { handleProtectPdf } from "./handlers/protectPdf.js";
 import { handleUnlockPdf } from "./handlers/unlockPdf.js";
 import { handlePdfMetadata } from "./handlers/pdfMetadata.js";
+import { handlePdfToText } from "./handlers/pdfToText.js";
+import { handlePdfToPdfa } from "./handlers/pdfToPdfa.js";
+import { handleFlattenPdf } from "./handlers/flattenPdf.js";
+import { handleRepairPdf } from "./handlers/repairPdf.js";
 import { JobFailure } from "./errors.js";
 
 const connection = new Redis(
@@ -43,6 +47,10 @@ const handlers: Record<string, (jobId: string) => Promise<void>> = {
   "protect-pdf": handleProtectPdf,
   "unlock-pdf": handleUnlockPdf,
   "pdf-metadata": handlePdfMetadata,
+  "pdf-to-text": handlePdfToText,
+  "pdf-to-pdfa": handlePdfToPdfa,
+  "flatten-pdf": handleFlattenPdf,
+  "repair-pdf": handleRepairPdf,
 };
 
 const worker = new Worker<ProcessingJobPayload>(

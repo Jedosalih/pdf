@@ -44,4 +44,60 @@ const png = await sharp({
   .toBuffer();
 await writeFile("docs/fixtures/sample-graphic.png", png);
 
-console.log("done", a.byteLength, b.byteLength, c.byteLength, jpg.byteLength, png.byteLength);
+// Flatten PDF fixture: a real interactive form field (AcroForm text field),
+// not just a page of text — qpdf's --flatten-annotations only has
+// something real to do if there's an actual annotation to bake in.
+const flattenDoc = await PDFDocument.create();
+const flattenFont = await flattenDoc.embedFont(StandardFonts.Helvetica);
+const flattenPage = flattenDoc.addPage([400, 300]);
+flattenPage.drawText("Flatten fixture", { x: 40, y: 220, size: 20, font: flattenFont, color: rgb(0, 0, 0) });
+const flattenForm = flattenDoc.getForm();
+const flattenField = flattenForm.createTextField("note");
+flattenField.setText("annotation content");
+flattenField.addToPage(flattenPage, { x: 40, y: 140, width: 200, height: 30 });
+const flattenBytes = await flattenDoc.save();
+await writeFile("docs/fixtures/sample-with-form-field.pdf", flattenBytes);
+
+// Repair PDF fixtures: pdf-lib's default `save()` writes a modern
+// cross-reference *stream* (no classic "trailer" keyword at all), which
+// qpdf's damaged-file recovery heuristic cannot reconstruct if the
+// startxref pointer is lost — verified empirically against the real qpdf
+// binary before choosing this approach (see docs/DECISIONS.md). Saving
+// with `useObjectStreams: false` produces a classic xref-table + trailer
+// PDF instead, which is what qpdf's recovery is actually built to handle.
+const repairDoc = await PDFDocument.create();
+const repairFont = await repairDoc.embedFont(StandardFonts.Helvetica);
+for (let i = 0; i < 3; i++) {
+  const page = repairDoc.addPage([400, 300]);
+  page.drawText(`Repair-Fixture - page ${i + 1}`, { x: 40, y: 150, size: 24, font: repairFont, color: rgb(0, 0, 0) });
+}
+const repairBytes = Buffer.from(await repairDoc.save({ useObjectStreams: false }));
+const repairText = repairBytes.toString("latin1");
+
+// Mild corruption: mangle the startxref offset so it points nowhere. qpdf
+// can reconstruct the xref table from the intact "trailer" keyword and
+// object markers still present in the rest of the file (verified: this
+// recovers successfully, exiting 3 "succeeded with warnings").
+const startxrefIdx = repairText.lastIndexOf("startxref");
+const mildCorruptText = repairText.slice(0, startxrefIdx)
+  + repairText.slice(startxrefIdx).replace(/startxref\s*\r?\n\d+/, "startxref\n999999");
+await writeFile("docs/fixtures/sample-mild-corrupt.pdf", Buffer.from(mildCorruptText, "latin1"));
+
+// Severe corruption: truncate to 40% of the file, destroying the xref
+// table, trailer, and much of the page content — verified: neither qpdf
+// nor Ghostscript can produce a genuinely usable document from this, which
+// is exactly the UNRECOVERABLE_FILE case repair-pdf must detect rather
+// than silently returning a broken "success".
+const severeCut = Math.floor(repairBytes.length * 0.4);
+await writeFile("docs/fixtures/sample-severe-corrupt.pdf", repairBytes.subarray(0, severeCut));
+
+console.log(
+  "done",
+  a.byteLength,
+  b.byteLength,
+  c.byteLength,
+  jpg.byteLength,
+  png.byteLength,
+  flattenBytes.byteLength,
+  repairBytes.byteLength,
+);

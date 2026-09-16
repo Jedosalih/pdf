@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "Repair PDF — Free & Secure | JDpdf",
+    "description": "Fix a damaged or corrupted PDF file so it opens normally again. Free, fast, and private — no installation required."
+  },
+  "h1": "Repair PDF",
+  "subtitle": "Fix a damaged PDF file that won't open correctly.",
+  "howItWorks": {
+    "title": "How to repair a PDF",
+    "steps": [
+      "Upload the damaged PDF file.",
+      "Click Repair to attempt to fix it.",
+      "Download the repaired file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "What kinds of damage can this fix?",
+        "a": "Common structural problems such as a broken cross-reference table or an invalid file trailer. Some files are damaged beyond recovery and can't be fixed by any tool."
+      },
+      {
+        "q": "Is repairing a PDF free?",
+        "a": "Yes, repairing a PDF is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["compress-pdf", "pdf-to-pdfa"]
+}

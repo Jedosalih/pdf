@@ -39,6 +39,11 @@ Order of checks in `lib/security/validateUpload.ts`:
 - Worker processes run with a working directory scoped to their own
   per-job temp folder and should run as a non-root container user with no
   write access outside that temp root and the storage upload path.
+- `pdf-to-pdfa`'s Ghostscript invocation runs with `-dSAFER` (Ghostscript's
+  own sandbox flag, restricting filesystem access) plus an explicit
+  `--permit-file-read=<icc-path>` naming only the one fixed system ICC
+  profile the conversion needs — never a broader allowance, and never
+  disabled.
 
 ## 3. Process isolation & resource limits
 

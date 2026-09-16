@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PDF'den PDF/A'ya Dönüştürücü — Ücretsiz ve Güvenli | JDpdf",
+    "description": "Bir PDF'i uzun süreli arşivleme için en iyi çaba ile bir PDF/A-2b dosyasına dönüştürün. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "PDF'den PDF/A'ya",
+  "subtitle": "Bir PDF'i arşivlenebilir bir PDF/A-2b dosyasına dönüştürün (en iyi çaba ile).",
+  "howItWorks": {
+    "title": "PDF nasıl PDF/A'ya dönüştürülür",
+    "steps": [
+      "Arşivlemek istediğiniz PDF dosyasını yükleyin.",
+      "PDF/A sürümünü oluşturmak için Dönüştür'e tıklayın.",
+      "Oluşan dosyayı indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "Bu, sertifikalı bir PDF/A dosyası mı?",
+        "a": "Hayır. Bu, en iyi çaba ile yapılan bir PDF/A-2b dönüşümüdür — resmi bir ISO 19005 doğrulayıcısı çalıştırmıyoruz, bu yüzden her sertifikasyon süreci için tam uyumluluk garanti edilmez."
+      },
+      {
+        "q": "PDF/A'ya dönüştürme ücretsiz mi?",
+        "a": "Evet, yukarıda belirtilen günlük kullanım sınırları dahilinde PDF/A'ya dönüştürme ücretsizdir."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["repair-pdf", "compress-pdf"]
+}

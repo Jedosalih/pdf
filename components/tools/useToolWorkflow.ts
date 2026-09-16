@@ -46,6 +46,8 @@ export function errorMessageKey(code: string | undefined): string {
       return "limitReached";
     case "INVALID_PASSWORD":
       return "invalidPassword";
+    case "UNRECOVERABLE_FILE":
+      return "unrecoverableFile";
     default:
       return "generic";
   }

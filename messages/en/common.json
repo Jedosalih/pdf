@@ -52,6 +52,7 @@
     "tooManyPages": "This file has more pages than the allowed limit.",
     "tooManyFiles": "You've selected more files than this tool allows.",
     "limitReached": "You've reached today's free limit.",
-    "invalidPassword": "That password is incorrect."
+    "invalidPassword": "That password is incorrect.",
+    "unrecoverableFile": "This file is too damaged to repair."
   }
 }

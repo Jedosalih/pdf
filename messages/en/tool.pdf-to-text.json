@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PDF to Text Converter — Free & Secure | JDpdf",
+    "description": "Extract all the text from a PDF file into a plain .txt file. Free, fast, and private — no installation required."
+  },
+  "h1": "PDF to Text",
+  "subtitle": "Extract the text content of a PDF into a plain .txt file.",
+  "howItWorks": {
+    "title": "How to convert PDF to text",
+    "steps": [
+      "Upload the PDF file you want to convert.",
+      "Click Convert to extract its text.",
+      "Download the resulting .txt file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is converting PDF to text free?",
+        "a": "Yes, converting PDF to text is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Does this preserve the original formatting?",
+        "a": "Layout is approximated using spacing, but a plain text file can't preserve fonts, colors, or images — only the text content itself."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-jpg", "compress-pdf"]
+}

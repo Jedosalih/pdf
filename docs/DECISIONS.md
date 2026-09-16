@@ -1112,6 +1112,114 @@ phases — this pass only improves composition/density/hierarchy of
 already-existing surfaces plus the document-capability roadmap that
 follows in the next entries.
 
+## 2026-09-17 — Tier A quick-win tools shipped (PDF to Text, PDF to PDF/A, Flatten PDF, Repair PDF) — first unit of the document capability roadmap
+
+First shipped unit of the document-capability roadmap that follows the
+visual refinement pass. Four tools, zero new worker packages/containers —
+all four land in the existing `workers/pdf` package, `pdf-processing`
+queue. **This is one unit of a larger, explicitly staged roadmap** — Office
+conversion (LibreOffice), OCR (OCRmyPDF), and Markdown/HTML → PDF
+(Playwright/headless Chromium) are separately-planned next units, not
+started here. The real PDF editor, Fill & Sign/e-signature, redaction,
+Compare, and batch processing remain unbuilt, later phases — unaffected by
+and unrelated to this entry.
+
+- **A real, previously-unknown architectural gap found before any of this
+  could work**: `Job.toolId` has a genuine Postgres foreign-key constraint
+  to a `Tool` table (`prisma/schema.prisma`), which is entirely separate
+  from `lib/tools/registry.ts`'s in-memory `ToolDefinition` array. The
+  registry is what the UI/API layer reads, but `POST /api/jobs` still
+  inserts a `Job` row that must reference an *existing* `Tool` row — adding
+  a registry entry alone is not sufficient for a tool to actually work end
+  to end. Discovered via a real `ForeignKeyConstraintViolation` on the
+  first live end-to-end test run (not caught by `tsc`/ESLint/`next build`,
+  since the registry and the Prisma schema are two independent type
+  systems with no cross-check). Fixed by re-running the existing
+  `npm run db:seed` (`prisma/seed.ts` already iterates `tools` from the
+  registry generically — no per-tool seed code needed, it was simply never
+  re-run after the registry changed). Worth remembering for every future
+  new tool in this roadmap: **a registry entry always needs a re-seed
+  before its first real job can be created**, in every environment
+  (local, CI, staging, production).
+- **`pdf-to-text`** — `pdftotext -layout` (Poppler, already installed).
+  Output is `text/plain`, the first non-PDF output type this project has
+  shipped — confirmed `app/api/files/[id]/download`, `download-zip`, and
+  `FileThumbnail` needed zero changes (already format-agnostic, per the
+  roadmap plan's pre-verified facts).
+- **`pdf-to-pdfa`** — Ghostscript `-dPDFA=2`, framed honestly in its own
+  copy as **best-effort** (no ISO 19005 validator in this pipeline, no
+  compliance claim). The ICC profile path
+  (`/usr/share/color/icc/ghostscript/srgb.icc`) and the `PDFA_def.ps`
+  prefix-file mechanism were verified empirically inside the real running
+  `pdf-worker` container (`docker exec` + a real fixture conversion,
+  checking for the `GTS_PDFA1` OutputIntent marker in the output bytes)
+  before writing any handler code — not assumed from documentation. The
+  ICC profile is already present via `libgs-common` (a transitive
+  dependency of the already-installed `ghostscript` package); no Dockerfile
+  change was needed. `workers/pdf/src/pdfaTemplate.ts` keeps our own copy
+  of Ghostscript's shipped `PDFA_def.ps` example (parametrized with the
+  ICC path) rather than reading the version-numbered system path at
+  runtime, so a future Ghostscript version bump can't silently break it.
+- **`flatten-pdf`** — `qpdf --flatten-annotations=all`. Verified against a
+  real AcroForm text-field fixture (`docs/fixtures/sample-with-form-field.pdf`,
+  built via `pdf-lib`'s `getForm().createTextField()` — a genuine
+  interactive annotation, not just page text): 1 field before, 0 after.
+- **`repair-pdf`** — qpdf rewrite, falling back to Ghostscript, with a
+  mandatory post-verification gate (`qpdf --check` + `--show-npages > 0`)
+  and a new `UNRECOVERABLE_FILE` error code. Three real, non-obvious
+  behaviors discovered by testing against real corrupted fixtures in the
+  running container (not assumed):
+  1. qpdf's damaged-file recovery can only reconstruct a **classic**
+     trailer + xref table — it fails outright ("unable to find trailer
+     dictionary") on a modern **cross-reference stream** PDF with a lost
+     `startxref` pointer. Since `pdf-lib`'s default `save()` always writes
+     an xref stream, the repair fixtures had to be generated with
+     `save({ useObjectStreams: false })` to produce a genuinely
+     qpdf-recoverable "mild corruption" case — the natural pdf-lib output
+     format doesn't exercise qpdf's recovery path at all.
+  2. qpdf exits **3** ("succeeded with warnings"), not 0, when it
+     genuinely repairs a file — treating any nonzero exit as failure
+     (the naive reading of `runCommand`'s existing throw-on-nonzero
+     contract) would incorrectly treat every successful repair as an
+     error. Required a dedicated exit-code-aware call path
+     (`runCommandCaptureAll`, added to `workers/pdf/src/exec.ts`) instead
+     of reusing `runCommand` as-is.
+  3. Ghostscript's repair path **always exits 0**, even when it gives up
+     entirely and produces an empty 1-page shell from a 3-page input —
+     exit code alone cannot distinguish "repaired" from "silently
+     broken." The handler scans combined stdout+stderr for Ghostscript's
+     own diagnostic phrases ("Couldn't initialise file", "Catalog
+     dictionary not located", "couldn't repair PDF file", "No pages will
+     be processed") as the real signal. This is exactly the "a repair
+     that silently returns a still-broken file is worse than failing
+     clearly" risk flagged before implementation — confirmed as a real,
+     reproducible failure mode, not a hypothetical one.
+- Registry entries were added with `enabled: false` first and only flipped
+  to `true` after each tool's full pipeline (handler, page, translations,
+  E2E test, real Docker verification) was genuinely green — consistent
+  with this project's standing "an entry in the registry is a promise the
+  nav links to something real" rule.
+
+**Verified**: `tsc --noEmit`/ESLint clean on the app; `tsc` build clean on
+`workers/pdf`; `docker compose up -d --build pdf-worker` rebuilt cleanly
+and confirmed listening; full Playwright suite **29/29 green** (24
+previous + 5 new: 4 tools + repair-pdf's two-case failure/success split),
+run serialized against the real Docker stack after a clean `.next` rebuild
+and route pre-warm. Real output-content verification per tool (not "a file
+came back"): `pdf-to-text` asserts the exact fixture strings extracted;
+`pdf-to-pdfa` asserts the page count survived *and* the `GTS_PDFA1`
+OutputIntent marker is genuinely present in the output bytes;
+`flatten-pdf` asserts the AcroForm field count drops from 1 to 0;
+`repair-pdf` asserts the mildly-corrupted fixture's exact page text
+survives recovery, and separately that the severely-truncated fixture
+surfaces the real `UNRECOVERABLE_FILE` error text in the UI. Screenshots
+taken and reviewed for all 4 new tool pages in `en` (desktop), `ar` (RTL,
+all 4), `tr` (desktop, one representative tool), and mobile (one
+representative tool) — no truncation/overflow/mirroring issues.
+`docs/PDF_ENGINE.md` and `docs/SECURITY.md` updated to the actual verified
+command shapes and security controls, not left describing a
+pre-implementation draft.
+
 ## Template for future entries
 
 ```

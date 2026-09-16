@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "Flatten PDF — Free & Secure | JDpdf",
+    "description": "Merge form fields and annotations permanently into the page content of a PDF. Free, fast, and private — no installation required."
+  },
+  "h1": "Flatten PDF",
+  "subtitle": "Merge form fields and annotations permanently into the page content.",
+  "howItWorks": {
+    "title": "How to flatten a PDF",
+    "steps": [
+      "Upload the PDF file you want to flatten.",
+      "Click Flatten to merge its fields and annotations into the page.",
+      "Download the flattened PDF."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "What does flattening a PDF do?",
+        "a": "It converts interactive form fields, comments, and other annotations into permanent page content, so they display the same everywhere but can no longer be edited or filled in."
+      },
+      {
+        "q": "Is flattening a PDF free?",
+        "a": "Yes, flattening a PDF is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-metadata", "protect-pdf"]
+}

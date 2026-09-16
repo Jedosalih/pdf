@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PDF to PDF/A Converter — Free & Secure | JDpdf",
+    "description": "Convert a PDF into a best-effort PDF/A-2b file for long-term archiving. Free, fast, and private — no installation required."
+  },
+  "h1": "PDF to PDF/A",
+  "subtitle": "Convert a PDF into an archival PDF/A-2b file (best-effort).",
+  "howItWorks": {
+    "title": "How to convert PDF to PDF/A",
+    "steps": [
+      "Upload the PDF file you want to archive.",
+      "Click Convert to produce a PDF/A version.",
+      "Download the resulting file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is this a certified PDF/A file?",
+        "a": "No. This is a best-effort PDF/A-2b conversion — we don't run a formal ISO 19005 validator, so full compliance for every certification workflow isn't guaranteed."
+      },
+      {
+        "q": "Is converting to PDF/A free?",
+        "a": "Yes, converting to PDF/A is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["repair-pdf", "compress-pdf"]
+}

@@ -34,3 +34,32 @@ export async function runCommandCapture(
   });
   return stdout.toString().trim();
 }
+
+/**
+ * Never throws — returns combined stdout+stderr text regardless of exit
+ * code. Needed for engines (Ghostscript's repair path, notably) that
+ * report a real "gave up" failure only in diagnostic text while still
+ * exiting 0, so a caller must inspect the text itself rather than rely on
+ * the exit code alone.
+ */
+export async function runCommandCaptureAll(
+  command: string,
+  args: string[],
+  options?: { timeoutMs?: number; cwd?: string },
+): Promise<{ stdout: string; stderr: string; exitCode: number | null }> {
+  try {
+    const { stdout, stderr } = await execFileAsync(command, args, {
+      timeout: options?.timeoutMs ?? 60_000,
+      cwd: options?.cwd,
+      killSignal: "SIGKILL",
+    });
+    return { stdout: stdout.toString(), stderr: stderr.toString(), exitCode: 0 };
+  } catch (error) {
+    const err = error as { stdout?: string; stderr?: string; code?: number };
+    return {
+      stdout: err.stdout?.toString() ?? "",
+      stderr: err.stderr?.toString() ?? "",
+      exitCode: typeof err.code === "number" ? err.code : null,
+    };
+  }
+}

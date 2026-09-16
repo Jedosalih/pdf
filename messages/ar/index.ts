@@ -20,6 +20,10 @@ import pageNumbers from "./tool.page-numbers.json";
 import protectPdf from "./tool.protect-pdf.json";
 import unlockPdf from "./tool.unlock-pdf.json";
 import pdfMetadata from "./tool.pdf-metadata.json";
+import pdfToText from "./tool.pdf-to-text.json";
+import pdfToPdfa from "./tool.pdf-to-pdfa.json";
+import flattenPdf from "./tool.flatten-pdf.json";
+import repairPdf from "./tool.repair-pdf.json";
 
 const messages = {
   common,
@@ -45,6 +49,10 @@ const messages = {
     "protect-pdf": protectPdf,
     "unlock-pdf": unlockPdf,
     "pdf-metadata": pdfMetadata,
+    "pdf-to-text": pdfToText,
+    "pdf-to-pdfa": pdfToPdfa,
+    "flatten-pdf": flattenPdf,
+    "repair-pdf": repairPdf,
   },
 };
 

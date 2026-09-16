@@ -122,6 +122,74 @@ UI locale, allow override) — installing all three Tesseract language packs
 pdftotext -layout <in.pdf> <out.txt>
 ```
 
+### PDF → PDF/A (`pdf-to-pdfa`) — Ghostscript, best-effort
+
+```
+gs -dPDFA=2 -dBATCH -dNOPAUSE -dNOOUTERSAVE -dSAFER \
+   --permit-file-read=<icc-path> \
+   -sColorConversionStrategy=RGB -sProcessColorModel=DeviceRGB \
+   -dPDFACompatibilityPolicy=1 -sDEVICE=pdfwrite \
+   -sOutputFile=<out.pdf> <PDFA_def.ps> <in.pdf>
+```
+
+**Best-effort only — no ISO 19005 compliance claim.** There is no validator
+(e.g. veraPDF) in this pipeline; the tool's own copy says "best-effort
+PDF/A-2b conversion." `PDFA_def.ps` (`workers/pdf/src/pdfaTemplate.ts`) is
+adapted from Ghostscript's own shipped example
+(`/usr/share/ghostscript/<version>/lib/PDFA_def.ps`), with the ICC profile
+path substituted in — kept as our own repo copy rather than read from the
+version-numbered system path, so a future Ghostscript version bump in the
+base image can't silently break it. The ICC profile itself
+(`/usr/share/color/icc/ghostscript/srgb.icc`) is verified to already exist
+in the worker image, owned by `libgs-common` (a transitive dependency of
+the already-installed `ghostscript` package) — no new apt package needed.
+`--permit-file-read` is required because Ghostscript's `-dSAFER` sandboxing
+otherwise refuses to open the ICC profile file.
+
+### Flatten PDF (`flatten-pdf`) — qpdf
+
+```
+qpdf --flatten-annotations=all <in.pdf> <out.pdf>
+```
+
+Converts interactive form fields, comments, and other annotations into
+permanent page content. Verified against a real AcroForm text-field fixture
+(`docs/fixtures/sample-with-form-field.pdf`): 1 field before, 0 after.
+
+### Repair PDF (`repair-pdf`) — qpdf, with a Ghostscript fallback and a post-verification gate
+
+```
+qpdf <in.pdf> <out.pdf>                          # attempt 1
+gs -o <out.pdf> -sDEVICE=pdfwrite <in.pdf>        # fallback if attempt 1 fails
+qpdf --check <out.pdf>                            # post-verification (both paths)
+qpdf --show-npages <out.pdf>                      # must be > 0
+```
+
+Real, empirically-verified behavior this handler accounts for (see
+`docs/DECISIONS.md`):
+
+- qpdf's damaged-file recovery only reconstructs a **classic** trailer +
+  xref table — it cannot recover a lost `startxref` pointer on a modern
+  **cross-reference stream** PDF (confirmed against the real qpdf 11.3.0
+  binary: "unable to find trailer dictionary while recovering damaged
+  file"). Most PDF writers (including this project's own `pdf-lib` usage
+  elsewhere) produce xref-stream PDFs by default.
+- qpdf exits **3** ("succeeded with warnings"), not 0, when it genuinely
+  repairs a damaged file — the handler must treat exit 3 as success, not
+  as a failure signal.
+- Ghostscript's repair path **always exits 0**, even when it completely
+  fails to reconstruct a usable document (confirmed: a "repaired" 1-page
+  empty shell from a 3-page input, still exit 0). The handler must scan
+  Ghostscript's combined stdout+stderr text for known "gave up" phrases
+  ("Couldn't initialise file", "Catalog dictionary not located",
+  "couldn't repair PDF file", "No pages will be processed") rather than
+  trust the exit code.
+- A final `qpdf --check` + `--show-npages > 0` gate catches anything that
+  slips past both of the above — an "unrecoverable" result throws the new
+  `UNRECOVERABLE_FILE` error code rather than silently returning a still-
+  broken file. This is a deliberate deviation from "just wrap the
+  subprocess call" for the sake of not lying to the user about success.
+
 ### PDF Metadata (`pdf-metadata`) — qpdf / `pdf-lib`
 
 Read via `qpdf --json` or `pdf-lib`; write updates via `pdf-lib` (avoids a
