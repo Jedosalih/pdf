@@ -37,6 +37,16 @@ and "start processing" are two separate, fast operations; the frontend then
 polls `GET /api/jobs/:id` (short-poll to start — see "Deferred" below) until
 the job reaches a terminal state.
 
+**Auth is implemented** (not deferred): `lib/security/actor.ts`'s
+`resolveActor()`/`resolveActorReadOnly()` are the single seam every route/
+page uses to identify the caller — they check for a real session
+(`lib/auth/session.ts`) first and fall back to the guest cookie, so the
+entitlements/ownership code everywhere else never needed to change. The
+`/workspace` dashboard (My Documents/Recent/Starred/Trash/Settings) is a
+thin read/mutate UI over the same `Job`/`File` rows every tool already
+produces — see `docs/DECISIONS.md`'s 2026-09-15/16 entries for the full
+build.
+
 ## Why this shape
 
 - **Isolation**: qpdf/Ghostscript/LibreOffice are native binaries operating

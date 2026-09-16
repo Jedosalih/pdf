@@ -985,6 +985,57 @@ Office conversions/OCR, SaaS/billing, AI) are explicitly deferred —
 not started, per the blueprint's own phase sequencing and this project's
 standing "don't build ahead of the current phase" convention.
 
+## 2026-09-17 — Closed out documentation/test gaps from the Priority 1+2 build; re-verified everything live in a fresh session
+
+A self-audit ("did you do everything you were told") against the approved
+plan for the previous 4 commits found the bulk of the work genuinely
+complete (confirmed by re-running the full suite fresh, not just trusting
+git history), but surfaced three real gaps that had been silently
+skipped:
+
+- **`docs/SECURITY.md` §6 was never updated** — it still described the
+  generic pre-implementation placeholder ("Argon2id via a maintained
+  library, or bcrypt...") instead of what was actually built. Rewrote it
+  to describe the real mechanism: custom email+password on the existing
+  `User`/`Session` schema, `bcryptjs` with UTF-8-byte-length validation,
+  the HMAC-signed session cookie mirroring the guest-cookie pattern,
+  Redis-backed rate limiting on register/login, generic invalid-credentials
+  messaging, and the guest-to-user migration trust boundary. Also updated
+  §4 (storage/retention) to describe the actual now-different-by-actor-type
+  expiry behavior (guest: 24h, authenticated: null) instead of the old
+  universal-24h description, and to flag explicitly that the
+  `workers/cleanup` sweep referenced there still doesn't exist.
+- **`docs/ARCHITECTURE.md` was never touched** — added a short paragraph
+  noting auth is implemented (not deferred) and pointing at the
+  `resolveActor()` seam and the `/workspace` dashboard as the entry
+  points, per the plan's own B10 requirement.
+- **`tests/e2e/auth-cross-user-isolation.spec.ts`'s docstring overclaimed
+  "rename" coverage** — the test only ever sent `{starred: true}` to the
+  shared file-PATCH route, never `{originalName: ...}`. Both fields go
+  through the identical ownership check before either is read, so the
+  security boundary was never actually unverified, but the explicit
+  coverage the user asked for wasn't literally exercised. Fixed: added a
+  separate rename-attempt assertion, and — going further than "got a
+  403" — added a follow-up re-fetch as User A confirming the file's
+  `originalName`/`starred`/`deletedAt` and the job's presence in history
+  were genuinely untouched by every one of User B's attempts, not merely
+  that each request was rejected.
+- **Turkish (`tr`) had never actually been screenshotted** — every prior
+  visual-verification pass in this phase covered `en`/`ar`(RTL)/mobile
+  only; `tr` was assumed fine by extension since it's LTR like English,
+  but was never actually looked at. Screenshotted homepage, `/tools`,
+  login, a tool page (Merge PDF), the full workspace dashboard (via a
+  real `tr`-locale signup), and homepage at mobile width — all correct,
+  fully translated, no layout breakage.
+
+**Re-verified from a cold start in a fresh session** (not assumed from
+memory): `tsc --noEmit`/ESLint clean, full `next build` clean, full
+Playwright suite **24/24 green** run live against the real Docker stack,
+and a fresh Postgres spot-check (26 users, 300 completed / 12 failed
+jobs, file ownership/trash counts all consistent) — confirming the
+previous session's claimed state was genuinely working code, not just
+commits that happened to exist.
+
 ## Template for future entries
 
 ```

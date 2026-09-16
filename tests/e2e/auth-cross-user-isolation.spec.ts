@@ -63,6 +63,9 @@ test("a second user cannot access another user's files or jobs through any route
   expect(((await listAsB.json()) as { items: unknown[] }).items).toHaveLength(0);
 
   expect((await pageB.request.patch(`/api/files/${fileId}`, { data: { starred: true } })).status()).toBe(403);
+  expect(
+    (await pageB.request.patch(`/api/files/${fileId}`, { data: { originalName: "hacked-by-b.pdf" } })).status(),
+  ).toBe(403);
   expect((await pageB.request.get(`/api/files/${fileId}/download`)).status()).toBe(403);
   expect((await pageB.request.post(`/api/files/${fileId}/trash`)).status()).toBe(403);
   expect((await pageB.request.post(`/api/files/${fileId}/restore`)).status()).toBe(403);
@@ -70,6 +73,23 @@ test("a second user cannot access another user's files or jobs through any route
   expect((await pageB.request.get(`/api/jobs/${jobId}`)).status()).toBe(403);
   expect((await pageB.request.post(`/api/jobs/${jobId}/hide`)).status()).toBe(403);
   expect((await pageB.request.get(`/api/jobs/${jobId}/download-zip`)).status()).toBe(403);
+
+  // Every attempt above must have had zero effect — re-check as A, not
+  // just that B received a 403.
+  const fileAfter = await pageA.request.get("/api/files?view=documents&sort=date&order=asc");
+  const fileRow = ((await fileAfter.json()) as { items: { id: string; originalName: string; starred: boolean; deletedAt: string | null }[] }).items.find(
+    (item) => item.id === fileId,
+  );
+  expect(fileRow).toBeDefined();
+  expect(fileRow!.originalName).not.toBe("hacked-by-b.pdf");
+  expect(fileRow!.starred).toBe(false);
+  expect(fileRow!.deletedAt).toBeNull();
+
+  const jobsAfter = await pageA.request.get("/api/jobs?limit=10");
+  const jobRow = ((await jobsAfter.json()) as { items: { id: string }[] }).items.find(
+    (item) => item.id === jobId,
+  );
+  expect(jobRow).toBeDefined(); // still present in A's history, not hidden by B's attempt
 
   await contextA.close();
   await contextB.close();

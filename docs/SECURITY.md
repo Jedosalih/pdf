@@ -64,8 +64,16 @@ Order of checks in `lib/security/validateUpload.ts`:
   guessable path.
 - Object storage buckets are private by default; the app is the only
   credentialed writer/reader.
-- Temporary and result files expire (`expiresAt`) and are removed by the
-  cleanup worker (`workers/cleanup`) on a schedule — see blueprint §49.
+- Guest-owned files/jobs get `expiresAt` set 24h out
+  (`lib/entitlements/retention.ts` / `workers/pdf/src/retention.ts`).
+  Authenticated-user-owned files/jobs get `expiresAt: null` (never
+  expire on their own) so they can persist in My Documents/History —
+  deletion for those is by explicit user action (Trash → permanent
+  delete) instead. **The `workers/cleanup` scheduled expiry sweep that
+  would actually act on a guest row's `expiresAt` does not exist yet**
+  — this is a known, pre-existing gap (rows/objects are not currently
+  reaped automatically); do not assume guest data is actually deleted
+  after 24h until that worker is built.
 
 ## 5. SSRF
 
@@ -76,18 +84,46 @@ and any internal DNS) before the platform ever issues a server-side
 request on a user-supplied URL — see blueprint §45. Do not build this
 without that control in place.
 
-## 6. Authentication (once Phase 4 is implemented)
+## 6. Authentication (implemented)
 
-- Passwords hashed with a modern adaptive hash (Argon2id via a maintained
-  library, or bcrypt if Argon2 isn't available in the chosen runtime).
-- Sessions via secure, `httpOnly`, `SameSite=Lax` (or `Strict` where it
-  doesn't break OAuth-style flows) cookies.
-- Rate limiting (Redis-backed) on login, registration, password reset, and
-  job creation endpoints — see blueprint §41.
-- Password reset tokens: single-use, short expiry, invalidated after use
-  or after a new one is requested.
-- Generic error messages for login/reset flows to avoid user enumeration
-  where practical.
+- Custom email+password auth built directly on the `User`/`Session`
+  schema (`lib/auth/session.ts`, `lib/auth/password.ts`) — no NextAuth/
+  Auth.js. `Session.tokenHash` is a hand-designed DB-session-with-
+  hashed-token shape; the raw token only ever lives in the cookie, never
+  in the database.
+- Passwords hashed with **`bcryptjs`** (pure JS, cost 12) rather than
+  Argon2id or native `bcrypt`/`argon2` — this project was previously
+  burned by a platform-specific native-binding dependency breaking a
+  Docker build (see `docs/DECISIONS.md`), and password hashing runs in
+  the Next.js app itself, an even less controlled environment than the
+  worker container. Password length is validated by **UTF-8 byte
+  length** (`new TextEncoder().encode(password).length <= 72`), not
+  string length — bcrypt's real truncation limit is 72 bytes, and a
+  naive character-count check under-counts multi-byte (Arabic/Turkish)
+  passwords, silently truncating them instead of rejecting with a clear
+  error.
+- Sessions via a random 256-bit token in a `httpOnly`, `SameSite=Lax`,
+  `secure`-in-production cookie (`jdpdf_session`); the server stores only
+  `HMAC-SHA256(AUTH_SECRET, token)`, mirroring the guest-cookie signing
+  primitive already in `lib/security/guestIdCore.ts`. 30-day expiry.
+  `SameSite=Strict` was not adopted — no inbound-link auth flow (email
+  verification, password reset) exists yet to require it; revisit if one
+  is built.
+- Rate limiting (Redis-backed, `lib/security/rateLimit.ts`, reusing the
+  existing BullMQ Redis connection) on `/api/auth/register` (by IP) and
+  `/api/auth/login` (by IP and by normalized email) — upload/job-creation
+  rate limiting is not yet implemented (see §10/known gaps).
+- Login returns the same generic `401 INVALID_CREDENTIALS` for an unknown
+  email, a wrong password, or a disabled account — never reveals which,
+  to avoid user enumeration.
+- Password reset flow: not implemented — there is no email provider
+  wired up yet. Change-password (while authenticated) requires the
+  current password and is the only credential-rotation path today.
+- On signup/login, any files/jobs created while the same browser was a
+  guest are reassigned to the new account
+  (`lib/auth/migrateGuestData.ts`) — trusted because the guest cookie
+  being presented is itself HMAC-signed, the same trust boundary the
+  download-ownership check already relies on.
 
 ## 7. Guest usage identity
 
