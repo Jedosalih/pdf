@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Greeting } from "@/components/workspace/Greeting";
 import { QuickActions } from "@/components/workspace/QuickActions";
-import { StorageUsageBar } from "@/components/workspace/StorageUsageBar";
+import { WorkspaceUploadButton } from "@/components/workspace/WorkspaceUploadButton";
 import type { Locale } from "@/lib/i18n/routing";
 
 interface PageProps {
@@ -56,6 +56,7 @@ export default async function WorkspaceHomePage({ params }: PageProps) {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <Greeting name={user.name} />
+        <WorkspaceUploadButton label={t("recent.emptyCta")} />
       </div>
 
       <QuickActions />
@@ -108,10 +109,6 @@ export default async function WorkspaceHomePage({ params }: PageProps) {
             ))}
           </ul>
         )}
-      </div>
-
-      <div className="max-w-xs">
-        <StorageUsageBar userId={user.id} locale={locale as Locale} />
       </div>
     </div>
   );

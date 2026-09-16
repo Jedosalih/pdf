@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { Search } from "lucide-react";
+import { ChevronRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Link } from "@/lib/i18n/navigation";
 import { searchTools } from "@/lib/tools/search";
@@ -67,20 +67,24 @@ export function ToolsDirectorySearch({
         filteredGroups.map((group) => (
           <div key={group.category} id={group.category} className="flex scroll-mt-24 flex-col gap-4">
             <h2 className="text-h3 font-semibold text-foreground">{group.label}</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
               {group.tools.map((tool) => (
                 <Link
                   key={tool.slug}
                   href={`/${tool.slug}`}
-                  className="group flex flex-col gap-3 rounded-lg border border-border bg-background p-5 transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+                  className="group flex items-center gap-3 rounded-lg border border-border bg-background px-3.5 py-3 transition-colors hover:border-primary/30 hover:bg-surface"
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-md bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-white">
                     {tool.icon}
                   </div>
-                  <div>
-                    <p className="text-body font-semibold text-foreground">{tool.title}</p>
-                    <p className="mt-1 text-small text-muted-foreground">{tool.description}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-small font-semibold text-foreground">{tool.title}</p>
+                    <p className="truncate text-caption text-muted-foreground">{tool.description}</p>
                   </div>
+                  <ChevronRight
+                    className="h-4 w-4 shrink-0 text-muted-foreground transition-transform rtl:rotate-180 group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5"
+                    aria-hidden="true"
+                  />
                 </Link>
               ))}
             </div>

@@ -22,12 +22,12 @@ export async function QuickActions() {
           <Link
             key={slug}
             href={`/${slug}`}
-            className="flex flex-col items-start gap-2.5 rounded-lg border border-border bg-background p-4 transition-colors hover:border-primary/30 hover:bg-surface"
+            className="flex items-center gap-3 rounded-lg border border-border bg-background p-3 transition-colors hover:border-primary/30 hover:bg-surface"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-secondary text-primary">
-              <Icon className="h-5 w-5" aria-hidden="true" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-secondary text-primary">
+              <Icon className="h-4 w-4" aria-hidden="true" />
             </div>
-            <span className="text-small font-medium text-foreground">
+            <span className="truncate text-small font-medium text-foreground">
               {t(`quickActions.${key}`)}
             </span>
           </Link>

@@ -1036,6 +1036,82 @@ jobs, file ownership/trash counts all consistent) — confirming the
 previous session's claimed state was genuinely working code, not just
 commits that happened to exist.
 
+## 2026-09-17 — Visual refinement pass shipped (header/hero/popular-tools/workspace shell), plus one fresh finding fixed beyond the original checklist
+
+Second visual pass against `docs/ref.png`, prompted by the product owner
+explicitly rejecting "the seven listed changes exist in the code" as a
+definition of done — the requirement was a fresh, judgment-based
+screenshot comparison against the reference image after implementation,
+not a checklist tick.
+
+**Seven planned changes, all shipped**: header nav regrouped into a
+left-side cluster next to the logo (`AppHeader.tsx`, `ms-auto` pushes
+search/locale/auth right — RTL-safe logical property, not a hardcoded
+side); homepage hero rebuilt as two columns (`Hero.tsx` left-aligned,
+new `HeroIllustration.tsx` — a decorative stacked-document composition
+built entirely from existing design tokens: plain divs, borders,
+`shadow-sm`, slight rotation, zero image assets/gradients/glassmorphism,
+per the standing ban); `PopularToolsRow` compacted from ~4.5 wide
+description-cards to 8 compact icon+label tiles per viewport; workspace
+gained a persistent `WorkspaceUploadButton` next to the greeting;
+`QuickActions` cards flattened from vertical to horizontal (icon left,
+label right); `StorageUsageBar` moved from the Home page body into
+`WorkspaceSidebar`'s bottom, visible from every workspace page.
+
+**Deliberate deviation from the plan's literal wording**: the plan called
+for a dedicated `WorkspaceTopbar.tsx` replacing the public `AppHeader`
+under `/workspace`, matching `ref.png`'s distinct app-shell header. Next.js
+App Router does not let a nested layout remove/replace content a parent
+layout unconditionally renders — `AppHeader` is rendered by
+`app/[locale]/layout.tsx`, above every route including `/workspace`. True
+per-subtree replacement would need either a large route-group refactor
+(moving 25+ existing page files) or a fragile proxy pathname-injection
+hack, both carrying real regression risk against a fully green 24-test
+suite for a cosmetic gain. Instead, added the desired "search-first
+workspace" outcome a different way: a prominent search-trigger button at
+the top of `WorkspaceSidebar` that opens the already-built
+`CommandPaletteProvider`/`CommandPalette` — same end-user capability
+(instant tool/document search from anywhere in the workspace), zero risk
+to the global header used everywhere else. Revisit only if a future need
+(e.g. workspace-only header actions) makes the route-group refactor worth
+its own dedicated pass.
+
+**A real finding surfaced by the mandatory fresh-comparison step, fixed
+in the same pass**: the `/tools` directory page (`ToolsDirectorySearch.tsx`)
+was never in the plan's 7-item scope, but `ref.png` has a dedicated
+"All Tools" panel, and comparing the live page against it showed the same
+"feature card" problem already fixed on the homepage's popular-tools row —
+large per-tool cards (icon-over-title-over-two-line-description, `p-5`)
+made the page nearly 2360px tall for 16 tools, versus `ref.png`'s compact
+flat rows (small icon, single-line truncated description, trailing
+chevron) fitting far more per screen. Converted to the same compact-row
+pattern: horizontal icon+text+chevron, `truncate` instead of wrapping,
+tighter padding — cut the same content to ~1815px. `ChevronRight` mirrors
+via the existing `rtl:rotate-180` convention (already used in
+`Breadcrumbs.tsx`/`PopularToolsRow.tsx`). This is the exact scenario the
+product owner's correction anticipated: the checklist was the floor, and
+a genuine fresh comparison found a real gap outside it worth fixing rather
+than deferring.
+
+**Verified**: `tsc --noEmit`/ESLint clean, full `next build` clean (all 40
+routes present). Full Playwright suite **24/24 green**, run serialized
+against a freshly restarted dev server with all routes pre-warmed (no
+regressions from either the planned changes or the tools-directory fix).
+Screenshots taken and actually reviewed (not assumed) for: homepage in
+`en`/`ar`(RTL)/`tr` desktop + `en` mobile; workspace dashboard in `en`/`ar`
+desktop + mobile (via real signup flows); `/tools` directory in `en`/`ar`
+desktop + `tr` desktop + `en` mobile. RTL confirmed correct in every
+surface: nav/illustration/menu mirror, chevrons flip, text right-aligns,
+no truncation/overflow.
+
+**Explicitly not addressed by this pass** (per the product owner's
+standing instruction that phase-completion claims must name what's
+unbuilt): the real PDF editor/canvas, Fill & Sign/e-signature, redaction,
+Compare documents, and batch processing remain entirely unbuilt, later
+phases — this pass only improves composition/density/hierarchy of
+already-existing surfaces plus the document-capability roadmap that
+follows in the next entries.
+
 ## Template for future entries
 
 ```

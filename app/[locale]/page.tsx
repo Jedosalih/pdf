@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { ShieldCheck, Zap, Globe2, Trash2, Lock } from "lucide-react";
+import { ShieldCheck, Zap, Globe2, Trash2, Lock, PenSquare, RefreshCw, Layers } from "lucide-react";
 import { buildLocalizedMetadata } from "@/lib/seo/metadata";
 import { getPopularTools } from "@/lib/tools/popular";
 import { Section } from "@/components/layout/Section";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Hero } from "@/components/marketing/Hero";
 import { HeroDropzoneCard } from "@/components/marketing/HeroDropzoneCard";
+import { HeroIllustration } from "@/components/marketing/HeroIllustration";
 import { PopularToolsRow } from "@/components/marketing/PopularToolsRow";
 import { FeatureSection } from "@/components/marketing/FeatureSection";
 import { HowItWorks } from "@/components/marketing/HowItWorks";
@@ -36,6 +37,14 @@ export default async function HomePage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("home");
+  const tCommon = await getTranslations("common");
+
+  const heroCategories = [
+    { icon: PenSquare, label: tCommon("categories.edit") },
+    { icon: RefreshCw, label: tCommon("categories.convert") },
+    { icon: Layers, label: tCommon("categories.organize") },
+    { icon: ShieldCheck, label: tCommon("categories.security") },
+  ];
 
   const popularTools = await Promise.all(
     getPopularTools().map(async (tool) => {
@@ -76,10 +85,19 @@ export default async function HomePage({ params }: PageProps) {
       />
 
       <div className="border-b border-border bg-surface">
-        <PageContainer className="flex flex-col items-center gap-8">
-          <Hero eyebrow={t("hero.eyebrow")} title={t("hero.title")} subtitle={t("hero.subtitle")} />
-          <div className="w-full max-w-xl pb-16 sm:pb-20">
-            <HeroDropzoneCard />
+        <PageContainer>
+          <div className="grid grid-cols-1 items-center gap-10 py-12 sm:py-16 lg:grid-cols-2 lg:gap-12">
+            <div className="flex flex-col gap-6">
+              <Hero
+                eyebrow={t("hero.eyebrow")}
+                title={t("hero.title")}
+                subtitle={t("hero.subtitle")}
+              />
+              <div className="max-w-lg">
+                <HeroDropzoneCard />
+              </div>
+            </div>
+            <HeroIllustration categories={heroCategories} readyLabel={t("hero.readyBadge")} />
           </div>
         </PageContainer>
       </div>

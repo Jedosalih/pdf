@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { getSessionUser } from "@/lib/auth/session";
 import { redirect } from "@/lib/i18n/navigation";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
+import { StorageUsageBar } from "@/components/workspace/StorageUsageBar";
+import type { Locale } from "@/lib/i18n/routing";
 
 interface WorkspaceLayoutProps {
   children: ReactNode;
@@ -21,5 +23,11 @@ export default async function WorkspaceLayout({ children, params }: WorkspaceLay
     redirect({ href: "/login", locale });
   }
 
-  return <WorkspaceShell>{children}</WorkspaceShell>;
+  return (
+    <WorkspaceShell
+      storageUsage={<StorageUsageBar userId={user!.id} locale={locale as Locale} />}
+    >
+      {children}
+    </WorkspaceShell>
+  );
 }

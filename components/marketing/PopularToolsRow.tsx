@@ -46,15 +46,13 @@ export function PopularToolsRow({ tools, scrollLeftLabel, scrollRightLabel }: Po
           <Link
             key={tool.slug}
             href={`/${tool.slug}`}
-            className="group flex w-56 shrink-0 snap-start flex-col gap-3 rounded-lg border border-border bg-background p-5 transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+            title={tool.description}
+            className="group flex w-32 shrink-0 snap-start flex-col items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-4 text-center transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-md bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-white">
               {tool.icon}
             </div>
-            <div>
-              <p className="text-body font-semibold text-foreground">{tool.title}</p>
-              <p className="mt-1 text-small text-muted-foreground">{tool.description}</p>
-            </div>
+            <p className="text-small font-medium text-foreground">{tool.title}</p>
           </Link>
         ))}
       </div>
