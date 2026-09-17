@@ -1,0 +1,44 @@
+{
+  "seo": {
+    "title": "Compare PDF — See What Changed Between Two Files | JPdf",
+    "description": "Compare two PDF files and see exactly what changed — both a text-level diff and a page-by-page visual diff, clearly labeled as the two different things they are. Free, fast, and private."
+  },
+  "h1": "Compare PDF",
+  "subtitle": "See what changed between two versions of a PDF — as text and visually.",
+  "howItWorks": {
+    "title": "How to compare two PDFs",
+    "steps": [
+      "Upload the original file, then the revised version.",
+      "Click Start to compare them.",
+      "Download a report showing the text differences and a page-by-page visual diff."
+    ]
+  },
+  "slots": {
+    "original": "Original",
+    "originalDrop": "Drop the original file here",
+    "revised": "Revised",
+    "revisedDrop": "Drop the revised file here"
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "What's the difference between the text diff and the visual diff?",
+        "a": "The text diff compares the words extracted from each document — it catches wording changes but nothing about layout or appearance. The visual diff renders each page as an image and compares it pixel by pixel — it catches font, image, and layout changes a text diff can't see, but can also flag differences a text diff wouldn't. They're genuinely different comparisons, shown separately, not combined into one score."
+      },
+      {
+        "q": "What if the two files have different numbers of pages?",
+        "a": "The text diff still compares the full content of both files. The visual, page-by-page diff only compares the pages both files have in common; the report notes how many extra pages the longer file has."
+      },
+      {
+        "q": "Which file should I upload first?",
+        "a": "Upload the original (older) version first, then the revised (newer) version second — the report labels differences as additions or removals based on that order."
+      },
+      {
+        "q": "Will my files be kept private?",
+        "a": "Yes. Both files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-text", "redact-pdf"]
+}

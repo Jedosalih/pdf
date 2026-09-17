@@ -29,6 +29,7 @@ import {
   FilePenLine,
   Signature,
   EyeOff,
+  GitCompare,
 } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
@@ -932,6 +933,37 @@ export const tools: ToolDefinition[] = [
         maxFileSizeBytes: 30 * MB,
         maxFiles: 1,
         maxPages: 150,
+        dailyOperations: 20,
+      },
+    },
+  },
+  {
+    id: "compare-pdf",
+    slug: "compare-pdf",
+    category: "organize",
+    icon: GitCompare,
+    inputTypes: ["application/pdf"],
+    outputType: "text/html",
+    processor: "poppler",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: true,
+    translationNamespace: "tool.compare-pdf",
+    relatedTools: ["pdf-to-text", "redact-pdf"],
+    limits: {
+      // Two full documents are rasterized and text-extracted per job --
+      // real per-job cost closer to redact-pdf than a single-file tool.
+      guest: {
+        maxFileSizeBytes: 15 * MB,
+        maxFiles: 2,
+        maxPages: 40,
+        dailyOperations: 5,
+      },
+      free: {
+        maxFileSizeBytes: 30 * MB,
+        maxFiles: 2,
+        maxPages: 100,
         dailyOperations: 20,
       },
     },

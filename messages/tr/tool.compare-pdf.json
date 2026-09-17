@@ -1,0 +1,44 @@
+{
+  "seo": {
+    "title": "PDF Karşılaştır — İki Dosya Arasındaki Değişiklikleri Görün | JPdf",
+    "description": "İki PDF dosyasını karşılaştırın ve tam olarak neyin değiştiğini görün — hem metin düzeyinde bir karşılaştırma hem de sayfa sayfa görsel bir karşılaştırma, iki farklı şey olarak ayrı ayrı belirtilir. Ücretsiz, hızlı ve gizli."
+  },
+  "h1": "PDF Karşılaştır",
+  "subtitle": "Bir PDF'in iki sürümü arasında neyin değiştiğini görün — metin olarak ve görsel olarak.",
+  "howItWorks": {
+    "title": "İki PDF nasıl karşılaştırılır",
+    "steps": [
+      "Önce orijinal dosyayı, ardından revize edilmiş sürümü yükleyin.",
+      "Karşılaştırmak için Başlat'a tıklayın.",
+      "Metin farklarını ve sayfa sayfa görsel bir karşılaştırmayı gösteren bir rapor indirin."
+    ]
+  },
+  "slots": {
+    "original": "Orijinal",
+    "originalDrop": "Orijinal dosyayı buraya bırakın",
+    "revised": "Revize edilmiş",
+    "revisedDrop": "Revize edilmiş dosyayı buraya bırakın"
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "Metin karşılaştırması ile görsel karşılaştırma arasındaki fark nedir?",
+        "a": "Metin karşılaştırması her belgeden çıkarılan kelimeleri karşılaştırır — ifade değişikliklerini yakalar ancak düzen veya görünüm hakkında hiçbir şey yakalamaz. Görsel karşılaştırma her sayfayı bir görsele dönüştürür ve piksel piksel karşılaştırır — metin karşılaştırmasının göremediği yazı tipi, görsel ve düzen değişikliklerini yakalar, ancak metin karşılaştırmasının yakalamayacağı farkları da işaretleyebilir. Bunlar gerçekten farklı karşılaştırmalardır, tek bir puanda birleştirilmeden ayrı ayrı gösterilir."
+      },
+      {
+        "q": "İki dosyanın sayfa sayısı farklıysa ne olur?",
+        "a": "Metin karşılaştırması yine de her iki dosyanın tam içeriğini karşılaştırır. Sayfa sayfa görsel karşılaştırma yalnızca her iki dosyada da ortak olan sayfaları karşılaştırır; rapor, daha uzun dosyanın kaç fazla sayfası olduğunu belirtir."
+      },
+      {
+        "q": "Önce hangi dosyayı yüklemeliyim?",
+        "a": "Önce orijinal (eski) sürümü, ardından revize edilmiş (yeni) sürümü yükleyin — rapor, farkları bu sıraya göre ekleme veya kaldırma olarak etiketler."
+      },
+      {
+        "q": "Dosyalarım gizli kalır mı?",
+        "a": "Evet. Her iki dosya da güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-text", "redact-pdf"]
+}

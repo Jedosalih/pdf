@@ -1584,6 +1584,49 @@ shipped and verified). Still entirely unbuilt, separate later phases: the
 real PDF editor/canvas, Fill & Sign/e-signature, redaction, Compare
 documents, and batch processing.
 
+## 2026-09-17 — Fixed a real, pre-existing gap: `maxPages` was never actually enforced
+
+Found while setting `compare-pdf`'s own page limits in the registry, not
+while looking for it -- worth recording precisely because it wasn't
+caught by any of the review this codebase already does regularly.
+
+- **What was wrong**: `ToolLimits.maxPages` ("max total pages across all
+  input files," per its own doc comment in `lib/tools/types.ts`) had real,
+  distinct per-tool/per-plan values in every registry entry and in the
+  `ToolLimit` DB table, and the client already had a translated
+  `TOO_MANY_PAGES` error message wired up in all 3 locales and mapped in
+  `useToolWorkflow.ts`'s `errorMessageKey` -- but a repo-wide search found
+  zero places that ever actually read `.maxPages` and compared it to
+  anything. Not the upload route (size-only), not the job-creation route
+  (file*count* only, via `maxFiles`), not any worker handler. A free-tier
+  user could merge twenty 5,000-page files today and nothing would stop
+  it before `qpdf` received the request. `docs/SECURITY.md` additionally
+  *claimed* a worker-side `pdfinfo`-based check existed with this exact
+  behavior -- a documentation error describing intent as fact, not just a
+  missing feature.
+- **Fix**: a real, generic gate at `app/api/jobs/route.ts` -- the one
+  place every tool's input files are already gathered regardless of which
+  tool it is. Every `application/pdf` input file for the job is opened via
+  `pdfjs-dist` (the same Node-compatible import path already proven in
+  `tests/e2e/helpers/pdfText.ts`, a lightweight structural parse, not an
+  "engine" in the sense `docs/SECURITY.md`'s architecture rules are about)
+  and the total page count is compared against `limits.maxPages` before
+  the job is created, returning `TOO_MANY_PAGES` (400, newly added to
+  `lib/api/errors.ts`'s `ApiErrorCode` union) synchronously. Non-PDF
+  inputs aren't page-counted -- already bounded by file size, and a
+  reliable page-count concept doesn't universally apply to them anyway.
+- **Why fix this now instead of deferring to the mission's final audit
+  step**: it's a real resource-exhaustion gap affecting every tool, not
+  just the one being built, and the fix was small, well-understood, and
+  used only already-vetted dependencies (`pdfjs-dist`, already a root
+  dependency; `getStorage().getObject()`, already used by the download
+  route) -- deferring a known, understood, cheap fix to "later" when there
+  is still Batch/Workspace-chaining/the audit itself ahead of this session
+  is how known gaps quietly become permanent ones.
+- **Scope not addressed**: this enforces a total-pages-per-job cap; it
+  does not add per-page-count-based pricing/throttling or apply to
+  non-PDF inputs. `docs/SECURITY.md` §1 has the full detail.
+
 ## 2026-09-17 — Redaction shipped (redact-pdf): whole-page rasterization, not a drawn box
 
 Third unit past the core-conversion phase. This was the mission's most

@@ -22,9 +22,21 @@ Order of checks in `lib/security/validateUpload.ts`:
 4. Filename is never used as a filesystem path. We generate a random
    storage key (`crypto.randomUUID()`-based) and keep the original name
    only as a display-only DB column, escaped when rendered.
-5. Structural validation (e.g. `pdfinfo` page count) happens once the file
-   reaches the worker, before the real operation runs — a job that fails
-   this check is marked `FAILED` with `errorCode: "TOO_MANY_PAGES"` etc.
+5. Page-count validation (`limits.maxPages`, "max total pages across all
+   input files") happens at job creation (`app/api/jobs/route.ts`), not at
+   upload time and not in the worker — every PDF input file is opened via
+   `pdfjs-dist` (already a proven, Node-compatible, structural-only parse;
+   see `tests/e2e/helpers/pdfText.ts` for the identical import path used
+   elsewhere) and the total page count across all of that job's PDF inputs
+   is compared against the caller's entitlement before the job is ever
+   enqueued, returning `TOO_MANY_PAGES` (400) synchronously rather than a
+   later async `Job.errorCode`. This was a real, previously-undiscovered
+   gap: `maxPages` had genuine per-tool/per-plan values in the registry
+   and `ToolLimit` DB table, and the client already had a translated error
+   message ready for `TOO_MANY_PAGES`, but nothing anywhere actually
+   compared a page count against it until this fix (found while adding
+   `compare-pdf`'s own page limits — see `docs/DECISIONS.md`). Non-PDF
+   input files aren't page-counted (already bounded by file size).
 
 **Exception: `edit-pdf`'s inserted images bypass this pipeline entirely.**
 The PDF editor (`components/tools/edit-pdf/`) builds its edit list

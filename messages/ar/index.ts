@@ -33,6 +33,7 @@ import markdownToPdf from "./tool.markdown-to-pdf.json";
 import editPdf from "./tool.edit-pdf.json";
 import fillSignPdf from "./tool.fill-sign-pdf.json";
 import redactPdf from "./tool.redact-pdf.json";
+import comparePdf from "./tool.compare-pdf.json";
 import pdfToPdfa from "./tool.pdf-to-pdfa.json";
 import flattenPdf from "./tool.flatten-pdf.json";
 import repairPdf from "./tool.repair-pdf.json";
@@ -77,6 +78,7 @@ const messages = {
     "edit-pdf": editPdf,
     "fill-sign-pdf": fillSignPdf,
     "redact-pdf": redactPdf,
+    "compare-pdf": comparePdf,
   },
 };
 
