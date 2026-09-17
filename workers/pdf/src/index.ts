@@ -20,6 +20,7 @@ import { handlePdfToPdfa } from "./handlers/pdfToPdfa.js";
 import { handleFlattenPdf } from "./handlers/flattenPdf.js";
 import { handleRepairPdf } from "./handlers/repairPdf.js";
 import { handleEditPdf } from "./handlers/editPdf.js";
+import { handleFillSignPdf } from "./handlers/fillSignPdf.js";
 import { JobFailure } from "./errors.js";
 
 const connection = new Redis(
@@ -53,6 +54,7 @@ const handlers: Record<string, (jobId: string) => Promise<void>> = {
   "flatten-pdf": handleFlattenPdf,
   "repair-pdf": handleRepairPdf,
   "edit-pdf": handleEditPdf,
+  "fill-sign-pdf": handleFillSignPdf,
 };
 
 const worker = new Worker<ProcessingJobPayload>(

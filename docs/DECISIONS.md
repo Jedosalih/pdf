@@ -1584,6 +1584,62 @@ shipped and verified). Still entirely unbuilt, separate later phases: the
 real PDF editor/canvas, Fill & Sign/e-signature, redaction, Compare
 documents, and batch processing.
 
+## 2026-09-17 — Fill & Sign shipped (fill-sign-pdf), with a documented cryptographic-signing boundary
+
+Second unit past the core-conversion phase, immediately following the PDF
+editor.
+
+- **Decision**: split Fill & Sign into what's genuinely real and
+  achievable versus what would be dishonest to claim. "Fill" means: if a
+  PDF has actual AcroForm text fields, detect and fill them for real
+  (`pdf-lib`'s form API, flattened into static content on export). "Sign"
+  means: place a *visual* signature (hand-drawn or an uploaded image) as
+  new page content, reusing `edit-pdf`'s canvas verbatim. Neither
+  fabricates anything -- there's no synthetic "looks like it worked" path.
+- **Why the cryptographic half is explicitly out of scope**: a real
+  digital signature (PAdES/PKCS#7) needs a certificate (self-signed or
+  CA-issued), a timestamp authority, and a library that understands PDF's
+  incremental-update signing byte ranges. `pdf-lib` -- the only PDF-
+  writing library this codebase uses -- has no signing support at all;
+  the realistic OSS option is `node-signpdf` paired with `node-forge` for
+  certs, plus a genuine product decision about where the signing
+  certificate comes from and what trust it carries. That's a scoped
+  project of its own, not a checkbox to tick alongside a canvas editor.
+  Per the mission's fallback protocol: the blocker is stated here, the
+  strongest safe version (visual signing) is shipped, and the limitation
+  is stated plainly in the tool's own UI copy, not just this doc.
+- **A deliberately deferred, not silently dropped, enhancement**: a typed
+  signature in a cursive/script font (needs bundling a font file plus the
+  `fontkit` pairing `pdf-lib` requires for custom font embedding) was
+  considered and set aside for this pass -- draw + upload are both fully
+  real, working signature-creation paths already, and the mission
+  prioritizes breadth (redaction/compare/batch/workspace chaining still
+  ahead) over polishing a third input method for one capability.
+- **Architecture**: zero new worker packages. The per-element drawing
+  logic `edit-pdf` already built was extracted into
+  `workers/pdf/src/pdfEditElements.ts` and is now shared by both
+  `editPdf.ts` and the new `fillSignPdf.ts` handler -- a real instance of
+  "duplicate the worker boilerplate" *not* applying, since these two
+  handlers share a package and a data model, unlike the cross-package
+  worker duplication this project otherwise accepts.
+- **Form-field detection was verified empirically before writing client
+  code around it**: generated a real AcroForm text field fixture (already
+  existed, built for `flatten-pdf`) and ran `pdfjs-dist`'s
+  `getAnnotations()` against it directly to confirm the actual runtime
+  shape (`subtype`, `fieldType`, `rect` coordinate space) rather than
+  trusting the library's untyped `Promise<any[]>` return signature.
+- **A real UI bug found by actually filling in a field**, not by
+  code review: the field input's translucent background let the canvas's
+  own rendering of the PDF's original field value show through underneath
+  the typed value, producing illegible overlapping text. Fixed with an
+  opaque background. Full detail in `docs/PDF_ENGINE.md`.
+- **Verification**: E2E test fills a real AcroForm field, draws a
+  signature, exports, and checks the downloaded PDF's actual content --
+  the filled value via real text extraction (alongside the original
+  page's own text, proving flatten preserved it), the signature via the
+  PDF's own drawing operator list. Full 40-spec suite green, `tsc`/ESLint
+  clean on the app and the `pdf` worker.
+
 ## 2026-09-17 — Real PDF editor shipped (edit-pdf): the first capability beyond the core-conversion phase
 
 The document-capability roadmap's core-conversion phase (Tier A, Office,

@@ -1,0 +1,49 @@
+{
+  "seo": {
+    "title": "PDF Doldur ve İmzala — Formları Doldurun ve İmzanızı Ekleyin | JPdf",
+    "description": "Bir PDF'in form alanlarını doldurun ve çizilmiş veya yüklenmiş bir imza ekleyin, hepsi tarayıcınızda. Ücretsiz, hızlı ve gizli."
+  },
+  "h1": "PDF Doldur ve İmzala",
+  "subtitle": "Form alanlarını doldurun ve bir PDF'i çizilmiş veya yüklenmiş bir imzayla imzalayın.",
+  "howItWorks": {
+    "title": "Bir PDF nasıl doldurulur ve imzalanır",
+    "steps": [
+      "Doldurmak veya imzalamak istediğiniz PDF'i yükleyin.",
+      "Algılanan form alanlarına doğrudan yazın veya belgeyi elle doldurup imzalamak için metin ve çizim araçlarını kullanın.",
+      "Tamamlanmış, imzalı PDF'i indirmek için Dışa Aktar'a tıklayın."
+    ]
+  },
+  "editor": {
+    "tools": {
+      "select": "Seç ve taşı",
+      "text": "Metin ekle",
+      "draw": "İmza çiz",
+      "image": "İmza görseli yükle"
+    },
+    "export": "PDF'i dışa aktar",
+    "overlayNote": "İmzanız sayfaya görsel bir işaret olarak eklenir, kriptografik bir dijital imza değildir — sertifika tabanlı bir e-imzanın sağladığı kimlik doğrulama veya değişiklik tespiti özelliğini taşımaz.",
+    "fieldsDetected": "{count, plural, other {Bu belgede # doldurulabilir alan bulundu — aşağıdan doğrudan doldurabilirsiniz.}}"
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "Bu yasal olarak bağlayıcı bir dijital imza mı?",
+        "a": "Hayır. Bu araç yalnızca görsel bir imza oluşturur — sayfaya yerleştirilen çizilmiş veya görsel bir işaret, tıpkı basılı bir sayfayı imzalayıp tarama gibi. Bir sertifikayla desteklenen, kriptografik olarak doğrulanabilir bir dijital imza oluşturmaz; bu, bu aracın sunmadığı ayrı ve daha karmaşık bir yetenektir."
+      },
+      {
+        "q": "Bu her PDF'de çalışır mı?",
+        "a": "İmza yerleştirme her PDF'de çalışır. Otomatik form alanı algılama yalnızca PDF'de zaten gerçek doldurulabilir alanlar varsa geçerlidir — aksi takdirde, kağıt bir formu doldurur gibi sayfanın herhangi bir yerine değer yazmak için metin aracını kullanın."
+      },
+      {
+        "q": "İmzamı fare veya trackpad ile çizebilir miyim?",
+        "a": "Evet — çizim aracını seçin ve doğrudan sayfa üzerine çizin. İsterseniz imzanızın bir görselini de yükleyebilirsiniz."
+      },
+      {
+        "q": "Dosyam gizli kalır mı?",
+        "a": "Evet. Dosyanız tarayıcınızda doldurulur ve imzalanır, yalnızca Dışa Aktar'a tıkladığınızda yüklenir; sonuçlar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["edit-pdf", "flatten-pdf"]
+}

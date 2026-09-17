@@ -43,7 +43,19 @@ beyond what `embedPng`/`embedJpg` themselves enforce by successfully
 decoding the image — acceptable here because the bytes are only ever
 handed to `pdf-lib`'s own image embedders (never written to disk, executed,
 or parsed by a native library), the same reasoning already applied to
-Markdown/HTML uploads in §5.
+Markdown/HTML uploads in §5. `fill-sign-pdf`'s signature elements travel
+the identical `options.edits` path and are validated by the exact same
+worker code (`applyEditElements()`, shared by both handlers).
+
+`fill-sign-pdf` also sends a separate `options.fields` record (field name
+→ typed value) for AcroForm filling. Both keys and values are plain
+strings, length-capped (200/2000 chars) and count-capped (200 fields) in
+`workers/pdf/src/handlers/fillSignPdf.ts`; an unrecognized field name is
+silently ignored via `form.getFieldMaybe()` rather than trusted to exist,
+and only fields that resolve to a real `PDFTextField` on *this specific*
+uploaded document are ever written — a client cannot target a field on a
+document other than the one it uploaded, since the field name is resolved
+against the freshly-loaded `PDFDocument` for that job's own input file.
 
 ## 2. Command execution
 

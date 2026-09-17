@@ -414,6 +414,61 @@ in-place text editing, no page manipulation (reuses the existing dedicated
 tools), no signatures/redaction (separate, later blueprint capabilities
 with their own honesty requirements).
 
+### Fill & Sign (`fill-sign-pdf`) — `pdf-lib` form API + the edit-pdf canvas
+
+Splits into two genuinely different mechanisms, both real:
+
+1. **Filling real AcroForm fields.** `components/tools/fill-sign-pdf/
+   useFormFields.ts` detects text fields client-side via `pdfjs-dist`'s
+   `page.getAnnotations()` (`subtype: "Widget"`, `fieldType: "Tx"`) --
+   verified empirically against `docs/fixtures/sample-with-form-field.pdf`
+   before writing any code around an assumed shape (its `rect` is
+   `[x1, y1, x2, y2]` in PDF bottom-left-origin space; converted to the
+   editor's top-left-origin model the same way as everywhere else:
+   `topY = pageHeight - y2`). Rendered as real `<input>` elements
+   positioned over their actual field location so the user types directly
+   into the document. On export, `workers/pdf/src/handlers/
+   fillSignPdf.ts` fills each field through `pdf-lib`'s `PDFForm` API
+   (`getFieldMaybe(name)`, `instanceof PDFTextField`, `setText(...)`) and
+   calls `form.flatten()` to bake the values into static page content --
+   the same "flatten" concept `flatten-pdf` already uses. Checkboxes/
+   radio groups/dropdowns (`fieldType: "Btn"`/`"Ch"`) are deliberately out
+   of scope for this pass; text fields cover the common case. Only applies
+   when the PDF actually has an AcroForm -- most PDFs don't, and that's
+   not an error, just nothing to fill.
+2. **Placing a signature.** Reuses `edit-pdf`'s canvas/overlay machinery
+   verbatim (`EditorCanvas`, `useEditorState`, `usePdfDocument`,
+   `EditorPageSidebar`, `EditorPropertiesPanel`) with a trimmed toolset
+   (select/text/draw/image -- no highlight/rect, not relevant to signing).
+   A hand-drawn signature is just the existing freehand "path" element
+   type; an uploaded signature is just the existing "image" element type.
+   Zero new drawing code was needed for this half.
+
+**Shared element-drawing logic was extracted, not duplicated**:
+`workers/pdf/src/pdfEditElements.ts`'s `applyEditElements()` is the exact
+same per-type validation/drawing switch `edit-pdf` uses, now called by
+both `editPdf.ts` and `fillSignPdf.ts` -- the "duplicate the worker
+boilerplate" convention (`db.ts`/`storage.ts`/etc. per package) doesn't
+apply here since these two handlers live in the *same* package and share
+the *same* element model, unlike the cross-package worker duplication.
+
+**This produces a visual signature, not a cryptographic one, stated
+plainly in the tool's own copy**: new ink/image content on the page, the
+same as signing a printed page and scanning it. No library in this stack
+signs PDFs cryptographically (PAdES/PKCS#7) -- `pdf-lib` has no signing
+support at all, and doing this correctly needs a real PKI/certificate
+story (a CA-issued or self-signed cert, a timestamp authority, an
+incremental-update-aware signing library such as `node-signpdf`), which is
+a deliberate, documented scope boundary, not an oversight. See
+`docs/DECISIONS.md` for the full reasoning.
+
+**A real UI bug found by actually filling in a field**: the field
+`<input>`'s background was a translucent tint (`bg-primary/5`), so the
+canvas's own rendering of the PDF's pre-existing field value showed
+through underneath the input's current text, producing an illegible
+double-exposure look. Fixed with an opaque background (`bg-background`)
+that fully masks the canvas layer underneath.
+
 ## Shared worker safety rules (blueprint §6)
 
 - Every job: max input file size, max page count (checked via `pdfinfo`

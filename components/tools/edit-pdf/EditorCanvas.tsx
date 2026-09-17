@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { EditElement, EditorTool, PathElement } from "./types";
 
@@ -20,6 +28,10 @@ interface EditorCanvasProps {
   onBeginDrag: () => void;
   onEndDrag: () => void;
   onToolConsumed: () => void;
+  /** Extra content positioned over the same page-sized, zoom-scaled
+   * container as the edit overlay -- used by fill-sign-pdf to render real
+   * AcroForm text-field inputs above the (unrelated) annotation layer. */
+  children?: ReactNode;
 }
 
 const DEFAULT_TEXT_WIDTH = 200;
@@ -58,6 +70,7 @@ export function EditorCanvas({
   onBeginDrag,
   onEndDrag,
   onToolConsumed,
+  children,
 }: EditorCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -383,6 +396,7 @@ export function EditorCanvas({
           </svg>
         ) : null}
       </div>
+      {children}
     </div>
   );
 }

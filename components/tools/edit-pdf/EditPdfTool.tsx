@@ -236,6 +236,7 @@ export function EditPdfTool({ maxFiles }: EditPdfToolProps) {
       />
 
       <EditorToolbar
+        translationNamespace="tool.edit-pdf"
         activeTool={editor.activeTool}
         onToolChange={editor.setActiveTool}
         onAddImageClick={handleAddImageClick}

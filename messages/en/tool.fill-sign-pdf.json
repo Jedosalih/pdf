@@ -1,0 +1,49 @@
+{
+  "seo": {
+    "title": "Fill & Sign PDF — Fill Forms and Add Your Signature | JPdf",
+    "description": "Fill in a PDF's form fields and add a drawn or uploaded signature, entirely in your browser. Free, fast, and private."
+  },
+  "h1": "Fill & Sign PDF",
+  "subtitle": "Fill in form fields and sign a PDF with a drawn or uploaded signature.",
+  "howItWorks": {
+    "title": "How to fill and sign a PDF",
+    "steps": [
+      "Upload the PDF you want to fill in or sign.",
+      "Type directly into any detected form fields, or use the text and drawing tools to fill in and sign the document by hand.",
+      "Click Export to download the completed, signed PDF."
+    ]
+  },
+  "editor": {
+    "tools": {
+      "select": "Select and move",
+      "text": "Add text",
+      "draw": "Draw signature",
+      "image": "Upload signature image"
+    },
+    "export": "Export PDF",
+    "overlayNote": "Your signature is added as a visual mark on the page, not a cryptographic digital signature — it won't carry the identity verification or tamper-evidence a certificate-based e-signature provides.",
+    "fieldsDetected": "{count, plural, one {Detected # fillable field in this document — fill it in directly below.} other {Detected # fillable fields in this document — fill them in directly below.}}"
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is this a legally-binding digital signature?",
+        "a": "No. This creates a visual signature — a drawn or image mark placed on the page, the same as signing a printed page and scanning it. It does not create a cryptographically verifiable digital signature (the kind backed by a certificate), which is a separate, more involved capability this tool doesn't provide."
+      },
+      {
+        "q": "Does this work on any PDF?",
+        "a": "Signature placement works on any PDF. Automatic form-field detection only applies if the PDF already has real fillable fields built in — otherwise, use the text tool to type values anywhere on the page, just like filling out a paper form."
+      },
+      {
+        "q": "Can I draw my signature with a mouse or trackpad?",
+        "a": "Yes — choose the drawing tool and draw directly on the page. You can also upload an image of your signature instead."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Your file is filled in and signed in your browser and only uploaded when you click Export; results are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["edit-pdf", "flatten-pdf"]
+}
