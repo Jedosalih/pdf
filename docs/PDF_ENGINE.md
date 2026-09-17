@@ -589,11 +589,18 @@ untouched across a skipped whitespace item.
 - Every job runs in its own randomly-named temp directory under a worker
   temp root; deleted in a `finally` regardless of success/failure.
 - No worker process needs outbound network access to do its job (all
-  engines operate on local files) — restrict worker container egress to
-  the object storage endpoint and nothing else at the infra layer.
-- Concurrency and memory limits are set per-queue in `workers/*/config.ts`
-  and enforced at the container level (`--memory`, `--cpus` in Compose /
-  orchestrator resource limits in production).
+  engines operate on local files) — `docker-compose.yml`'s network is
+  `internal: true`, so every worker container has no route to the
+  outside world at all (verified: an external connection attempt from
+  inside a worker gets an immediate `ENETUNREACH`), while
+  container-name resolution to postgres/redis/minio on the same network
+  keeps working normally. See `docs/SECURITY.md` §3.
+- Concurrency is set inline per queue in each `workers/*/src/index.ts`
+  (`new Worker(..., { concurrency: N })`, currently 2 for every queue).
+  Memory/CPU limits are enforced at the container level
+  (`deploy.resources.limits` in `docker-compose.yml`; an equivalent
+  orchestrator resource limit is still needed for a non-Compose
+  production deployment).
 
 ## Input/output constraints (MVP defaults — overridable via `ToolLimit`)
 

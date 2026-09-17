@@ -15,6 +15,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    # On `default` (for the `ports:` mapping the app running on the host
+    # needs) *and* `restricted` (so the workers, which are deliberately
+    # NOT on `default`, can still reach it by container name). See the
+    # `networks` block at the bottom of this file for why one internal-
+    # only network isn't enough on its own.
+    networks: [default, restricted]
 
   redis:
     image: redis:7-alpine
@@ -28,6 +34,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks: [default, restricted]
 
   # S3-compatible object storage for local dev — same API surface as R2/S3
   # in production (see lib/storage).
@@ -48,6 +55,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks: [default, restricted]
 
   minio-init:
     image: minio/mc:latest
@@ -59,12 +67,21 @@ services:
       mc alias set local http://minio:9000 jdpdf jdpdf12345 &&
       mc mb --ignore-existing local/jdpdf-dev
       "
+    networks: [restricted]
 
   pdf-worker:
     build:
       context: .
       dockerfile: workers/pdf/Dockerfile
     restart: unless-stopped
+    # BullMQ concurrency: 2 (workers/pdf/src/index.ts) -- sized for two
+    # concurrent qpdf/Ghostscript/poppler processes or pureCompute
+    # subprocesses, with headroom, not a tight fit.
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1536M
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,12 +99,23 @@ services:
       STORAGE_SECRET_KEY: jdpdf12345
       STORAGE_FORCE_PATH_STYLE: "true"
       NODE_ENV: production
+    # `restricted` only, never `default` -- this container has no route
+    # to the outside world at all (see the `networks` block below).
+    networks: [restricted]
 
   office-worker:
     build:
       context: .
       dockerfile: workers/office/Dockerfile
     restart: unless-stopped
+    # LibreOffice headless is the most memory-hungry engine in this repo;
+    # concurrency: 2 (workers/office/src/index.ts) -- two soffice
+    # instances can each realistically want 1GB+ on a large document.
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 3072M
     depends_on:
       postgres:
         condition: service_healthy
@@ -105,12 +133,21 @@ services:
       STORAGE_SECRET_KEY: jdpdf12345
       STORAGE_FORCE_PATH_STYLE: "true"
       NODE_ENV: production
+    networks: [restricted]
 
   ocr-worker:
     build:
       context: .
       dockerfile: workers/ocr/Dockerfile
     restart: unless-stopped
+    # concurrency: 2 (workers/ocr/src/index.ts) -- Tesseract is CPU-bound
+    # per page more than memory-hungry, but OCRmyPDF's own Ghostscript/
+    # qpdf steps add real headroom needs on larger documents.
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2048M
     depends_on:
       postgres:
         condition: service_healthy
@@ -128,6 +165,7 @@ services:
       STORAGE_SECRET_KEY: jdpdf12345
       STORAGE_FORCE_PATH_STYLE: "true"
       NODE_ENV: production
+    networks: [restricted]
 
   html-worker:
     build:
@@ -139,6 +177,14 @@ services:
     # well-known Playwright/Docker requirement, unrelated to the sandbox
     # security posture above.
     shm_size: "1gb"
+    # concurrency: 2 (workers/html/src/index.ts) -- headless Chromium is
+    # the single heaviest process in this repo; two concurrent render
+    # contexts need real headroom beyond shm_size alone.
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 3072M
     depends_on:
       postgres:
         condition: service_healthy
@@ -156,8 +202,37 @@ services:
       STORAGE_SECRET_KEY: jdpdf12345
       STORAGE_FORCE_PATH_STYLE: "true"
       NODE_ENV: production
+    networks: [restricted]
 
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+
+networks:
+  # Two networks, not one, because a single `internal: true` network
+  # can't do both jobs at once: Docker's published-port (`ports:`)
+  # mechanism relies on the same NAT/bridge machinery that `internal:
+  # true` deliberately disables, so an internal network's containers
+  # cannot be reached from the host via `ports:` at all (found the hard
+  # way -- MinIO/Postgres/Redis's host port mappings silently stopped
+  # working, breaking the app's own connections to them, when they were
+  # first put on a single internal network alongside the workers).
+  #
+  # `default` (unrestricted): postgres/redis/minio only, purely so their
+  # `ports:` mappings keep working for the app running on the host.
+  #
+  # `restricted` (`internal: true`): every service actually needs to be
+  # reachable from the four workers by container name -- postgres/redis/
+  # minio join this too, in *addition* to `default` -- but the workers
+  # themselves are ONLY on this network, never on `default`, so they have
+  # no route to the outside world at all. This is the network-level
+  # egress backstop `workers/html`'s own SSRF mitigation
+  # (workers/html/src/render.ts's context.route() blocking) already
+  # documented as required. Build-time networking (apt-get/npm install/
+  # playwright install in each Dockerfile) is unaffected -- `internal:
+  # true` only restricts already-built containers at runtime, never
+  # `docker build` itself.
+  default: {}
+  restricted:
+    internal: true

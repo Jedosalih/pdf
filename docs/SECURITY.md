@@ -123,24 +123,39 @@ against the freshly-loaded `PDFDocument` for that job's own input file.
   concurrent job now pays a real module cold-start cost a same-process call
   never did; `pdf-processing`'s BullMQ concurrency was lowered from 4 to 2
   after measuring real contention under concurrent load on dev hardware.
-- **No per-container memory/CPU limits are currently configured** —
-  `docker-compose.yml` sets none, and there is no separate production
-  orchestrator config in this repo. Known gap; add `deploy.resources`
-  (Compose) or the equivalent orchestrator limit before any non-trusted-
-  traffic production deployment, so one hostile/pathological job can't
-  starve the host.
+- **Per-container memory/CPU limits** are configured in `docker-compose.yml`
+  for all four workers (`deploy.resources.limits`, verified applied via
+  `docker inspect` — Compose honors this outside Swarm mode too, not just
+  in a Swarm cluster): 2 CPUs each, memory sized to each engine's real
+  footprint (1.5GB pdf-worker, 3GB office-worker for LibreOffice, 2GB
+  ocr-worker, 3GB html-worker for Chromium). One hostile/pathological job
+  can no longer exhaust host memory/CPU without bound. An equivalent limit
+  still needs configuring in whatever production orchestrator eventually
+  runs this (ECS task definitions, Kubernetes resource limits, etc.) —
+  this only covers the Compose-based deployment shape.
 - Randomized temp directories, deleted in a `finally` block on every code
   path (success, failure, timeout). **The scheduled sweep for anything
   orphaned despite that (a crashed worker, a killed container) does not
   exist yet** — see §4's identical caveat for the guest-file-expiry sweep;
   it's the same missing `workers/cleanup` service.
-- No worker needs outbound internet access to process a file. **This is
-  not currently enforced** — no container network egress restriction is
-  configured in `docker-compose.yml` today; `workers/html`'s own
-  application-level request-blocking (`context.route()`, see
-  `workers/html/src/render.ts`) is the only control in place, and it
-  explicitly documents a network-level backstop as still required. Known
-  gap for every worker.
+- **No worker needs outbound internet access to process a file, and none
+  can reach it**: `docker-compose.yml`'s network is now `internal: true`
+  — Docker configures no default route to the outside world for any
+  container on it at all, verified by confirming a worker container gets
+  an immediate `ENETUNREACH` connecting to a real external IP, while
+  container-name resolution and connectivity between services on the
+  same network (worker → postgres/redis/minio) keeps working normally.
+  This is the network-level backstop `workers/html`'s own application-
+  level request-blocking (`context.route()`, see
+  `workers/html/src/render.ts`) already documented as required. Build-time
+  networking (`apt-get`/`npm install`/`playwright install` during
+  `docker build`) is unaffected — `internal: true` only restricts already-
+  built containers at runtime. Gotcha hit while shipping this: changing
+  the network definition alone does not recreate already-running
+  containers with no other config diff (`postgres`/`redis`/`minio` here) —
+  they're left attached to the old, soon-orphaned network object while
+  freshly recreated containers join the new one, breaking DNS resolution
+  between them until a full `docker compose down` + `up` cycle.
 
 ## 4. Storage & access control
 
@@ -177,16 +192,19 @@ build this without that control in place.
 `html-to-pdf`/`markdown-to-pdf` (`workers/html`) are a related but distinct
 surface: the rendered HTML/CSS a user uploads can itself reference
 external URLs (`<img>`, `<link>`, `@import`, `url()`, `<iframe>`, JS
-`fetch`). Mitigated at the application level today —
-`workers/html/src/render.ts` registers a Playwright `context.route("**/*",
-...)` handler *before* any content loads, aborting every request except
-`about:blank`/`data:` — plus `javaScriptEnabled: false` at context
-creation, which independently closes JS-driven `fetch()`-based SSRF. A
-referenced external resource is left missing (broken-image-style
-degradation) rather than the job being hard-failed. **The documented
-network-level backstop (restricting the container's own egress to only
-the object storage endpoint) is not actually configured** — see §3; today
-this surface relies on the application-level control alone.
+`fetch`). Mitigated in two independent layers now: at the application
+level, `workers/html/src/render.ts` registers a Playwright
+`context.route("**/*", ...)` handler *before* any content loads, aborting
+every request except `about:blank`/`data:` — plus `javaScriptEnabled:
+false` at context creation, which independently closes JS-driven
+`fetch()`-based SSRF. A referenced external resource is left missing
+(broken-image-style degradation) rather than the job being hard-failed.
+At the network level, `docker-compose.yml`'s `internal: true` network (see
+§3) means the container has no route to the outside world at all even if
+the application-level control had a bug or Chromium did something
+`page.route()` doesn't cover (DNS prefetch, safety-check pings) — the
+backstop this section previously described as aspirational is now
+actually configured.
 
 ## 6. Authentication (implemented)
 

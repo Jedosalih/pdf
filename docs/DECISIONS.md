@@ -2255,6 +2255,65 @@ list (§4.6, §4.8).
   *any* schema migration in this architecture, not just this one; worth
   remembering next time.
 
+## 2026-09-18 — Worker CPU/memory limits and real network egress restriction
+
+Two more items from the Final Completion Mission's production-hardening
+list (§4.2, §4.3).
+
+- **Per-container CPU/memory limits**: `deploy.resources.limits` added to
+  all four workers in `docker-compose.yml` (2 CPUs each; memory sized to
+  each engine's real footprint — 1.5GB pdf-worker, 3GB office-worker for
+  LibreOffice, 2GB ocr-worker, 3GB html-worker for Chromium). Verified
+  actually applied via `docker inspect` (Compose honors `deploy.resources`
+  outside Swarm mode too) rather than assumed from the YAML alone.
+
+- **Network egress restriction**: every worker container is now on a
+  Docker network with no route to the outside world at all.
+
+  **Real mistake made and caught before it stuck**: the first attempt put
+  *every* service — including postgres/redis/minio — on one
+  `internal: true` network. This breaks Docker's `ports:` host-publishing
+  mechanism for anything on that network, because published ports rely on
+  the same NAT/bridge machinery `internal: true` deliberately disables.
+  Found immediately by actually running the full E2E suite afterward
+  (not just checking raw container-to-container connectivity, which
+  looked fine) — 22 of 49 specs failed, every one of them a test that
+  touches file upload/storage, while pure-UI tests passed. Root-caused to
+  `curl http://localhost:9000` (MinIO's own host-mapped port) returning
+  nothing at all — the app running on the host had lost the ability to
+  reach Postgres/Redis/MinIO entirely.
+
+  Fixed with two networks instead of one: `default` (unrestricted) keeps
+  postgres/redis/minio's `ports:` mappings working for the app on the
+  host; `restricted` (`internal: true`) is what the four workers are
+  *actually* on, with postgres/redis/minio joining it too (in addition to
+  `default`) so container-name resolution to them still works from inside
+  the workers. The workers themselves are on `restricted` only, never
+  `default`, so they have no path to the outside world — verified via a
+  real connection attempt to a public IP from inside a worker container
+  returning an immediate `ENETUNREACH`, and separately confirmed
+  container-name connectivity to postgres/redis/minio keeps working
+  normally.
+
+  Also hit: after changing the network topology the first time, a plain
+  `docker compose up -d` left long-running, unrelated containers
+  (postgres/redis/minio, which had no config diff of their own) attached
+  to the old, soon-orphaned network object while newly recreated
+  containers joined the new one — breaking DNS resolution between them
+  until a full `docker compose down` + `up` cycle. Worth remembering for
+  any future network-topology change in this compose file, not just this
+  one.
+
+  **Verified with the full test suite twice**: once (deliberately) with
+  the broken single-network topology to confirm the failure mode was
+  real and not a fluke (27/49 passed, all 22 failures matching the
+  storage-touching-test pattern exactly), then again with the fixed
+  two-network topology (49/49 passed, 5.8 minutes, no regressions).
+
+This closes the network-level backstop `workers/html`'s own SSRF
+mitigation (`context.route()` blocking) already documented as required
+but not configured — see `docs/SECURITY.md` §5.
+
 ## Template for future entries
 
 ```
