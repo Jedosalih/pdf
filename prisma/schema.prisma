@@ -1,4 +1,4 @@
-// JDpdf database schema.
+// JPdf database schema.
 // Scope notes for what's implemented now vs. placeholder-only: docs/DECISIONS.md
 
 generator client {

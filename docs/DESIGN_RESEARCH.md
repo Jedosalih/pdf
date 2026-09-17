@@ -1,4 +1,4 @@
-# Design Research & System — JDpdf
+# Design Research & System — JPdf
 
 ## Reference points
 

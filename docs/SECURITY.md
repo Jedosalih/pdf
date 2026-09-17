@@ -1,4 +1,4 @@
-# Security — JDpdf
+# Security — JPdf
 
 ## Threat model summary
 

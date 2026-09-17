@@ -22,7 +22,7 @@
     "scrollRight": "Scroll right"
   },
   "whyUs": {
-    "title": "Why JDpdf",
+    "title": "Why JPdf",
     "items": [
       { "title": "Fast", "description": "Most operations finish in seconds." },
       {
@@ -60,7 +60,7 @@
     "title": "Frequently asked questions",
     "items": [
       {
-        "q": "Is JDpdf free to use?",
+        "q": "Is JPdf free to use?",
         "a": "Yes — every tool is free to use as a guest, with a generous daily limit. Creating a free account raises those limits and keeps your documents in one place."
       },
       {

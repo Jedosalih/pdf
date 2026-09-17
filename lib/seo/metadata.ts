@@ -45,7 +45,7 @@ export function buildLocalizedMetadata({
       description,
       url: canonicalUrl,
       locale,
-      siteName: "JDpdf",
+      siteName: "JPdf",
       type: "website",
     },
     twitter: {

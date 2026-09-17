@@ -22,7 +22,7 @@
     "scrollRight": "Sağa kaydır"
   },
   "whyUs": {
-    "title": "Neden JDpdf",
+    "title": "Neden JPdf",
     "items": [
       { "title": "Hızlı", "description": "Çoğu işlem saniyeler içinde tamamlanır." },
       {
@@ -60,7 +60,7 @@
     "title": "Sıkça sorulan sorular",
     "items": [
       {
-        "q": "JDpdf kullanımı ücretsiz mi?",
+        "q": "JPdf kullanımı ücretsiz mi?",
         "a": "Evet — her araç, cömert bir günlük limitle misafir olarak ücretsiz kullanılabilir. Ücretsiz bir hesap oluşturmak bu limitleri artırır ve belgelerinizi tek bir yerde tutar."
       },
       {

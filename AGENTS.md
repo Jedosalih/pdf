@@ -1,10 +1,10 @@
-# AGENTS.md — JDpdf
+# AGENTS.md — JPdf
 
 Read this file completely before writing any code in this repository.
 
 ## 1. Project purpose
 
-JDpdf is a multilingual (Arabic/English/Turkish) online PDF & document tools
+JPdf is a multilingual (Arabic/English/Turkish) online PDF & document tools
 platform (merge, split, compress, convert, OCR, etc.), architected as the
 foundation of a commercial SaaS product — not a one-off script collection.
 

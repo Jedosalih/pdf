@@ -1,4 +1,4 @@
-# Architecture — JDpdf
+# Architecture — JPdf
 
 ## System overview
 

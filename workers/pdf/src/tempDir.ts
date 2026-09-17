@@ -7,7 +7,7 @@ import { join } from "node:path";
 export async function withTempDir<T>(
   fn: (dir: string) => Promise<T>,
 ): Promise<T> {
-  const dir = await mkdtemp(join(tmpdir(), "jdpdf-"));
+  const dir = await mkdtemp(join(tmpdir(), "jpdf-"));
   try {
     return await fn(dir);
   } finally {

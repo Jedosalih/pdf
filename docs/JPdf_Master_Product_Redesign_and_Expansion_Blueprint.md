@@ -1,7 +1,7 @@
-# JDpdf --- Master Product, UX/UI & Platform Expansion Blueprint
+# JPdf --- Master Product, UX/UI & Platform Expansion Blueprint
 
 **Document type:** Master implementation brief for Claude Code\
-**Project:** JDpdf\
+**Project:** JPdf\
 **Purpose:** Full product redesign + document-workspace evolution +
 feature roadmap\
 **Execution style:** Autonomous, end-to-end, production-minded\
@@ -12,7 +12,7 @@ expansion are the next major phase
 
 ## 0. Executive Direction
 
-JDpdf must evolve from a collection of PDF utility pages into a
+JPdf must evolve from a collection of PDF utility pages into a
 **professional, multilingual document platform**.
 
 The target product is not a prototype and should not look like one.
@@ -22,7 +22,7 @@ The long-term product model is:
 > **Upload → Edit → Organize → Convert → Sign → Automate → Manage →
 > Export**
 
-JDpdf should support PDFs first, then Office documents and images, while
+JPdf should support PDFs first, then Office documents and images, while
 presenting the user with one coherent **Document Workspace** rather than
 dozens of disconnected tool pages.
 
@@ -190,7 +190,7 @@ Do not introduce separate bespoke UI patterns for every tool.
 
 # 4. Product Positioning
 
-JDpdf should be positioned as:
+JPdf should be positioned as:
 
 > **A modern document workspace for editing, converting, organizing,
 > signing, and managing documents.**
@@ -248,7 +248,7 @@ Useful conceptual references:
 -   Adobe Acrobat
 -   Google Drive
 
-JDpdf must have its own identity.
+JPdf must have its own identity.
 
 ## Explicitly avoid
 
@@ -273,7 +273,7 @@ The interface should feel like a serious document application.
 
 ## Logo
 
-Create/refine a simple JDpdf mark based around:
+Create/refine a simple JPdf mark based around:
 
 -   J
 -   document/page
@@ -444,7 +444,7 @@ Recommended order:
 2.  Hero
 3.  Main upload/dropzone
 4.  Popular tools
-5.  Why JDpdf
+5.  Why JPdf
 6.  Document workflow
 7.  Tool categories
 8.  Security/privacy
@@ -461,7 +461,7 @@ Do not make the homepage excessively long.
 Desktop:
 
 ``` text
-JDpdf
+JPdf
 
 Tools
 Workspace
@@ -538,7 +538,7 @@ Implement:
 Example:
 
 ``` text
-Search JDpdf
+Search JPdf
 
 Edit PDF
 Merge PDFs
@@ -759,7 +759,7 @@ Also provide:
 
 This is the most important new concept.
 
-Instead of making every operation feel like a standalone tool, JDpdf
+Instead of making every operation feel like a standalone tool, JPdf
 should support a central workspace.
 
 Concept:
@@ -798,7 +798,7 @@ Conceptual layout:
 
 ``` text
 ┌──────────────────────────────────────────────────────┐
-│ JDpdf   contract.pdf       Saved    Undo Redo Export │
+│ JPdf   contract.pdf       Saved    Undo Redo Export │
 ├──────────┬───────────────────────────────┬───────────┤
 │ Pages    │                               │ Properties│
 │          │                               │           │
@@ -1431,7 +1431,7 @@ Do not simply shrink desktop.
 Example:
 
 ``` text
-JDpdf
+JPdf
 
 Good morning
 
@@ -2140,7 +2140,7 @@ If new environment variables are required:
 
 # 68. Security/Privacy Product Messaging
 
-JDpdf handles user documents.
+JPdf handles user documents.
 
 The UI should communicate trust without making unsupported claims.
 
@@ -2269,7 +2269,7 @@ functionality.
 
 # 76. Product Quality Bar
 
-JDpdf should pass this test:
+JPdf should pass this test:
 
 ### First-time visitor
 
@@ -2447,10 +2447,10 @@ The goal is **verified progress**, not a large diff.
 
 # 81. Suggested End State
 
-The eventual JDpdf experience should feel like:
+The eventual JPdf experience should feel like:
 
 ``` text
-                         JDpdf
+                         JPdf
                            │
               ┌────────────┴────────────┐
               │                         │
@@ -2485,7 +2485,7 @@ Not:
 
 # 82. Final Product Vision
 
-JDpdf should become a **multilingual document operating workspace**.
+JPdf should become a **multilingual document operating workspace**.
 
 The immediate goal is not to build every possible feature at once.
 
@@ -2532,7 +2532,7 @@ Audit the repository and current UI.
 
 ### Step 2
 
-Create/standardize the JDpdf design system.
+Create/standardize the JPdf design system.
 
 ### Step 3
 
@@ -2597,5 +2597,5 @@ Then continue.
 
 The desired result is not the largest possible code change.
 
-The desired result is a **cohesive, production-quality JDpdf platform
+The desired result is a **cohesive, production-quality JPdf platform
 that users would genuinely choose to use.**

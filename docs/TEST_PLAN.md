@@ -1,4 +1,4 @@
-# Test Plan — JDpdf
+# Test Plan — JPdf
 
 ## Layers
 

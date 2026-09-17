@@ -1,11 +1,11 @@
-# Decisions log — JDpdf
+# Decisions log — JPdf
 
 Running record of non-obvious choices. Append, don't rewrite history —
 if a decision is reversed, add a new entry rather than editing the old one.
 
 ## 2026-09-02 — Project kickoff
 
-- Product name: **JDpdf**.
+- Product name: **JPdf**.
 - Scope approach: incremental, MVP-first. Build the foundation (docs,
   scaffold, schema, tool registry, design system) then get **Merge PDF**
   working fully end-to-end (upload → queue → qpdf worker → storage →
@@ -246,7 +246,7 @@ SaaS-quality UI, no AI-template look) before starting new tools:
 
 **Found via actual screenshots, not just code review**: the homepage's
 scroll-triggered fade-in (`components/ui/Reveal.tsx`, added earlier this
-session) left entire sections (`Why JDpdf`, `How it works`) permanently
+session) left entire sections (`Why JPdf`, `How it works`) permanently
 invisible in a full-page capture — the `IntersectionObserver` never fired
 for content outside the initial viewport in that context, and more
 importantly this pattern (hide-by-default until JS says otherwise) is

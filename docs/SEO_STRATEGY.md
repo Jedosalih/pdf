@@ -1,4 +1,4 @@
-# SEO Strategy — JDpdf
+# SEO Strategy — JPdf
 
 ## URL structure
 

@@ -61,7 +61,7 @@ export async function GET(
   return new NextResponse(Readable.toWeb(nodeStream) as ReadableStream, {
     headers: {
       "Content-Type": "application/zip",
-      "Content-Disposition": 'attachment; filename="jdpdf-result.zip"',
+      "Content-Disposition": 'attachment; filename="jpdf-result.zip"',
     },
   });
 }

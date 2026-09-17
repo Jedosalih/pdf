@@ -1,4 +1,4 @@
-# Monetization — JDpdf
+# Monetization — JPdf
 
 ## Status
 

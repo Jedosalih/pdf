@@ -3,7 +3,7 @@ interface BrandMarkProps {
 }
 
 /**
- * JDpdf logomark: a rounded document tile with a folded corner (subtle
+ * JPdf logomark: a rounded document tile with a folded corner (subtle
  * "document transformation" cue, blueprint §6) and a bold "J" glyph — not a
  * generic PDF icon. Uses the design tokens directly (`--color-primary`/
  * `--color-primary-hover`) so it always matches the current theme rather
@@ -20,11 +20,11 @@ export function BrandMark({ className }: BrandMarkProps) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <clipPath id="jdpdf-mark-clip">
+        <clipPath id="jpdf-mark-clip">
           <rect width="32" height="32" rx="8" />
         </clipPath>
       </defs>
-      <g clipPath="url(#jdpdf-mark-clip)">
+      <g clipPath="url(#jpdf-mark-clip)">
         <rect width="32" height="32" fill="var(--color-primary)" />
         <path d="M21 0H32V11L21 0Z" fill="var(--color-primary-hover)" />
         <path
