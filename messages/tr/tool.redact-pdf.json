@@ -1,0 +1,47 @@
+{
+  "seo": {
+    "title": "PDF Sansürle — Hassas İçeriği Kalıcı Olarak Kaldırın | JPdf",
+    "description": "Bir PDF'deki hassas metni veya görseli gerçekten kapatın — kapatılan içerik kalıcı olarak kaldırılır, yalnızca bir kutunun altında gizlenmez. Ücretsiz, hızlı ve gizli."
+  },
+  "h1": "PDF Sansürle",
+  "subtitle": "Bir PDF'den hassas içeriği kalıcı olarak kaldırın — yalnızca üzerini kapatmayın.",
+  "howItWorks": {
+    "title": "Bir PDF nasıl sansürlenir",
+    "steps": [
+      "Hassas içerik barındıran PDF'i yükleyin.",
+      "Kaldırmak istediğiniz her alanın üzerine siyah bir kutu çizin.",
+      "Bu içeriğin gerçekten kaldırıldığı bir PDF indirmek için Dışa Aktar'a tıklayın."
+    ]
+  },
+  "editor": {
+    "tools": {
+      "select": "Seç ve taşı",
+      "redact": "Sansürle"
+    },
+    "export": "PDF'i dışa aktar",
+    "overlayNote": "Sansür kutuları çalışırken siyah olarak gösterilir — dışa aktarana kadar hiçbir şey gerçekten kaldırılmaz.",
+    "destructiveNote": "Sansür kutusu bulunan herhangi bir sayfa, kapatılan içeriğin kurtarılamaması için düzleştirilmiş bir görsele dönüştürülür — o sayfanın metni dışa aktarılan PDF'de artık seçilebilir veya aranabilir olmayacaktır."
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "Bu içeriği gerçekten kaldırıyor mu, yoksa sadece üzerine mi çiziyor?",
+        "a": "Gerçekten kaldırıyor. Sansürlediğiniz herhangi bir sayfa, siyah kutuların doğrudan piksellere işlendiği düzleştirilmiş bir görsele dönüştürülür — basit çizilmiş bir dikdörtgende olduğu gibi bir şekli silerek veya metni kopyalayarak kurtarılabilecek gizli bir metin veya görsel kalmaz."
+      },
+      {
+        "q": "Buradaki ödünleşim nedir?",
+        "a": "Sansürlenen bir sayfa statik bir görsele dönüşür, bu yüzden dışa aktarılan dosyada metni artık seçilebilir, aranabilir veya kopyalanabilir olmaz — kapatılan içeriğin gerçekten kaybolduğuna dair gerçek bir garanti için gerekli bir ödünleşim. Sansür içermeyen sayfalar orijinal metnini ve kalitesini korur."
+      },
+      {
+        "q": "Dışa aktarmadan önce bir sansürü geri alabilir miyim?",
+        "a": "Evet — dışa aktarana kadar hiçbir şey kalıcı değildir. Çalışırken geri al/yinele kullanabilir veya diğer öğeler gibi bir kutuyu silebilirsiniz."
+      },
+      {
+        "q": "Dosyam gizli kalır mı?",
+        "a": "Evet. Dosyanız tarayıcınızda işaretlenir ve yalnızca Dışa Aktar'a tıkladığınızda yüklenir; sonuçlar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["flatten-pdf", "edit-pdf"]
+}

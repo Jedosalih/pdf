@@ -46,14 +46,30 @@ export interface PathElement extends BaseElement {
   strokeWidth: number;
 }
 
+/** Always solid black, non-configurable -- a redaction box is a promise
+ * that the covered content is permanently removed (see redact-pdf's
+ * worker handler), not merely painted over, so it deliberately has no
+ * color/opacity options that could weaken that guarantee. */
+export interface RedactElement extends BaseElement {
+  type: "redact";
+}
+
 export type EditElement =
   | TextElement
   | ImageElement
   | RectElement
   | HighlightElement
-  | PathElement;
+  | PathElement
+  | RedactElement;
 
-export type EditorTool = "select" | "text" | "image" | "rect" | "highlight" | "draw";
+export type EditorTool =
+  | "select"
+  | "text"
+  | "image"
+  | "rect"
+  | "highlight"
+  | "draw"
+  | "redact";
 
 export const PRESET_COLORS = [
   "#111827",

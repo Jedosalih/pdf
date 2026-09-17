@@ -186,3 +186,28 @@ call sites (blueprint §43).
 Before adding any new processing dependency, check maturity, maintenance
 status, and license compatibility with a commercial SaaS (blueprint §63–64).
 Decisions are logged in `docs/DECISIONS.md`.
+
+## 11. Redaction guarantee
+
+`redact-pdf` (`workers/pdf/src/handlers/redactPdf.ts`) is the one tool in
+this codebase whose entire purpose is a security property, not just a
+convenience, so its guarantee is stated explicitly here rather than left
+implicit: any page containing a redaction box is rasterized whole, the
+box is burned into that raster's pixels, and the page's original content
+(text, vectors, everything, not only the boxed region) is discarded and
+replaced by the flattened image. There is no code path that draws a box
+on top of otherwise-intact content — a rectangle-over-text or
+rectangle-over-image implementation was deliberately rejected specifically
+because it fails this property (the original content is still present
+underneath, recoverable by removing the rectangle or extracting text).
+This is verified, not assumed: `tests/e2e/redact-pdf.spec.ts` asserts the
+redacted page has zero extractable text anywhere on the page and carries
+an embedded raster image, while untouched pages keep their original
+extractable text and are confirmed not rasterized.
+
+This tool also deviates from the "skip a bad element, keep going" pattern
+every other handler in this codebase uses: if any page the user asked to
+redact can't actually be processed, the whole job fails
+(`PROCESSING_FAILED`) rather than shipping a file that could be mistaken
+for fully redacted. See `docs/DECISIONS.md`'s 2026-09-17 redaction entry
+for the reasoning.

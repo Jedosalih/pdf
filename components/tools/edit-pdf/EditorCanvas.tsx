@@ -173,7 +173,7 @@ export function EditorCanvas({
         return;
       }
 
-      if (activeTool === "rect" || activeTool === "highlight") {
+      if (activeTool === "rect" || activeTool === "highlight" || activeTool === "redact") {
         gestureRef.current = { kind: "draw-rect", startX: point.x, startY: point.y };
         setDrawingRect({ x: point.x, y: point.y, width: 0, height: 0 });
         event.currentTarget.setPointerCapture(event.pointerId);
@@ -245,6 +245,16 @@ export function EditorCanvas({
           width,
           height,
           color: pendingColor,
+        });
+      } else if (activeTool === "redact") {
+        onAddElement({
+          id,
+          type: "redact",
+          page: pageIndex,
+          x: rect.x,
+          y: rect.y,
+          width,
+          height,
         });
       } else {
         onAddElement({
@@ -489,6 +499,21 @@ function ElementView({
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- locally-held data: URL, not a remote asset to optimize */}
         <img src={element.image} alt="" className="h-full w-full object-fill" draggable={false} />
+        {selected ? <ResizeHandle onPointerDown={onResizePointerDown} /> : null}
+      </div>
+    );
+  }
+
+  if (element.type === "redact") {
+    return (
+      <div
+        data-testid="editor-element"
+        data-element-type="redact"
+        className={`absolute flex cursor-move select-none items-center justify-center overflow-hidden bg-black text-[9px] font-semibold uppercase tracking-wide text-white/70 ${selectedRing}`}
+        style={style}
+        onPointerDown={onPointerDown}
+      >
+        REDACTED
         {selected ? <ResizeHandle onPointerDown={onResizePointerDown} /> : null}
       </div>
     );

@@ -10,7 +10,7 @@
 | **OCRmyPDF** (wraps Ghostscript + Tesseract + qpdf) | MPL-2.0 | OCR / searchable PDF layer |
 | **Tesseract** | Apache-2.0 | OCR text recognition (used via OCRmyPDF) |
 | **LibreOffice** (headless) | MPL-2.0 | Word/Excel/PowerPoint → PDF, PDF → Word |
-| **Sharp** | Apache-2.0 | Image resizing/format conversion for JPG/PNG ↔ PDF page rasters |
+| **Sharp** | Apache-2.0 | Burning opaque redaction boxes into a rasterized page's actual pixels (`redact-pdf`) |
 | **exceljs** (Node library) | MIT | PDF → Excel (reconstructing rows/columns from extracted text — LibreOffice cannot do this direction, see below) |
 | **pptxgenjs** (Node library) | MIT | PDF → PowerPoint (building image-per-slide decks — LibreOffice cannot do this direction either, see below) |
 | **Playwright** (driving Chromium) | Apache-2.0 | HTML → PDF, Markdown → PDF rendering |
@@ -468,6 +468,55 @@ canvas's own rendering of the PDF's pre-existing field value showed
 through underneath the input's current text, producing an illegible
 double-exposure look. Fixed with an opaque background (`bg-background`)
 that fully masks the canvas layer underneath.
+
+### Redact PDF (`redact-pdf`) — `pdftoppm` + `sharp`, whole-page rasterization
+
+**The one capability where "draw a black box" would be an outright false
+claim, and the implementation is built to make that structurally
+impossible, not just visually convincing.** A rectangle drawn on top of
+live text (the same technique `edit-pdf`'s highlight/rect tools use) still
+leaves the original text object in the content stream underneath --
+select-all, `pdftotext`, or deleting the rectangle shape all recover it.
+Real removal needs the underlying content gone, not covered.
+
+**Mechanism**: every page that has at least one requested redaction box is
+rasterized *whole* via `pdftoppm -png -r 150` (the same tool/DPI
+`pdf-to-jpg`/`pdf-to-png` already use), the black boxes are burned
+directly into that raster's pixels via `sharp`'s SVG compositing
+(`sharp(png).composite([{ input: svgRectMarkup }])`), and the page's
+*entire original content* -- text, vectors, every object, not just the
+boxed region -- is discarded and replaced by the flattened image
+(`pdfDoc.insertPage(i, [w, h])` + `drawImage` + `pdfDoc.removePage(i+1)`).
+There is no separate "black rectangle object" sitting on top of anything
+recoverable -- the pixels the box covers, and the pixels it doesn't, are
+now the *only* content that page has. Pages with no requested box are
+never rasterized at all, keeping their original text/vector fidelity.
+
+**A real design trap avoided before it shipped**: the first instinct is
+"rasterize the page, then draw a `pdf-lib` rectangle on top of the
+embedded image" -- but that's two separate layers in the new page's
+content stream, and removing the top rectangle object reveals the
+rasterized (but not-yet-redacted) pixels underneath, which still show the
+original content. The box must be burned into the raster *before* it's
+ever embedded into the PDF, which is why this uses `sharp` for pixel
+compositing rather than a second `pdf-lib` drawing call.
+
+**The honest trade-off, stated in the tool's own copy**: a redacted page
+becomes a static image -- its text is no longer selectable, searchable, or
+copyable in the output. This is the accepted cost of a genuine guarantee,
+not a side effect glossed over.
+
+**Fails loudly, not silently, on partial failure** -- a deliberate
+deviation from this codebase's usual "skip one bad element, keep going"
+pattern (e.g. `editPdf.ts`'s `applyEditElements`). If a page the user
+asked to redact can't actually be rasterized or composited for any reason,
+the whole job fails (`PROCESSING_FAILED`) rather than shipping a file the
+user could mistake for fully redacted. Verified directly: the E2E test
+checks page 1 (redacted) has *zero* extractable text anywhere on the page
+and an embedded raster image, while untouched pages 2-3 keep their exact
+original text and are confirmed *not* rasterized (`OPS.paintImageXObject`
+absent) -- proving both the removal guarantee and that non-redacted pages
+keep full fidelity.
 
 ## Shared worker safety rules (blueprint §6)
 

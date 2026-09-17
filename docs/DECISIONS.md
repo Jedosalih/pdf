@@ -1584,6 +1584,56 @@ shipped and verified). Still entirely unbuilt, separate later phases: the
 real PDF editor/canvas, Fill & Sign/e-signature, redaction, Compare
 documents, and batch processing.
 
+## 2026-09-17 — Redaction shipped (redact-pdf): whole-page rasterization, not a drawn box
+
+Third unit past the core-conversion phase. This was the mission's most
+explicit "do not fake this" requirement, and the implementation is built
+so faking it isn't structurally possible, not just visually convincing.
+
+- **Decision**: a redaction box triggers whole-page rasterization
+  (`pdftoppm`) with the box burned directly into the resulting pixels
+  (`sharp`'s SVG compositing) *before* that image ever becomes the page's
+  new, sole content (replacing everything that page originally had --
+  text, vectors, all of it). Pages with no redaction box are never
+  touched. Full mechanism and licensing in `docs/PDF_ENGINE.md`.
+- **Why not draw a rectangle on top, the same way `edit-pdf`'s highlight/
+  rect tools work?** Because that leaves the original text object sitting
+  in the content stream underneath a rectangle that can be deleted or
+  selected around -- exactly the well-known real-world redaction failure
+  this capability exists to avoid. A drawn box is a promise "this is
+  hidden"; this tool needed to make a different promise, "this is gone."
+- **A real design trap caught before it shipped, not after**: the first
+  natural implementation -- rasterize the page, then draw a `pdf-lib`
+  rectangle on top of the embedded image, two separate content-stream
+  layers -- has the *identical* flaw as a rectangle over live text: remove
+  the top rectangle object and the rasterized-but-unredacted pixels
+  underneath are still there. The box has to be burned into the raster
+  data itself, before it's embedded, which is why this needed `sharp`
+  (added as a new `workers/pdf` dependency) rather than reusing
+  `pdf-lib`'s existing drawing primitives a second time.
+- **This tool fails loudly on partial failure, unlike every other tool in
+  this codebase** -- a deliberate, stated exception to the "skip one bad
+  element and keep going" pattern `editPdf.ts` and others use. If a page
+  the user asked to redact can't actually be processed, the whole job
+  fails rather than silently shipping a file that looks redacted but
+  isn't. This asymmetry is specific to redaction's risk profile: a
+  decorative edit failing silently is low-stakes, a security tool doing
+  so is not.
+- **The honest trade-off is stated in the tool's own UI copy**: a
+  redacted page becomes a static image, so its text is no longer
+  selectable, searchable, or copyable in the output -- disclosed as the
+  accepted cost of a genuine guarantee, not hidden in a FAQ nobody reads.
+- **Verification**: E2E test redacts one region of page 1 of a real
+  3-page fixture, exports, and checks the actual downloaded PDF -- page 1
+  has *zero* extractable text anywhere on the page (not just under the
+  box) and carries an embedded raster image; pages 2-3, never touched,
+  keep their exact original extractable text and are confirmed *not*
+  rasterized. A fake "rectangle on top" implementation would still let
+  page 1's text extract cleanly and would fail this test immediately.
+  Full 41-spec suite green, `tsc`/ESLint clean on the app and the `pdf`
+  worker (now including `sharp`, verified loading correctly inside the
+  actual container, not just resolving on the host).
+
 ## 2026-09-17 — Fill & Sign shipped (fill-sign-pdf), with a documented cryptographic-signing boundary
 
 Second unit past the core-conversion phase, immediately following the PDF

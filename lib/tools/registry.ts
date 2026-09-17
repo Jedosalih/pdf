@@ -28,6 +28,7 @@ import {
   FileCode,
   FilePenLine,
   Signature,
+  EyeOff,
 } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
@@ -900,6 +901,38 @@ export const tools: ToolDefinition[] = [
         maxFiles: 1,
         maxPages: 300,
         dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "redact-pdf",
+    slug: "redact-pdf",
+    category: "security",
+    icon: EyeOff,
+    inputTypes: ["application/pdf"],
+    outputType: "application/pdf",
+    processor: "pdf-lib",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.redact-pdf",
+    relatedTools: ["flatten-pdf", "edit-pdf"],
+    limits: {
+      // Every redacted page is rasterized (pdftoppm) and re-composited
+      // (sharp), real per-page cost closer to OCR/pdf-to-image than a
+      // plain pdf-lib draw operation -- capped accordingly.
+      guest: {
+        maxFileSizeBytes: 15 * MB,
+        maxFiles: 1,
+        maxPages: 50,
+        dailyOperations: 5,
+      },
+      free: {
+        maxFileSizeBytes: 30 * MB,
+        maxFiles: 1,
+        maxPages: 150,
+        dailyOperations: 20,
       },
     },
   },

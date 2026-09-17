@@ -1,0 +1,47 @@
+{
+  "seo": {
+    "title": "Redact PDF — Permanently Remove Sensitive Content | JPdf",
+    "description": "Black out sensitive text or images in a PDF for real — the covered content is permanently removed, not just hidden underneath a box. Free, fast, and private."
+  },
+  "h1": "Redact PDF",
+  "subtitle": "Permanently remove sensitive content from a PDF — not just cover it up.",
+  "howItWorks": {
+    "title": "How to redact a PDF",
+    "steps": [
+      "Upload the PDF containing sensitive content.",
+      "Draw a black box over each area you want removed.",
+      "Click Export to download a PDF where that content is genuinely gone."
+    ]
+  },
+  "editor": {
+    "tools": {
+      "select": "Select and move",
+      "redact": "Redact"
+    },
+    "export": "Export PDF",
+    "overlayNote": "Redaction boxes are shown in black while you work — nothing is actually removed until you export.",
+    "destructiveNote": "Any page with a redaction box is converted to a flattened image so the covered content can't be recovered — that page's text will no longer be selectable or searchable in the exported PDF."
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Does this actually remove the content, or just draw over it?",
+        "a": "It actually removes it. Any page you redact is converted into a flattened image with the black boxes burned directly into the pixels — there's no hidden text or image left underneath to recover by deleting a shape or copying text, the way there would be with a simple drawn rectangle."
+      },
+      {
+        "q": "What's the trade-off?",
+        "a": "A redacted page becomes a static image, so its text is no longer selectable, searchable, or copyable in the exported file — a necessary trade-off for a genuine guarantee that the covered content is gone. Pages without any redaction keep their original text and quality."
+      },
+      {
+        "q": "Can I undo a redaction before exporting?",
+        "a": "Yes — nothing is permanent until you export. Use undo/redo or delete a box like any other element while you're working."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Your file is marked up in your browser and only uploaded when you click Export; results are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["flatten-pdf", "edit-pdf"]
+}

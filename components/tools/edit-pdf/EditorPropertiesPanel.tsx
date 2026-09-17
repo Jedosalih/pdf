@@ -14,7 +14,7 @@ interface EditorPropertiesPanelProps {
 export function EditorPropertiesPanel({ element, onChange, onDelete }: EditorPropertiesPanelProps) {
   const t = useTranslations("tool.edit-pdf");
   const tCommon = useTranslations("common");
-  const hasColor = element.type !== "image";
+  const hasColor = element.type !== "image" && element.type !== "redact";
 
   return (
     <div className="flex w-full flex-col gap-4 rounded-lg border border-border bg-surface p-4 sm:w-56 sm:shrink-0">

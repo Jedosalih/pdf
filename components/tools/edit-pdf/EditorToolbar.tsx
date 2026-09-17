@@ -7,6 +7,7 @@ import {
   Highlighter,
   Square,
   Pencil,
+  EyeOff,
   Undo2,
   Redo2,
   ZoomIn,
@@ -47,6 +48,7 @@ const TOOL_ICONS: Record<EditorTool, typeof MousePointer2> = {
   highlight: Highlighter,
   rect: Square,
   draw: Pencil,
+  redact: EyeOff,
   image: ImagePlus,
 };
 
