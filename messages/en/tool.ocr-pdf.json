@@ -1,0 +1,47 @@
+{
+  "seo": {
+    "title": "OCR PDF — Make Scanned PDFs Searchable | JPdf",
+    "description": "Add a searchable, selectable text layer to a scanned or image-only PDF. Free, fast, and private — no installation required."
+  },
+  "h1": "OCR PDF",
+  "subtitle": "Make a scanned PDF's text searchable and selectable.",
+  "howItWorks": {
+    "title": "How to OCR a PDF",
+    "steps": [
+      "Upload the scanned or image-only PDF.",
+      "Choose the document's language and click Start.",
+      "Download the PDF with a searchable text layer."
+    ]
+  },
+  "options": {
+    "languageLabel": "Document language",
+    "languages": {
+      "eng": "English",
+      "ara": "Arabic",
+      "tur": "Turkish",
+      "eng+ara+tur": "English, Arabic & Turkish"
+    }
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "What does OCR actually do?",
+        "a": "It recognizes the text in scanned page images and adds it as a hidden, selectable text layer underneath — the page still looks the same, but you can now search, select, and copy its text."
+      },
+      {
+        "q": "Will this touch pages that already have real text?",
+        "a": "No — pages that already contain a text layer are left untouched; only image-only pages are processed."
+      },
+      {
+        "q": "Is OCR free?",
+        "a": "Yes, OCR is free within the daily usage limits shown above — note these limits are lower than most other tools, since OCR is significantly more resource-intensive per page."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-text", "compress-pdf"]
+}

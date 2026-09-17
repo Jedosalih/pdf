@@ -108,15 +108,32 @@ Unlock only ever uses a password the user themselves supplied in the
 request — never brute force, never a bypass. If the password is wrong,
 qpdf fails and we surface `INVALID_PASSWORD`, nothing else.
 
-### OCR PDF (`ocr-pdf`) — OCRmyPDF
+### OCR PDF (`ocr-pdf`) — OCRmyPDF + Tesseract
 
 ```
-ocrmypdf --language <eng+ara+tur subset> --output-type pdfa <in.pdf> <out.pdf>
+ocrmypdf --language <eng|ara|tur|eng+ara+tur> --output-type pdf --skip-text <in.pdf> <out.pdf>
 ```
 
-Language pack selection depends on a rough language hint (default to the
-UI locale, allow override) — installing all three Tesseract language packs
-(`eng`, `ara`, `tur`) in the worker image.
+Implemented in `workers/ocr` (own package, own `ocr` BullMQ queue,
+concurrency 2 — OCR is CPU-heavy and slow per page). `--skip-text` OCRs
+only image-only pages, leaving any existing text layer untouched.
+`--output-type pdf`, not `pdfa`, is deliberate — this tool doesn't reuse
+the separate, already best-effort-framed `pdf-to-pdfa` tool's compliance
+language. The user picks a language via a `Select` (English/Arabic/
+Turkish/all three combined); all four Tesseract language packs
+(`tesseract-ocr-eng`/`-ara`/`-tur`, plus the base `tesseract-ocr`) are
+installed in the worker image.
+
+**Verified for real, not assumed**: an English fixture built as a
+genuinely image-only PDF (no pre-existing text layer — confirmed via
+`pdfjs-dist` extracting empty text *before* writing the E2E test around
+it) round-trips through OCR with the exact expected text recognized
+afterward. A separate multi-script smoke fixture (Arabic + Turkish text
+in one image) run manually through the real container with
+`--language eng+ara+tur` correctly recognized both scripts in the same
+pass (Arabic and Latin/Turkish text both present in the extracted
+output) — confirming the combined language pack genuinely works, not
+just that the flag is accepted.
 
 ### PDF → Text (`pdf-to-text`) — Poppler (`pdftotext`)
 

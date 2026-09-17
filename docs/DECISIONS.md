@@ -1395,6 +1395,72 @@ way to scroll to it.
   (OCR, HTML/Markdown, and beyond) push the count meaningfully higher
   again, rather than only reacting to the next E2E failure.
 
+## 2026-09-17 — OCR shipped (`ocr-pdf`) — third unit of the document capability roadmap
+
+Third shipped unit. New `workers/ocr` package (OCRmyPDF + Tesseract), new
+`ocr-worker` Docker Compose service, `ocr` BullMQ queue (concurrency 2 —
+OCR is CPU-heavy and slow per page, same "own queue so a slow job can't
+starve others" reasoning as `office-conversion`). `lib/tools/types.ts`
+already had `"ocrmypdf"`/`"ocr"` pre-reserved from Phase 0 planning — no
+type changes needed here, unlike the genuinely-new values Office/HTML
+units required.
+
+- **Command**: `ocrmypdf --language <eng|ara|tur|eng+ara+tur>
+  --output-type pdf --skip-text <in> <out>`. `--skip-text` OCRs only
+  image-only pages, leaving any existing text layer alone. `--output-type
+  pdf` (not `pdfa`) is deliberate — this tool doesn't borrow the separate,
+  already best-effort-framed `pdf-to-pdfa` tool's compliance language.
+- **UI**: bespoke component (`OcrPdfTool.tsx`), not `MultiFileTool` — one
+  language `Select` (English/Arabic/Turkish/all three), matching
+  `CompressPdfTool.tsx`'s established single-file-plus-options pattern.
+- **Registry limits deliberately tighter than the qpdf-class defaults**
+  (guest: 30 pages/3 ops per day vs. the usual 300/8) — real per-page
+  Tesseract cost is far higher than a qpdf/Ghostscript operation, and this
+  is stated as a genuine product decision, not an oversight.
+- **A real, correctly-designed test fixture, not a shortcut**: the OCR
+  E2E test's fixture (`docs/fixtures/sample-image-only.pdf`) is an SVG
+  rasterized to a PNG (`sharp`) embedded as a full-page image via
+  `pdf-lib` — genuinely image-only, with **no hidden real text layer**.
+  This was verified independently (via `pdfjs-dist` extracting empty text)
+  *before* writing the assertion around it — a fixture with a smuggled
+  real text layer would make the test pass regardless of whether OCR
+  actually did anything, which is exactly the kind of fake verification
+  this project's standing quality bar exists to rule out.
+- **Multi-script correctness verified manually, not just assumed from the
+  flag being accepted**: a separate smoke fixture combining Arabic and
+  Turkish text in one image, run through the real container with
+  `--language eng+ara+tur`, correctly recognized both scripts in a single
+  pass (confirmed by reading the actual extracted text, which contained
+  real Arabic characters alongside the Turkish/Latin phrase) — this is
+  the "lighter smoke-test bar for non-English languages" this roadmap
+  unit's design called for, satisfied with a real run rather than skipped
+  entirely.
+
+**Verified**: `tsc`/ESLint clean on the app and `workers/ocr`;
+`docker compose up -d --build ocr-worker` rebuilt cleanly, confirmed
+`ocrmypdf`/`tesseract` binaries present and functional inside the running
+container; full Playwright suite green including the new OCR spec, real
+output-content verification (exact recognized text from a verified-empty
+starting point, substring-matched rather than exact-equality since OCR
+can introduce minor character-level noise even on a clean rendered
+fixture). Screenshots reviewed in `en`, `ar` (RTL), and `tr` (mobile).
+`docs/PDF_ENGINE.md` updated to the final verified command shape and the
+real verification method, replacing the Phase-0 draft.
+
+**Still not started**: Markdown/HTML → PDF (final roadmap unit) and the
+editor/Fill & Sign/redaction/Compare/batch capabilities.
+
+## 2026-09-17 — AGENTS.md's "Current status" section de-staled
+
+`AGENTS.md` §13 still described "Phase 0" and "the Merge PDF end-to-end
+path" as the active focus — stale since the very first tool shipped after
+it. Rewrote it to point at `docs/DECISIONS.md` as the actual source of
+truth for current scope rather than hardcoding a tool count or phase name
+that silently goes stale every time either changes again. The rest of
+`AGENTS.md` (stack, architecture, coding/security/i18n/testing rules)
+needed no changes — those are still accurate; only the status section had
+drifted.
+
 ## Template for future entries
 
 ```

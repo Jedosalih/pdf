@@ -27,6 +27,7 @@ import excelToPdf from "./tool.excel-to-pdf.json";
 import pdfToExcel from "./tool.pdf-to-excel.json";
 import powerpointToPdf from "./tool.powerpoint-to-pdf.json";
 import pdfToPowerpoint from "./tool.pdf-to-powerpoint.json";
+import ocrPdf from "./tool.ocr-pdf.json";
 import pdfToPdfa from "./tool.pdf-to-pdfa.json";
 import flattenPdf from "./tool.flatten-pdf.json";
 import repairPdf from "./tool.repair-pdf.json";
@@ -65,6 +66,7 @@ const messages = {
     "pdf-to-excel": pdfToExcel,
     "powerpoint-to-pdf": powerpointToPdf,
     "pdf-to-powerpoint": pdfToPowerpoint,
+    "ocr-pdf": ocrPdf,
   },
 };
 

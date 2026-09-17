@@ -153,11 +153,15 @@ been recorded in `docs/DECISIONS.md` if it involved a non-obvious choice.
 
 ## 13. Current status
 
-See `docs/DECISIONS.md` for the running log of what has been built and why.
-As of the initial foundation commit: Phase 0 (docs + scaffold) and the
-Merge PDF end-to-end path are the active focus. Everything else in the
-blueprint is intentionally deferred — do not start Phase 4+ work (auth,
-CMS, billing) before the first tool works reliably end-to-end.
+`docs/DECISIONS.md` is the running log of what has actually been built,
+why, and every non-obvious engine/architecture finding along the way —
+read it, not this section, for ground truth on current scope. This file
+(`AGENTS.md`) only states rules that should stay true regardless of how
+many tools exist; do not hardcode a tool count or phase name here, since
+it will silently go stale the next time either changes. If a rule in this
+file and the actual implementation in `docs/DECISIONS.md` disagree, the
+implementation wins — update this file to match, not the other way
+around.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

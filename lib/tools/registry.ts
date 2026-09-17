@@ -23,6 +23,7 @@ import {
   Table,
   Presentation,
   MonitorPlay,
+  ScanText,
 } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
@@ -802,6 +803,38 @@ export const tools: ToolDefinition[] = [
         maxFiles: 1,
         maxPages: 300,
         dailyOperations: 15,
+      },
+    },
+  },
+  {
+    id: "ocr-pdf",
+    slug: "ocr-pdf",
+    category: "edit",
+    icon: ScanText,
+    inputTypes: ["application/pdf"],
+    outputType: "application/pdf",
+    processor: "ocrmypdf",
+    queue: "ocr",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.ocr-pdf",
+    relatedTools: ["pdf-to-text", "compress-pdf"],
+    limits: {
+      // Deliberately tighter than the qpdf-class defaults — real
+      // per-page OCR cost (Tesseract) is far higher than a qpdf/Ghostscript
+      // operation.
+      guest: {
+        maxFileSizeBytes: 15 * MB,
+        maxFiles: 1,
+        maxPages: 30,
+        dailyOperations: 3,
+      },
+      free: {
+        maxFileSizeBytes: 30 * MB,
+        maxFiles: 1,
+        maxPages: 100,
+        dailyOperations: 10,
       },
     },
   },

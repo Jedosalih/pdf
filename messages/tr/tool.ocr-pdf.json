@@ -1,0 +1,47 @@
+{
+  "seo": {
+    "title": "PDF OCR — Taranmış PDF'leri Aranabilir Yapın | JPdf",
+    "description": "Taranmış veya yalnızca görsel içeren bir PDF'e aranabilir, seçilebilir bir metin katmanı ekleyin. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "PDF OCR",
+  "subtitle": "Taranmış bir PDF'in metnini aranabilir ve seçilebilir hale getirin.",
+  "howItWorks": {
+    "title": "PDF nasıl OCR'dan geçirilir",
+    "steps": [
+      "Taranmış veya yalnızca görsel içeren PDF'i yükleyin.",
+      "Belgenin dilini seçin ve Başlat'a tıklayın.",
+      "Aranabilir metin katmanına sahip PDF'i indirin."
+    ]
+  },
+  "options": {
+    "languageLabel": "Belge dili",
+    "languages": {
+      "eng": "İngilizce",
+      "ara": "Arapça",
+      "tur": "Türkçe",
+      "eng+ara+tur": "İngilizce, Arapça ve Türkçe"
+    }
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "OCR tam olarak ne yapar?",
+        "a": "Taranmış sayfa görsellerindeki metni tanır ve altına gizli, seçilebilir bir metin katmanı olarak ekler — sayfa aynı görünmeye devam eder, ancak artık metnini arayabilir, seçebilir ve kopyalayabilirsiniz."
+      },
+      {
+        "q": "Bu, zaten gerçek metin içeren sayfaları etkiler mi?",
+        "a": "Hayır — zaten bir metin katmanı içeren sayfalar dokunulmadan bırakılır; yalnızca sadece görsel içeren sayfalar işlenir."
+      },
+      {
+        "q": "OCR ücretsiz mi?",
+        "a": "Evet, yukarıda belirtilen günlük kullanım sınırları dahilinde OCR ücretsizdir — bu sınırların diğer araçların çoğundan daha düşük olduğunu unutmayın, çünkü OCR sayfa başına önemli ölçüde daha fazla kaynak gerektirir."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-text", "compress-pdf"]
+}

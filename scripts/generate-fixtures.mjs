@@ -124,6 +124,23 @@ slide.addText("OfficeFixturePptxMarker12345", { x: 1, y: 1, w: 6, h: 1, fontSize
 const pptxBytes = await pres.write({ outputType: "nodebuffer" });
 await writeFile("docs/fixtures/sample.pptx", pptxBytes);
 
+// OCR fixture: genuinely image-only, no real text layer — an SVG
+// rasterized to a PNG (via sharp), embedded as a full-page image in a
+// fresh pdf-lib document. This must extract as empty/near-empty text via
+// pdftotext — that's the entire point of an OCR test fixture; a fixture
+// with a hidden real text layer would prove nothing.
+const ocrSvg = `<svg width="800" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="300" fill="white"/>
+  <text x="40" y="170" font-family="sans-serif" font-size="48" fill="black">OcrFixtureMarker12345</text>
+</svg>`;
+const ocrPng = await sharp(Buffer.from(ocrSvg)).png().toBuffer();
+const ocrDoc = await PDFDocument.create();
+const ocrImage = await ocrDoc.embedPng(ocrPng);
+const ocrPage = ocrDoc.addPage([800, 300]);
+ocrPage.drawImage(ocrImage, { x: 0, y: 0, width: 800, height: 300 });
+const ocrBytes = await ocrDoc.save();
+await writeFile("docs/fixtures/sample-image-only.pdf", ocrBytes);
+
 console.log(
   "done",
   a.byteLength,
@@ -136,4 +153,5 @@ console.log(
   docxBytes.byteLength,
   xlsxBytes.byteLength,
   pptxBytes.byteLength,
+  ocrBytes.byteLength,
 );
