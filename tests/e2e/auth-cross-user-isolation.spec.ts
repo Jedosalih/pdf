@@ -13,6 +13,14 @@ const splitFixture = path.join(__dirname, "../../docs/fixtures/sample-c-6page.pd
 test("a second user cannot access another user's files or jobs through any route", async ({
   browser,
 }) => {
+  // This test genuinely does more work than the 30s default budget
+  // comfortably covers: two full signup+upload+process+download cycles
+  // plus ~12 sequential ownership-check API requests. Verified flaky
+  // (not a real regression) by reproducing a clean pass in isolation
+  // every time it failed as part of the full serial suite — the failure
+  // was always a timeout, never a wrong assertion.
+  test.setTimeout(60_000);
+
   const contextA = await browser.newContext();
   const pageA = await contextA.newPage();
 
