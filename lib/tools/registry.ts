@@ -24,6 +24,8 @@ import {
   Presentation,
   MonitorPlay,
   ScanText,
+  Code2,
+  FileCode,
 } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
@@ -832,6 +834,68 @@ export const tools: ToolDefinition[] = [
       },
       free: {
         maxFileSizeBytes: 30 * MB,
+        maxFiles: 1,
+        maxPages: 100,
+        dailyOperations: 10,
+      },
+    },
+  },
+  {
+    id: "html-to-pdf",
+    slug: "html-to-pdf",
+    category: "convert",
+    icon: Code2,
+    inputTypes: ["text/html"],
+    outputType: "application/pdf",
+    processor: "playwright",
+    queue: "html-rendering",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.html-to-pdf",
+    relatedTools: ["markdown-to-pdf", "pdf-to-text"],
+    limits: {
+      // Deliberately tight — there's no cheap pre-flight "how expensive
+      // to render" check for arbitrary HTML/CSS the way pdfinfo gives one
+      // for PDFs, so a low byte cap is the practical proxy (the render
+      // timeout in workers/html/src/render.ts is the real backstop).
+      guest: {
+        maxFileSizeBytes: 2 * MB,
+        maxFiles: 1,
+        maxPages: 50,
+        dailyOperations: 3,
+      },
+      free: {
+        maxFileSizeBytes: 5 * MB,
+        maxFiles: 1,
+        maxPages: 100,
+        dailyOperations: 10,
+      },
+    },
+  },
+  {
+    id: "markdown-to-pdf",
+    slug: "markdown-to-pdf",
+    category: "convert",
+    icon: FileCode,
+    inputTypes: ["text/markdown"],
+    outputType: "application/pdf",
+    processor: "playwright",
+    queue: "html-rendering",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.markdown-to-pdf",
+    relatedTools: ["html-to-pdf", "pdf-to-text"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 2 * MB,
+        maxFiles: 1,
+        maxPages: 50,
+        dailyOperations: 3,
+      },
+      free: {
+        maxFileSizeBytes: 5 * MB,
         maxFiles: 1,
         maxPages: 100,
         dailyOperations: 10,

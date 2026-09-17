@@ -13,6 +13,9 @@
 | **Sharp** | Apache-2.0 | Image resizing/format conversion for JPG/PNG ↔ PDF page rasters |
 | **exceljs** (Node library) | MIT | PDF → Excel (reconstructing rows/columns from extracted text — LibreOffice cannot do this direction, see below) |
 | **pptxgenjs** (Node library) | MIT | PDF → PowerPoint (building image-per-slide decks — LibreOffice cannot do this direction either, see below) |
+| **Playwright** (driving Chromium) | Apache-2.0 | HTML → PDF, Markdown → PDF rendering |
+| **markdown-it** | MIT | Markdown → HTML parsing (before rendering) |
+| **sanitize-html** | MIT | Defense-in-depth HTML sanitization before rendering |
 
 ### Licensing note (blueprint §64)
 
@@ -296,6 +299,67 @@ pdftoppm -png -r 150 <in.pdf> <page-prefix>
 preserves exact visual layout at the cost of the result being pictures,
 not editable text — stated plainly in the tool's own copy, not presented
 as equivalent to a true content-aware PDF→PowerPoint converter.
+
+### HTML → PDF (`html-to-pdf`) and Markdown → PDF (`markdown-to-pdf`) — Playwright (headless Chromium)
+
+Genuinely new territory in this codebase — every other tool shells out to
+a CLI subprocess (`execFile`); this is the first engine driven in-process
+via a persistent browser instance. New `workers/html` package, new
+`html-rendering` queue, new `"playwright"` `ToolProcessor` value.
+
+**Engine choice, checked against the alternatives** (full comparison in
+`docs/DECISIONS.md`): WeasyPrint executes zero JavaScript (silently —
+real-world HTML exported from Notion/Confluence would render broken with
+no error) and wkhtmltopdf's upstream project was archived in 2023/2024
+(abandonware). Playwright's `page.pdf()` (Apache-2.0, driving Google's
+permissively-licensed "Chrome for Testing" build — not proprietary retail
+Chrome) gives full modern CSS/JS-capable rendering fidelity at the cost of
+a large image (~1-4GB) and its own container security posture, the same
+shape of trade-off already accepted for LibreOffice.
+
+**One Chromium process per worker, one fresh `BrowserContext` per job**
+(`workers/html/src/index.ts` launches once at startup;
+`workers/html/src/render.ts`'s `renderHtmlToPdf` creates/closes a context
+per job) — cheap per-job isolation without paying Chromium's full startup
+cost every job.
+
+**Security, in order of importance** (see docs/DECISIONS.md for the full
+SSRF threat-model writeup):
+1. `context.route("**/*", ...)` blocks every network request except
+   `about:blank`/`data:` — the primary control, catching every
+   fetch-triggering HTML/CSS construct uniformly. A referenced external
+   resource simply renders as missing rather than the job being rejected.
+2. `javaScriptEnabled: false` at context creation — the primary rendering
+   control. A PDF is a static snapshot; no legitimate fidelity is lost.
+3. `sanitize-html` before `page.setContent()` — defense-in-depth. Uses a
+   deliberately full-document-oriented allowlist (`html`/`head`/`body`/
+   `style` included) rather than sanitize-html's own fragment-oriented
+   defaults, which would otherwise strip a full HTML document down to
+   almost nothing.
+4. An application-level `Promise.race` timeout forcing `context.close()`
+   in a `finally` block — Playwright is a persistent driver, not a
+   one-shot subprocess, so it needs its own force-close backstop rather
+   than `execFile`'s `SIGKILL`-on-timeout used everywhere else.
+5. Non-root container user (Chromium's own sandbox — kept enabled, not
+   disabled via `--no-sandbox` — will not fully engage running as root).
+
+**Markdown → PDF reuses the exact same render path**, not a separate
+pipeline: `markdown-it` (`html: false` — a literal `<script>` typed into a
+`.md` file is escaped to visible text, not live markup) parses Markdown
+to an HTML string, wrapped in a fixed server-authored template/stylesheet
+(`workers/html/src/handlers/markdownToPdf.ts`), then handed to the same
+`renderHtmlToPdf()` function. Raw HTML uploads do not get this template —
+that tool's entire point is rendering an already-styled document as-is.
+
+**Upload validation** for both formats reuses `lib/security/
+validateUpload.ts`'s `TEXT_FORMATS` path (extension + declared-MIME
+allowlist + strict UTF-8 decode + control-byte-ratio check) — neither
+format has a magic-byte signature, and this was already built generically
+enough to cover them without changes.
+
+**Two real Docker/Playwright deployment issues found and fixed, not
+assumed**: see docs/DECISIONS.md for the `PLAYWRIGHT_BROWSERS_PATH`
+non-root install-location bug and the `/dev/shm` sizing requirement.
 
 ## Shared worker safety rules (blueprint §6)
 

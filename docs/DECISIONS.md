@@ -1461,6 +1461,180 @@ that silently goes stale every time either changes again. The rest of
 needed no changes — those are still accurate; only the status section had
 drifted.
 
+## 2026-09-17 — HTML/Markdown → PDF shipped — fourth and final unit of the document capability roadmap's core-conversion phase
+
+New `workers/html` package driving headless Chromium via Playwright — the
+first engine in this codebase controlled in-process via a persistent
+driver rather than a one-shot `execFile` subprocess. New `html-rendering`
+BullMQ queue, new `"playwright"` `ToolProcessor` value (both pre-declared
+in `lib/tools/types.ts` in an earlier session specifically for this unit).
+
+**Engine choice, researched properly before implementing** (not
+improvised, per explicit product-owner correction earlier in this
+roadmap): WeasyPrint executes zero JavaScript, silently — real-world HTML
+exported from Notion/Confluence/a static site generator would render
+broken with no error, rejected for that reason specifically, not as a
+technicality. wkhtmltopdf's upstream project and GitHub org were archived
+in 2023/2024 — abandonware, disqualified outright. Playwright's
+`page.pdf()` (Apache-2.0, driving Google's permissively-licensed "Chrome
+for Testing" build, never the proprietary retail Chrome via
+`channel: "chrome"`) gives full CSS/JS-capable rendering fidelity at an
+accepted image-size and container-posture cost — the same shape of
+trade-off already accepted for LibreOffice, applied to a new format
+family.
+
+**SSRF / resource-loading mitigation, defense in depth**:
+1. `context.route("**/*", ...)` blocks every network request except inert
+   `about:blank`/`data:` URIs — the primary control, catching every
+   fetch-triggering construct (img/link/@import/url()/srcset/iframe/fetch)
+   uniformly regardless of which one a given document uses. A referenced
+   external resource renders as simply missing rather than the job being
+   rejected — rejecting outright would break a large share of benign
+   real-world HTML (Google Fonts links, hotlinked images) for no
+   additional security benefit, since the request is aborted either way.
+2. `javaScriptEnabled: false` at context creation — the primary
+   *rendering* control (distinct from the network block above). A PDF is
+   a static snapshot; no legitimate fidelity is lost.
+3. `sanitize-html` before `page.setContent()` — defense-in-depth, with a
+   deliberately *full-document*-oriented allowlist (`html`/`head`/`body`/
+   `style` explicitly included) rather than sanitize-html's own
+   fragment-oriented defaults, which would otherwise strip a complete
+   HTML document down to almost nothing — this would have been a real,
+   easy-to-miss bug if the defaults had been used as-is.
+4. Application-level `Promise.race` timeout forcing `context.close()` in
+   a `finally` block (`workers/html/src/render.ts`) — Playwright is a
+   persistent driver, not a one-shot subprocess, so a hung render needs
+   its own force-close rather than `execFile`'s `SIGKILL`-on-timeout used
+   everywhere else in this codebase. `finally` matters specifically here:
+   `Promise.race` alone doesn't cancel the losing side, only the
+   `context.close()` outside the race actually stops a hung render.
+5. Non-root container user — Chromium's own internal sandbox (kept
+   enabled; no blanket `--no-sandbox`, no `--cap-add=SYS_ADMIN`) will not
+   fully engage running as root.
+
+**Markdown → PDF reuses the exact same render path**, not a separate
+pipeline: `markdown-it` (`html: false` — a literal `<script>` typed into a
+`.md` file is escaped to visible text, not live markup) parses to an HTML
+string, wrapped in a fixed server-authored template/stylesheet
+(bare `markdown-it` output has zero CSS and would look broken relative to
+GitHub/Typora-style rendering users expect), then handed to the identical
+`renderHtmlToPdf()` html-to-pdf uses. Raw HTML uploads do not get this
+template — that tool's entire point is rendering an already-styled
+document as-is.
+
+**Two real Docker/Playwright deployment bugs found and fixed, not
+assumed from documentation:**
+1. **Non-root Playwright browser install location.** Chromium was
+   installed during the Docker build while still running as `root`
+   (before the `USER jpdf` switch), which defaults to installing into
+   `/root/.cache/ms-playwright`. At container start, the runtime user
+   (`jpdf`, a different home directory) looked in
+   `/home/jpdf/.cache/ms-playwright` and found nothing — a fast, clear
+   startup crash (`Executable doesn't exist at ...`), not a silent
+   failure, so this was easy to diagnose from the container logs. Fixed
+   with the standard approach: `ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright`
+   set *before* `npx playwright install`, giving a single, fixed,
+   non-user-specific install location, plus `chmod -R o+rx /ms-playwright`
+   so the non-root runtime user can read it.
+2. **`/dev/shm` sizing.** Chromium's default 64MB `/dev/shm` under Docker
+   is a well-known, separate cause of renderer crashes, unrelated to the
+   sandbox security posture — `docker-compose.yml`'s `html-worker` service
+   sets `shm_size: "1gb"`.
+3. **ToolDropzone's client-side MIME check was too strict for
+   `.md`/`.markdown`.** Browsers have no built-in MIME mapping for these
+   extensions and commonly report an empty `file.type`, which would have
+   made a real, valid Markdown file look "rejected" by
+   `components/tools/ToolDropzone.tsx`'s pre-filter even though the
+   server-side `validateUpload.ts` correctly accepts it. Fixed by
+   extending the accept-matching logic to also match by filename
+   extension (entries in the `accept` string starting with `.`), the same
+   dual-signal approach the native HTML `accept` attribute already
+   supports — `html-to-pdf`/`markdown-to-pdf`'s `accept` strings now
+   include both the MIME type and the extensions
+   (`"text/markdown,.md,.markdown"`). This is a general `ToolDropzone`
+   fix, not tool-specific, and improves every future tool that accepts a
+   format without a reliable browser-reported MIME type.
+
+**Upload validation required no new code** — `lib/security/
+validateUpload.ts`'s `TEXT_FORMATS` path (extension + declared-MIME
+allowlist + strict UTF-8 decode + control-byte-ratio check), built in an
+earlier session specifically anticipating this unit, covers both formats
+unchanged.
+
+**Registry limits deliberately tight** (guest: 2MB/3 ops per day) — no
+cheap pre-flight "how expensive to render" check exists for arbitrary
+HTML/CSS the way `pdfinfo` gives one for PDFs, so a low byte cap is the
+practical proxy; the render timeout in `render.ts` is the real backstop.
+
+**Verified**: `tsc`/ESLint clean on the app and `workers/html`; two Docker
+rebuild iterations (each catching a real bug above, not by inspection);
+full Playwright suite green including 2 new specs — `html-to-pdf`'s
+fixture deliberately includes an external image (verifies the SSRF block
+lets the render complete instead of hanging — confirmed by completion
+well under the 60s render timeout) and a `<script>` tag (verifies it's
+stripped, never executes); `markdown-to-pdf`'s fixture includes a raw
+`<script>` tag (verifies `html: false` escapes it to visible text).
+Screenshots reviewed in `en`, `ar` (RTL), and `tr` (mobile).
+`docs/PDF_ENGINE.md` updated with the final verified architecture,
+replacing the pre-implementation design notes.
+
+**This completes the document-capability roadmap's core-conversion phase**
+(Office, OCR, HTML/Markdown — all four originally-scoped units now
+shipped and verified). Still entirely unbuilt, separate later phases: the
+real PDF editor/canvas, Fill & Sign/e-signature, redaction, Compare
+documents, and batch processing.
+
+## 2026-09-17 — Docker Desktop WSL2 data relocated from C: to D: (infrastructure, not product code)
+
+The local dev machine's C: drive filled to near-zero free space
+(0.83 GB) mid-session, crashing Docker Desktop
+(`Error response from daemon: Docker Desktop is unable to start`) and
+interrupting the html-worker rebuild in progress. Diagnosis (not
+assumption) before any destructive action:
+
+- `Get-PSDrive`/full C:\ folder-size scan found the two largest
+  contributors were personal video files (44GB, untouched — not a dev
+  environment concern) and Docker Desktop's WSL2 data disk (25.6GB,
+  `%LOCALAPPDATA%\Docker\wsl\disk\docker_data.vhdx`).
+- Checked the Windows registry (`HKCU:\...\Lxss`) directly for the
+  authoritative WSL distro list (`wsl --list`'s own text output was
+  UTF-16-garbled in this shell environment) — confirmed only one
+  registered distro (`docker-desktop`, a small utility-VM `ext4.vhdx`),
+  with the actual container/image/volume data living in a separately
+  directly-attached `docker_data.vhdx`, not a second WSL-registered
+  "docker-desktop-data" distro (this Docker Desktop version's newer
+  internal architecture).
+- Searched Docker Desktop's own settings files
+  (`%APPDATA%\Docker\settings-store.json` and everywhere else under
+  `%APPDATA%\Docker`/`%LOCALAPPDATA%\Docker`) for a user-configurable
+  "disk image location" key and found none — this version's Settings UI
+  equivalent isn't a simple config value to edit directly.
+
+**Migration performed** (Docker Desktop fully stopped and `wsl --shutdown`
+run first; confirmed the VHDX files were unlocked before touching them):
+copied `%LOCALAPPDATA%\Docker\wsl` (both VHDX files, 25.6GB total) to
+`D:\DockerData\wsl` via `robocopy /COPY:DAT` (not `/COPYALL`, which
+requires the "Manage Auditing" privilege this session didn't have and
+failed the first attempt with a clear, non-destructive error before any
+data was touched); verified byte-for-byte size match on every file;
+renamed (not deleted) the original C: folder as a safety net; created an
+NTFS directory junction at the original path pointing to the D: copy, so
+Docker Desktop's own hardcoded path resolves transparently through the
+junction with zero Docker-side configuration changes. Started Docker
+Desktop and verified every container, image, and volume from before the
+crash was present and functional (`docker ps -a`, `docker images`,
+`docker volume ls` all matched, including all four `pdf-*-worker` images
+and the `pdf_postgres_data`/`pdf_redis_data`/`pdf_minio_data` volumes) —
+only after this real verification (not just matching file sizes) was the
+now-redundant C: backup actually deleted, freeing C: from 0.83GB to
+26.4GB free.
+
+This is a one-time local-machine infrastructure fix, not a product/code
+change — no repo files were touched by this entry. Recorded here because
+future sessions on this same machine should know Docker's data now lives
+on D: via a junction, not literally under `%LOCALAPPDATA%` on C:, in case
+that ever needs to be understood or re-migrated again.
+
 ## Template for future entries
 
 ```

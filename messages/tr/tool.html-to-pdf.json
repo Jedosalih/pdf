@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "HTML'den PDF'e Dönüştürücü — Ücretsiz ve Güvenli | JPdf",
+    "description": "Bir HTML dosyasını PDF belgesine dönüştürün. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "HTML'den PDF'e",
+  "subtitle": "Bir HTML dosyasını PDF belgesine dönüştürün.",
+  "howItWorks": {
+    "title": "HTML nasıl PDF'e dönüştürülür",
+    "steps": [
+      "Dönüştürmek istediğiniz HTML dosyasını yükleyin.",
+      "PDF olarak oluşturmak için Dönüştür'e tıklayın.",
+      "Oluşan PDF dosyasını indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "HTML dosyamdaki JavaScript çalıştırılır mı?",
+        "a": "Hayır — güvenlik ve tutarlılık için oluşturma sırasında JavaScript kasıtlı olarak devre dışı bırakılır. Statik HTML ve CSS beklendiği gibi görüntülenir; yalnızca bir script çalıştıktan sonra görünen içerik görüntülenmez."
+      },
+      {
+        "q": "Başka web sitelerinden yüklenen görsellere veya stil sayfalarına ne olur?",
+        "a": "Dönüştürme sırasında dış kaynaklar getirilmez — sonuçta eksik görünürler, tıpkı bozuk bir görsel gibi. Bu kasıtlı bir güvenlik sınırıdır, hata değildir."
+      },
+      {
+        "q": "HTML'den PDF'e dönüştürme ücretsiz mi?",
+        "a": "Evet, yukarıda belirtilen günlük kullanım sınırları dahilinde ücretsizdir."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["markdown-to-pdf", "pdf-to-text"]
+}

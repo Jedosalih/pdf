@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "Markdown to PDF Converter — Free & Secure | JPdf",
+    "description": "Convert a Markdown file into a formatted PDF document. Free, fast, and private — no installation required."
+  },
+  "h1": "Markdown to PDF",
+  "subtitle": "Convert a Markdown (.md) file into a formatted PDF document.",
+  "howItWorks": {
+    "title": "How to convert Markdown to PDF",
+    "steps": [
+      "Upload the Markdown file you want to convert.",
+      "Click Convert to render it as a PDF.",
+      "Download the resulting PDF file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "What Markdown features are supported?",
+        "a": "Headings, paragraphs, bold/italic text, links, lists, tables, code blocks, and blockquotes all render with clean, readable formatting — similar to how GitHub renders a README."
+      },
+      {
+        "q": "Can I use raw HTML inside my Markdown file?",
+        "a": "No — raw HTML tags are treated as plain text rather than rendered, for security reasons. Stick to standard Markdown syntax."
+      },
+      {
+        "q": "Is converting Markdown to PDF free?",
+        "a": "Yes, within the daily usage limits shown above."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["html-to-pdf", "pdf-to-text"]
+}

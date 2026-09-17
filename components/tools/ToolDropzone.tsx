@@ -41,6 +41,23 @@ export function ToolDropzone({
     [accept],
   );
 
+  // `file.type` alone isn't reliable for every format: browsers have no
+  // built-in MIME mapping for `.md`/`.markdown` and commonly report an
+  // empty string for them, which would otherwise make a real, valid
+  // Markdown file look "rejected" client-side even though the server
+  // accepts it. `accept` can mix MIME types (`text/markdown`) and
+  // extensions (`.md`) exactly like the native `accept` attribute does —
+  // match on whichever the file actually satisfies.
+  const isAccepted = useCallback(
+    (file: File) => {
+      const lowerName = file.name.toLowerCase();
+      return acceptedTypes.some((entry) =>
+        entry.startsWith(".") ? lowerName.endsWith(entry) : entry === file.type,
+      );
+    },
+    [acceptedTypes],
+  );
+
   const handleFiles = useCallback(
     (fileList: FileList | null) => {
       if (!fileList || fileList.length === 0) return;
@@ -50,12 +67,12 @@ export function ToolDropzone({
         return;
       }
 
-      const accepted = files.filter((file) => acceptedTypes.includes(file.type));
-      const rejected = files.filter((file) => !acceptedTypes.includes(file.type));
+      const accepted = files.filter((file) => isAccepted(file));
+      const rejected = files.filter((file) => !isAccepted(file));
       if (accepted.length > 0) onFilesSelected(accepted);
       if (rejected.length > 0) onRejectedFiles(rejected);
     },
-    [onFilesSelected, onRejectedFiles, acceptedTypes],
+    [onFilesSelected, onRejectedFiles, acceptedTypes, isAccepted],
   );
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {

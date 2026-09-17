@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "HTML to PDF Converter — Free & Secure | JPdf",
+    "description": "Convert an HTML file into a PDF document. Free, fast, and private — no installation required."
+  },
+  "h1": "HTML to PDF",
+  "subtitle": "Convert an HTML file into a PDF document.",
+  "howItWorks": {
+    "title": "How to convert HTML to PDF",
+    "steps": [
+      "Upload the HTML file you want to convert.",
+      "Click Convert to render it as a PDF.",
+      "Download the resulting PDF file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Does this run JavaScript from my HTML file?",
+        "a": "No — JavaScript is deliberately disabled during rendering, for both security and consistency. Static HTML and CSS render exactly as expected; content that only appears after a script runs will not."
+      },
+      {
+        "q": "What happens to images or stylesheets loaded from other websites?",
+        "a": "External resources aren't fetched during conversion — they'll appear missing in the result, the same as a broken image. This is a deliberate security boundary, not a bug."
+      },
+      {
+        "q": "Is converting HTML to PDF free?",
+        "a": "Yes, within the daily usage limits shown above."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["markdown-to-pdf", "pdf-to-text"]
+}

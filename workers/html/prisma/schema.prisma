@@ -1,0 +1,426 @@
+// JPdf database schema.
+// Scope notes for what's implemented now vs. placeholder-only: docs/DECISIONS.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- Enums ---
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum JobStatus {
+  QUEUED
+  UPLOADING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum FileStatus {
+  UPLOADING
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+  EXPIRED
+}
+
+enum PlanTier {
+  FREE
+  PRO
+  BUSINESS
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+  EXPIRED
+}
+
+// --- Auth / users ---
+
+model User {
+  id              String    @id @default(cuid(2))
+  email           String    @unique
+  passwordHash    String?
+  name            String?
+  role            Role      @default(USER)
+  emailVerifiedAt DateTime?
+  disabledAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sessions      Session[]
+  subscriptions Subscription[]
+  usageRecords  UsageRecord[]
+  jobs          Job[]
+  files         File[]
+  auditLogs     AuditLog[]
+
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid(2))
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// --- Plans / billing (architected now, not enabled — docs/MONETIZATION.md) ---
+
+model Plan {
+  id          String   @id @default(cuid(2))
+  tier        PlanTier @unique
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  prices        PlanPrice[]
+  subscriptions Subscription[]
+  toolLimits    ToolLimit[]
+}
+
+model PlanPrice {
+  id          String   @id @default(cuid(2))
+  planId      String
+  plan        Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  currency    String
+  amountCents Int
+  interval    String // "month" | "year"
+  createdAt   DateTime @default(now())
+
+  @@unique([planId, currency, interval])
+}
+
+model Subscription {
+  id                String             @id @default(cuid(2))
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId            String
+  plan              Plan               @relation(fields: [planId], references: [id])
+  status            SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  events SubscriptionEvent[]
+
+  @@index([userId])
+}
+
+model SubscriptionEvent {
+  id             String       @id @default(cuid(2))
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  type           String
+  payload        Json?
+  createdAt      DateTime     @default(now())
+
+  @@index([subscriptionId])
+}
+
+model UsageRecord {
+  id          String   @id @default(cuid(2))
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestId     String?
+  toolId      String
+  tool        Tool     @relation(fields: [toolId], references: [id])
+  count       Int      @default(1)
+  windowStart DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([userId, toolId, windowStart])
+  @@index([guestId, toolId, windowStart])
+}
+
+// --- Tools ---
+
+model Tool {
+  id           String   @id
+  slug         String   @unique
+  category     String
+  processor    String
+  enabled      Boolean  @default(true)
+  guestEnabled Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  translations ToolTranslation[]
+  limits       ToolLimit[]
+  jobs         Job[]
+  usageRecords UsageRecord[]
+}
+
+model ToolTranslation {
+  id             String @id @default(cuid(2))
+  toolId         String
+  tool           Tool   @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  locale         String
+  title          String
+  description    String
+  seoTitle       String?
+  seoDescription String?
+
+  @@unique([toolId, locale])
+}
+
+model ToolLimit {
+  id               String  @id @default(cuid(2))
+  toolId           String
+  tool             Tool    @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  // null planId = the guest (unauthenticated) tier
+  planId           String?
+  plan             Plan?   @relation(fields: [planId], references: [id])
+  maxFileSizeBytes Int
+  maxFiles         Int
+  maxPages         Int
+  dailyOperations  Int
+
+  @@unique([toolId, planId])
+}
+
+// --- Jobs / files ---
+
+model Job {
+  id          String     @id @default(cuid(2))
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestId     String?
+  toolId      String
+  tool        Tool       @relation(fields: [toolId], references: [id])
+  status      JobStatus  @default(QUEUED)
+  progress    Int        @default(0)
+  options     Json?
+  errorCode   String?
+  createdAt   DateTime   @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  expiresAt   DateTime?
+
+  hiddenAt    DateTime?
+
+  inputFiles  File[]     @relation("JobInputFiles")
+  outputFiles File[]     @relation("JobOutputFiles")
+  events      JobEvent[]
+
+  @@index([userId])
+  @@index([guestId])
+  @@index([status])
+}
+
+model JobEvent {
+  id        String   @id @default(cuid(2))
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  type      String
+  message   String?
+  createdAt DateTime @default(now())
+
+  @@index([jobId])
+}
+
+model File {
+  id           String     @id @default(cuid(2))
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestId      String?
+  storageKey   String     @unique
+  originalName String
+  mimeType     String
+  size         Int
+  pageCount    Int?
+  checksum     String?
+  status       FileStatus @default(UPLOADING)
+  createdAt    DateTime   @default(now())
+  expiresAt    DateTime?
+  starred      Boolean    @default(false)
+  deletedAt    DateTime?
+
+  inputJob   Job? @relation("JobInputFiles", fields: [inputJobId], references: [id], onDelete: Cascade)
+  inputJobId String?
+
+  outputJob   Job? @relation("JobOutputFiles", fields: [outputJobId], references: [id], onDelete: Cascade)
+  outputJobId String?
+
+  @@index([userId])
+  @@index([guestId])
+  @@index([userId, deletedAt])
+}
+
+// --- Commerce extras (schema only — unused until a real promotion exists) ---
+
+model Coupon {
+  id             String    @id @default(cuid(2))
+  code           String    @unique
+  description    String?
+  percentOff     Int?
+  amountOffCents Int?
+  maxRedemptions Int?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  redemptions CouponRedemption[]
+}
+
+model CouponRedemption {
+  id        String   @id @default(cuid(2))
+  couponId  String
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([couponId, userId])
+}
+
+model EmailEvent {
+  id        String   @id @default(cuid(2))
+  userId    String?
+  toEmail   String
+  template  String
+  status    String
+  createdAt DateTime @default(now())
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid(2))
+  name      String
+  email     String
+  message   String
+  handled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// --- Content (CMS, Phase 5+) ---
+
+model ArticleCategory {
+  id       String    @id @default(cuid(2))
+  slug     String    @unique
+  articles Article[]
+}
+
+model ArticleTag {
+  id       String    @id @default(cuid(2))
+  slug     String    @unique
+  articles Article[]
+}
+
+model Article {
+  id          String           @id @default(cuid(2))
+  slug        String           @unique
+  categoryId  String?
+  category    ArticleCategory? @relation(fields: [categoryId], references: [id])
+  tags        ArticleTag[]
+  coverImage  String?
+  authorName  String?
+  publishedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  translations ArticleTranslation[]
+}
+
+model ArticleTranslation {
+  id             String  @id @default(cuid(2))
+  articleId      String
+  article        Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  locale         String
+  title          String
+  excerpt        String?
+  content        String
+  seoTitle       String?
+  seoDescription String?
+
+  @@unique([articleId, locale])
+}
+
+model Page {
+  id        String   @id @default(cuid(2))
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  translations PageTranslation[]
+}
+
+model PageTranslation {
+  id      String @id @default(cuid(2))
+  pageId  String
+  page    Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  locale  String
+  title   String
+  content String
+
+  @@unique([pageId, locale])
+}
+
+model SeoMetadata {
+  id          String  @id @default(cuid(2))
+  path        String
+  locale      String
+  title       String
+  description String
+  canonical   String?
+
+  @@unique([path, locale])
+}
+
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model SiteLanguage {
+  locale    String  @id
+  enabled   Boolean @default(true)
+  isDefault Boolean @default(false)
+}
+
+// --- Ops ---
+
+model AuditLog {
+  id         String   @id @default(cuid(2))
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+}
+
+model SystemLog {
+  id        String   @id @default(cuid(2))
+  level     String
+  message   String
+  context   Json?
+  createdAt DateTime @default(now())
+
+  @@index([level, createdAt])
+}
