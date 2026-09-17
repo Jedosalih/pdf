@@ -27,5 +27,14 @@ COPY workers/office/src ./src
 RUN npx prisma generate --schema=./prisma/schema.prisma
 RUN npm run build
 
+# Runs as a dedicated non-root user, not the container default root —
+# LibreOffice parses hostile user-uploaded documents directly, so a parser
+# exploit should not hand an attacker root inside the container. Same
+# pattern as workers/html's Dockerfile.
+RUN groupadd -r jpdf && useradd -r -g jpdf jpdf \
+    && mkdir -p /home/jpdf \
+    && chown -R jpdf:jpdf /home/jpdf /app
+USER jpdf
+
 ENV NODE_ENV=production
 CMD ["node", "dist/index.js"]

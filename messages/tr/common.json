@@ -58,6 +58,7 @@
     "tooManyFiles": "Bu araç için izin verilenden fazla dosya seçtiniz.",
     "limitReached": "Bugünkü ücretsiz kullanım sınırınıza ulaştınız.",
     "invalidPassword": "Bu şifre yanlış.",
-    "unrecoverableFile": "Bu dosya onarılamayacak kadar hasarlı."
+    "unrecoverableFile": "Bu dosya onarılamayacak kadar hasarlı.",
+    "guestNotAllowed": "Bu aracı kullanmak için lütfen giriş yapın."
   }
 }

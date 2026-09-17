@@ -58,6 +58,7 @@
     "tooManyFiles": "You've selected more files than this tool allows.",
     "limitReached": "You've reached today's free limit.",
     "invalidPassword": "That password is incorrect.",
-    "unrecoverableFile": "This file is too damaged to repair."
+    "unrecoverableFile": "This file is too damaged to repair.",
+    "guestNotAllowed": "Please sign in to use this tool."
   }
 }

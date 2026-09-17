@@ -1928,6 +1928,139 @@ future sessions on this same machine should know Docker's data now lives
 on D: via a junction, not literally under `%LOCALAPPDATA%` on C:, in case
 that ever needs to be understood or re-migrated again.
 
+## 2026-09-17 — Final security/consistency audit: fixes applied, gaps documented
+
+With all six of the mission's post-core-conversion capability units shipped
+(editor, Fill & Sign, redaction, compare, batch, workspace chaining), a
+dedicated audit subagent was commissioned to look for the same *shape* of
+gap the session had already caught once organically (`maxPages` defined
+everywhere but enforced nowhere) — cross-cutting inconsistencies between
+what the registry/DB/docs claim and what the code actually does, across
+container security, entitlement enforcement, and `docs/SECURITY.md`'s own
+accuracy. It found several real, file:line-cited gaps. Per this mission's
+"no false claims" rule (extended here to documentation, not just product
+copy) and its "implement the strongest safe version, document the rest"
+rule, each finding was triaged individually rather than either fixing
+everything indiscriminately or writing a report without touching code.
+
+**Fixed this pass:**
+
+- **All four worker containers now run as non-root.** `workers/html`
+  already had this (`groupadd`/`useradd`/`USER jpdf`, needed there for
+  Chromium's own sandbox to engage); `workers/pdf`, `workers/office`, and
+  `workers/ocr` did not — they parse hostile user-uploaded input with the
+  same engines (qpdf/Ghostscript/poppler/LibreOffice/OCRmyPDF/Tesseract)
+  while running as container root. Copied the exact same pattern into all
+  three Dockerfiles. Verified safe: all three already write only to `/tmp`
+  (via `withTempDir`, world-writable by default) and to `/app` only during
+  the image build (as root, before `USER jpdf` takes effect) — no runtime
+  code path needed root.
+- **Workspace chaining bypassed the destination tool's own file-type/size
+  limits.** `/api/upload` validates a file against the tool it's uploaded
+  *for*, but chaining (using a prior job's `READY` output, or any of the
+  actor's own files, as input to a *different* tool) skipped this
+  entirely — a file accepted under one tool's limits could be handed to a
+  tool with tighter ones, or the wrong `inputTypes` altogether, with
+  nothing checking either. Fixed in `app/api/jobs/route.ts`: after the
+  ownership check, every input file's stored `mimeType`/`size` is checked
+  against the *destination* tool's `inputTypes`/`maxFileSizeBytes`,
+  returning the same `UNSUPPORTED_FILE`/`FILE_TOO_LARGE` codes (and
+  existing translated client messages) `/api/upload` already uses. This
+  trusts the file's stored metadata rather than re-reading and re-sniffing
+  the bytes — proportionate, since the bytes were already validated once
+  at upload and cannot change in place afterward.
+- **Batch processing amplified a pre-existing entitlement race.**
+  `canUseTool`'s daily-limit read and `recordToolUsage`'s write are not
+  atomic with each other; firing every batch entry's `/api/jobs` call in
+  parallel (the original implementation) let all of them read the same
+  pre-increment usage count and all pass the check, regardless of
+  `dailyOperations`. Fixed by serializing job-*creation* requests in
+  `BatchProcessTool.tsx` (await each one before starting the next) —
+  this removes the one deterministic, one-click way this session's own
+  feature triggered the race, and as a side effect makes `BATCH_MAX_FILES`
+  (20) correctly hit `DAILY_LIMIT_REACHED` partway through for a guest
+  (`dailyOperations: 8`) instead of silently exceeding it. Does **not**
+  fix the underlying race in general (e.g. many browser tabs firing at
+  once) — a real fix needs an atomic check-and-increment (DB row-level
+  `UPDATE ... WHERE count < limit` or a Redis `INCR`), left as a
+  documented gap (`docs/SECURITY.md` §7).
+- **Unbounded aggregate request body for options-JSON-borne images.**
+  `edit-pdf`/`fill-sign-pdf` cap each image (8MB) and the edit count (300)
+  but nothing capped the request as a whole — worst case, a multi-
+  gigabyte JSON body fully buffered by `request.json()` before any
+  per-element check runs. Added `MAX_JOB_BODY_BYTES` (50MB) as a
+  `Content-Length` pre-check in `app/api/jobs/route.ts`. Documented
+  honestly as a partial fix: defends the actual product UI (an honest
+  `Content-Length` header) but not a caller who lies about it while
+  streaming more bytes than declared — closing that needs a streaming
+  byte-counter instead of `request.json()`, not done here.
+- **`GUEST_NOT_ALLOWED` had no translation** in any locale (fell through
+  to the generic error message) — currently unreachable in the UI (no
+  registered tool disables guests today) but cheap to close properly.
+  Added `common.errors.guestNotAllowed` to all three locales and wired it
+  into `errorMessageKey()`.
+- **`docs/SECURITY.md` corrected in six places** where it no longer
+  matched the code (some stale, some describing a design that was never
+  actually built): §3's per-engine timeout numbers were wrong/swapped
+  (real: 60s qpdf-class, 120s most Ghostscript, 180s LibreOffice **and**
+  poppler rasterization, 300s OCR — the doc previously said 180s for both
+  Ghostscript *and* OCR, and 300s for LibreOffice) and its "per-job
+  timeout" framing was inaccurate (it's per-*subprocess-call*; six pure
+  `pdf-lib` handlers with no subprocess have no timeout at all); the
+  claimed per-container memory/CPU limits don't exist in
+  `docker-compose.yml` or anywhere else in the repo; §4 cited a
+  nonexistent `lib/storage/getDownloadUrl.ts` (the real check is
+  `app/api/files/[id]/download/route.ts` + `lib/security/actor.ts`'s
+  `isOwnedByActor`) and self-contradicted §3's cleanup-worker framing
+  (§3 implied a "crash-recovery sweep via the cleanup worker" runs; §4
+  correctly says `workers/cleanup` doesn't exist yet — §3 now points at
+  §4 instead of asserting the sweep exists); §5 described SSRF as an
+  unbuilt-feature concern when `workers/html` had already shipped a real
+  (application-level-only) mitigation for it; §7 claimed an IP-based
+  secondary limit on usage counters that was never built (IP-based
+  limiting exists only for `/api/auth/*`); §9 described
+  `lib/security/scan.ts` as an existing pluggable interface when no such
+  file exists at all. All six rewritten to state the actual current
+  behavior and the real gap, not the originally-planned design.
+
+**Found, deliberately not fixed this pass — documented as known
+limitations instead** (`docs/SECURITY.md`, in place):
+
+- The general `dailyOperations` TOCTOU race (beyond the batch-specific
+  trigger above) needs an atomic counter, which is a change to the one
+  entitlement gate every tool shares — too large/risky to make safely in
+  this pass without its own dedicated review.
+- No per-job timeout for the six pure-`pdf-lib` handlers listed above.
+- No per-container CPU/memory limits.
+- No container network egress restriction (every worker, not just
+  `workers/html`) — the documented backstop for `workers/html`'s SSRF
+  mitigation specifically.
+- No malware/antivirus scanning of uploaded files.
+- `workers/cleanup` (the scheduled expiry sweep for guest files past
+  their `expiresAt`, and for orphaned temp dirs after a crash) still does
+  not exist — already honestly documented before this pass; unchanged.
+- The `PRO` plan tier exists in the seed data with no corresponding
+  `ToolLimit` rows, silently falling back to `FREE` limits. Low priority:
+  billing/subscriptions aren't live yet.
+- A handful of vestigial Prisma columns, checked individually rather than
+  assumed as a group: `File.checksum` and `File.pageCount` are never read
+  *or* written anywhere in the app. `UsageRecord.count` is written but
+  only ever as its schema `@default(1)` (never explicitly set, never
+  read back — the real usage tally is `prisma.usageRecord.count()`,
+  counting rows, not this field). `UsageRecord.windowStart` is written
+  (`new Date()` on every record) but never read — the actual lookback
+  query filters on `createdAt` instead, so the compound indexes on
+  `windowStart` are currently dead weight too. Left alone rather than
+  migrating the schema this late in the pass for a cosmetic-only cleanup.
+
+**Verification**: `tsc`/ESLint clean on the app; all four worker
+containers rebuilt (`docker compose up -d --build`) and confirmed healthy
+with the new non-root user; full Playwright suite re-run green; a new
+assertion added to `auth-cross-user-isolation.spec.ts` confirming a second
+user still gets `403` attempting to start a *new* job against the first
+user's file (guards specifically against the workspace-chaining ownership
+widening having loosened actor scoping, which it did not).
+
 ## Template for future entries
 
 ```

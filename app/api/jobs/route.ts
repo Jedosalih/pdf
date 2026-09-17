@@ -18,6 +18,25 @@ const createJobSchema = z.object({
   options: z.record(z.string(), z.unknown()).optional(),
 });
 
+/**
+ * `edit-pdf`/`fill-sign-pdf` carry base64 image data inside the generic
+ * `options` JSON rather than a multipart upload (see docs/SECURITY.md §1).
+ * Each individual image is capped (8MB, `pdfEditElements.ts`'s
+ * `MAX_IMAGE_BYTES`) and the edit *count* is capped (300,
+ * `MAX_EDITS`), but nothing previously capped the request body as a
+ * whole -- 300 elements at 8MB each is a multi-gigabyte JSON payload that
+ * `request.json()` would fully buffer into memory before any per-element
+ * check runs. A generous but finite cap here (comfortably above any real
+ * editing session) bounds worst-case memory use for this route. This
+ * checks the browser-supplied `Content-Length` header, so it fully
+ * defends the actual product UI (which always sends an accurate header
+ * for a JSON string body) but would not stop a deliberately malicious API
+ * caller who lies about `Content-Length` while streaming more bytes than
+ * declared -- closing that fully would need a streaming byte-counter
+ * instead of `request.json()`, not done here (see docs/SECURITY.md).
+ */
+const MAX_JOB_BODY_BYTES = 50 * 1024 * 1024;
+
 const listJobsQuerySchema = z.object({
   cursor: z.string().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
@@ -73,6 +92,11 @@ export async function GET(request: NextRequest) {
  * processing (blueprint §4).
  */
 export async function POST(request: NextRequest) {
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (contentLength > MAX_JOB_BODY_BYTES) {
+    return apiError("FILE_TOO_LARGE");
+  }
+
   const parsed = createJobSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return apiError("VALIDATION_ERROR");
@@ -114,6 +138,27 @@ export async function POST(request: NextRequest) {
   });
   if (ownedFiles.length !== fileIds.length) {
     return apiError("FORBIDDEN");
+  }
+
+  // `/api/upload` validates type/size against the tool the file was
+  // *originally* uploaded for, but workspace chaining (blueprint: "use an
+  // existing workspace file as input without re-upload") can hand any of
+  // the actor's own files to a *different* tool here -- e.g. a file
+  // accepted under one tool's 50MB limit chained into a tool with a 15MB
+  // limit, or a non-PDF job output chained into a PDF-only tool. Re-check
+  // against every destination tool's own limits rather than trusting the
+  // file's original validation. This trusts the file's stored `mimeType`/
+  // `size` (set once at upload or by the worker on job completion, never
+  // user-editable after that) instead of re-reading and re-sniffing the
+  // bytes -- proportionate, since the bytes themselves cannot change
+  // in-place, only which tool they're later handed to.
+  const invalidFile = ownedFiles.find((file) => !tool.inputTypes.includes(file.mimeType));
+  if (invalidFile) {
+    return apiError("UNSUPPORTED_FILE");
+  }
+  const oversizedFile = ownedFiles.find((file) => file.size > limits.maxFileSizeBytes);
+  if (oversizedFile) {
+    return apiError("FILE_TOO_LARGE");
   }
 
   let totalPdfPages: number;

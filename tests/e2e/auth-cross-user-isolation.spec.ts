@@ -81,6 +81,18 @@ test("a second user cannot access another user's files or jobs through any route
   expect((await pageB.request.get(`/api/jobs/${jobId}`)).status()).toBe(403);
   expect((await pageB.request.post(`/api/jobs/${jobId}/hide`)).status()).toBe(403);
   expect((await pageB.request.get(`/api/jobs/${jobId}/download-zip`)).status()).toBe(403);
+  // B must not be able to start a *new* job against A's file either --
+  // workspace chaining (blueprint: "use an existing workspace file as
+  // input without re-upload") widened this same ownership query to also
+  // accept READY files, so this specifically guards that widening didn't
+  // also loosen the actor scoping.
+  expect(
+    (
+      await pageB.request.post("/api/jobs", {
+        data: { toolId: "compress-pdf", fileIds: [fileId] },
+      })
+    ).status(),
+  ).toBe(403);
 
   // Every attempt above must have had zero effect — re-check as A, not
   // just that B received a 403.

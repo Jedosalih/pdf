@@ -154,9 +154,20 @@ export function BatchProcessTool({ limitsByTool }: BatchProcessToolProps) {
 
   const handleStartBatch = useCallback(() => {
     const readyEntries = entries.filter((e) => e.status === "ready" && e.serverId);
-    for (const entry of readyEntries) {
-      updateEntry(entry.localId, { status: "queued" });
-      void (async () => {
+    void (async () => {
+      // Job *creation* requests are deliberately sent one at a time, not
+      // fanned out in parallel: `canUseTool`'s daily-limit check reads the
+      // actor's current usage count before `recordToolUsage` writes it, so
+      // firing every entry's request at once let a batch race past
+      // `dailyOperations` entirely (every request reads the same
+      // pre-increment count). Awaiting each creation call in turn closes
+      // the one deterministic, no-effort way to trigger that race that
+      // this feature itself introduced -- see docs/SECURITY.md for the
+      // remaining, harder-to-trigger general case (concurrent requests
+      // from multiple tabs) that this does not fix. Polling each created
+      // job still happens concurrently in the background.
+      for (const entry of readyEntries) {
+        updateEntry(entry.localId, { status: "queued" });
         try {
           const response = await fetch("/api/jobs", {
             method: "POST",
@@ -173,7 +184,7 @@ export function BatchProcessTool({ limitsByTool }: BatchProcessToolProps) {
               status: "failed",
               errorCode: body?.error?.code ?? "generic",
             });
-            return;
+            continue;
           }
           const data = (await response.json()) as { jobId: string };
           updateEntry(entry.localId, { jobId: data.jobId });
@@ -181,8 +192,8 @@ export function BatchProcessTool({ limitsByTool }: BatchProcessToolProps) {
         } catch {
           updateEntry(entry.localId, { status: "failed", errorCode: "generic" });
         }
-      })();
-    }
+      }
+    })();
   }, [entries, selectedTool, updateEntry, pollJob]);
 
   const handleRemoveEntry = useCallback((localId: string) => {

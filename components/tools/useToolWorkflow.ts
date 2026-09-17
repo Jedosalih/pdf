@@ -58,6 +58,8 @@ export function errorMessageKey(code: string | undefined): string {
       return "invalidPassword";
     case "UNRECOVERABLE_FILE":
       return "unrecoverableFile";
+    case "GUEST_NOT_ALLOWED":
+      return "guestNotAllowed";
     default:
       return "generic";
   }
