@@ -113,7 +113,16 @@ const worker = new Worker<ProcessingJobPayload>(
       );
     }
   },
-  { connection, concurrency: 4 },
+  // Lowered from 4: several tools (edit-pdf, fill-sign-pdf, page-numbers,
+  // watermark-pdf, pdf-metadata, image-to-pdf, pdf-to-md) now run their
+  // actual pdf-lib/pdfjs-dist work in an isolated Node subprocess for a
+  // genuine, killable timeout (see runPureCompute.ts) -- each concurrent
+  // job pays a real module cold-start cost that in-process code never
+  // did, and empirically, 4 concurrent subprocess-backed jobs measurably
+  // contended with each other on this dev machine (a job that normally
+  // completes in ~1s took ~11s under full concurrency). Documented
+  // trade-off, not a bug: genuine timeout safety costs some throughput.
+  { connection, concurrency: 2 },
 );
 
 worker.on("error", (error) => {

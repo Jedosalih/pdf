@@ -579,11 +579,13 @@ untouched across a skipped whitespace item.
 - Every job: max input file size (checked at upload), max total page count
   across all PDF inputs (checked once at job creation in
   `app/api/jobs/route.ts` via `pdfjs-dist`, not inside each worker or via
-  `pdfinfo` — see `docs/SECURITY.md` §1), and for engine-subprocess-backed
-  handlers, a per-call wall-clock timeout — kill the child process on
-  timeout (`SIGKILL` after a grace period). Pure-`pdf-lib`/`pdfjs-dist`
-  handlers with no subprocess have no timeout of their own yet — a known
-  gap, see `docs/SECURITY.md` §3.
+  `pdfinfo` — see `docs/SECURITY.md` §1), and a wall-clock timeout with a
+  real `SIGKILL` — for engine-subprocess-backed handlers this is a direct
+  per-call timeout; for pure-`pdf-lib`/`pdfjs-dist` handlers (no engine
+  subprocess of their own) the actual computation runs in its own isolated
+  Node child process instead (`workers/pdf/src/runPureCompute.ts`) so the
+  same real-kill guarantee applies — see `docs/SECURITY.md` §3 for why a
+  same-process `Promise.race` timeout can't honestly do this.
 - Every job runs in its own randomly-named temp directory under a worker
   temp root; deleted in a `finally` regardless of success/failure.
 - No worker process needs outbound network access to do its job (all

@@ -17,6 +17,33 @@ const toolTranslations: Record<
   },
 };
 
+/**
+ * Billing/subscriptions are not live -- no plan is actually purchasable
+ * yet, so there is no real product decision to encode per tool. Rather
+ * than inventing 35 individually hand-picked PRO limits with no business
+ * basis, PRO's `ToolLimit` rows are derived from the FREE tier's own
+ * already-decided values by a single, uniform multiplier. This closes the
+ * real gap (a PRO subscriber previously fell through to FREE limits
+ * silently, since no PRO rows existed at all -- see docs/DECISIONS.md)
+ * without pretending a specific per-tool PRO pricing tier was designed.
+ * Revisit with real numbers once billing actually ships.
+ */
+const PRO_LIMIT_MULTIPLIER = 3;
+
+function deriveProLimits(freeLimits: {
+  maxFileSizeBytes: number;
+  maxFiles: number;
+  maxPages: number;
+  dailyOperations: number;
+}) {
+  return {
+    maxFileSizeBytes: freeLimits.maxFileSizeBytes * PRO_LIMIT_MULTIPLIER,
+    maxFiles: freeLimits.maxFiles * PRO_LIMIT_MULTIPLIER,
+    maxPages: freeLimits.maxPages * PRO_LIMIT_MULTIPLIER,
+    dailyOperations: freeLimits.dailyOperations * PRO_LIMIT_MULTIPLIER,
+  };
+}
+
 async function main() {
   const free = await prisma.plan.upsert({
     where: { tier: "FREE" },
@@ -28,7 +55,7 @@ async function main() {
     },
   });
 
-  await prisma.plan.upsert({
+  const pro = await prisma.plan.upsert({
     where: { tier: "PRO" },
     update: {},
     create: {
@@ -94,6 +121,23 @@ async function main() {
     } else {
       await prisma.toolLimit.create({
         data: { toolId: tool.id, planId: free.id, ...tool.limits.free },
+      });
+    }
+
+    // Pro plan tier limit -- see deriveProLimits() above for why this is
+    // a multiplier of FREE rather than a hand-picked value.
+    const proLimits = deriveProLimits(tool.limits.free);
+    const existingProLimit = await prisma.toolLimit.findFirst({
+      where: { toolId: tool.id, planId: pro.id },
+    });
+    if (existingProLimit) {
+      await prisma.toolLimit.update({
+        where: { id: existingProLimit.id },
+        data: proLimits,
+      });
+    } else {
+      await prisma.toolLimit.create({
+        data: { toolId: tool.id, planId: pro.id, ...proLimits },
       });
     }
   }

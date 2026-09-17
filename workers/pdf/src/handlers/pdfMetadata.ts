@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { PDFDocument } from "pdf-lib";
 import { prisma } from "../db.js";
 import { downloadToBuffer, uploadBuffer } from "../storage.js";
+import { withTempDir } from "../tempDir.js";
+import { runPureCompute } from "../runPureCompute.js";
 import { JobFailure } from "../errors.js";
 import { computeFileExpiry } from "../retention.js";
 
@@ -43,28 +44,15 @@ export async function handlePdfMetadata(jobId: string): Promise<void> {
 
   const buffer = await downloadToBuffer(inputFile.storageKey);
 
-  let pdfDoc: PDFDocument;
-  try {
-    pdfDoc = await PDFDocument.load(buffer);
-  } catch {
-    throw new JobFailure("UNSUPPORTED_FILE");
-  }
+  const outputBuffer = await withTempDir((dir) =>
+    runPureCompute(
+      "pdfMetadata",
+      [{ buffer, mimeType: "application/pdf" }],
+      { title, author, subject, keywords },
+      dir,
+    ),
+  );
 
-  // Fields left blank keep whatever metadata the file already had —
-  // this is an editor for existing values, not a reset to empty.
-  if (title) pdfDoc.setTitle(title);
-  if (author) pdfDoc.setAuthor(author);
-  if (subject) pdfDoc.setSubject(subject);
-  if (keywords) {
-    pdfDoc.setKeywords(
-      keywords
-        .split(",")
-        .map((keyword) => keyword.trim())
-        .filter(Boolean),
-    );
-  }
-
-  const outputBuffer = Buffer.from(await pdfDoc.save());
   const storageKey = `results/${randomUUID()}.pdf`;
   await uploadBuffer(storageKey, outputBuffer, "application/pdf");
 

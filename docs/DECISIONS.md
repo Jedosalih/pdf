@@ -2135,6 +2135,72 @@ neither reusing an existing worker handler.
   touched this pass). Screenshots taken and inspected in en/ar (RTL) +
   mobile for both new tool pages.
 
+## 2026-09-17 — PRO tool limits seeded; real timeouts for pure-JS handlers
+
+Two items from the Final Completion Mission's production-hardening list
+(§4.7, §4.4).
+
+- **PRO tool limits** (`prisma/seed.ts`): the `PRO` plan existed with zero
+  `ToolLimit` rows, so a PRO subscriber silently fell through to FREE
+  limits (found by the earlier security audit). Billing isn't live, so
+  there's no real per-tool PRO pricing decision to encode — rather than
+  inventing 35 hand-picked values, `deriveProLimits()` derives every PRO
+  row from that same tool's already-decided FREE row via a single, stated
+  `PRO_LIMIT_MULTIPLIER` (3x). Revisit with real numbers once billing
+  ships; this closes the "silently falls back" bug honestly without
+  pretending a pricing tier was designed.
+- **Real timeouts for pure-JS handlers** (`edit-pdf`, `fill-sign-pdf`,
+  `page-numbers`, `watermark-pdf`, `pdf-metadata`, `image-to-pdf`,
+  `pdf-to-md`): these have no engine subprocess, so they never got the
+  `runCommand`/`SIGKILL` timeout every other handler has. A same-process
+  `Promise.race` timeout was deliberately **not** used — Node is single-
+  threaded, so a timer callback can't fire (and can't "time out"
+  anything) until the current synchronous, CPU-bound block yields on its
+  own; by the time such a race "wins," the dangerous work is either
+  already done or still silently running forever in the background. That
+  is exactly the "fake timeout" the mission brief explicitly warned
+  against.
+
+  Instead, each handler's actual pdf-lib/pdfjs-dist computation was
+  extracted into a new `workers/pdf/src/pureCompute/<name>.ts` module
+  (pure function, zero Prisma/storage dependency) and now runs inside a
+  short-lived Node **child process**
+  (`workers/pdf/src/pureComputeRunner.ts`), invoked through the exact same
+  `runCommand()` + `killSignal: "SIGKILL"` machinery every qpdf/Ghostscript/
+  LibreOffice call already uses (`workers/pdf/src/runPureCompute.ts`) — a
+  real OS-level kill, not a giveup. The handler itself now only does I/O
+  (download, write input to temp file, invoke the subprocess, read output,
+  upload, write the `File` row) — unchanged behavior/error codes, verified
+  by re-running every affected tool's E2E test. A `ComputeFailure` error
+  class (a duplicate of `JobFailure`, deliberately not imported, to keep
+  the child process's own dependency footprint minimal) carries a `.code`
+  string across the process boundary via a small `<output>.error.json`
+  side-channel file.
+
+  **Verified, not assumed**: temporarily forced an impossibly short
+  timeout (5ms) end-to-end and confirmed the job genuinely failed with
+  `PROCESSING_FAILED` (the subprocess was actually killed, not merely
+  ignored) before restoring the real 45s budget; separately verified the
+  `UNSUPPORTED_FILE`/`NO_EXTRACTABLE_TEXT` failure paths still propagate
+  correctly through the new process boundary using real corrupt/image-only
+  fixtures.
+
+  **Real trade-off found by actually running the test suite under
+  concurrency**, not assumed: spawning a fresh Node process per job means
+  every concurrent job now pays a real module cold-start cost (importing
+  `pdfjs-dist` especially) that in-process code never did. Under
+  Playwright's default multi-worker parallelism, two tools (`jpg-to-pdf`,
+  `pdf-to-md`) that normally complete in ~1s took 10-12s when several such
+  jobs ran concurrently on this dev machine, despite 8 CPUs being
+  available to the container — likely Docker Desktop/WSL2 process-spawn
+  overhead, not raw CPU exhaustion. Mitigated by lowering `pdf-processing`'s
+  BullMQ concurrency from 4 to 2 (`workers/pdf/src/index.ts`); full
+  suite re-verified green using this project's own established
+  `--workers=1` serial convention (`reference-jpdf-operations` memory),
+  which this project already used specifically because of this class of
+  contention sensitivity. Documented as an accepted cost of genuine
+  timeout safety, not silently absorbed.
+
 ## Template for future entries
 
 ```

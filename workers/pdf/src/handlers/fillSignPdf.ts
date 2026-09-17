@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { PDFDocument, PDFTextField } from "pdf-lib";
 import { prisma } from "../db.js";
 import { downloadToBuffer, uploadBuffer } from "../storage.js";
+import { withTempDir } from "../tempDir.js";
+import { runPureCompute } from "../runPureCompute.js";
 import { JobFailure } from "../errors.js";
 import { computeFileExpiry } from "../retention.js";
-import { applyEditElements } from "../pdfEditElements.js";
 
 interface FillSignOptions {
   /** fieldName -> text value, for real AcroForm text fields detected
@@ -15,10 +15,6 @@ interface FillSignOptions {
    * applyEditElements handles the full set uniformly). */
   edits?: unknown;
 }
-
-const MAX_FIELD_NAME_LENGTH = 200;
-const MAX_FIELD_VALUE_LENGTH = 2000;
-const MAX_FIELDS = 200;
 
 /**
  * Fill & Sign, split into its two genuinely different mechanisms:
@@ -35,6 +31,8 @@ const MAX_FIELDS = 200;
  * library in this stack signs PDFs cryptographically, and doing that
  * correctly needs a real PKI/certificate story, which is a deliberate,
  * documented scope boundary (see docs/DECISIONS.md), not an oversight.
+ * The actual pdf-lib work runs in an isolated, timed-out subprocess --
+ * see ../runPureCompute.ts.
  */
 export async function handleFillSignPdf(jobId: string): Promise<void> {
   const job = await prisma.job.findUniqueOrThrow({
@@ -48,57 +46,23 @@ export async function handleFillSignPdf(jobId: string): Promise<void> {
   }
 
   const options = (job.options as FillSignOptions | null) ?? {};
-  const buffer = await downloadToBuffer(inputFile.storageKey);
-
-  let pdfDoc: PDFDocument;
-  try {
-    pdfDoc = await PDFDocument.load(buffer);
-  } catch {
-    throw new JobFailure("UNSUPPORTED_FILE");
-  }
-
-  let filledFieldCount = 0;
   const rawFields =
     options.fields && typeof options.fields === "object" && !Array.isArray(options.fields)
       ? (options.fields as Record<string, unknown>)
       : {};
-  const fieldEntries = Object.entries(rawFields).slice(0, MAX_FIELDS);
-
-  if (fieldEntries.length > 0) {
-    try {
-      const form = pdfDoc.getForm();
-      for (const [name, rawValue] of fieldEntries) {
-        if (name.length === 0 || name.length > MAX_FIELD_NAME_LENGTH) continue;
-        if (typeof rawValue !== "string") continue;
-
-        const field = form.getFieldMaybe(name);
-        if (!field) continue; // no such field on this document -- ignore, don't fail the job
-
-        // Checkboxes/radio groups/dropdowns are intentionally out of scope
-        // for this first pass -- text fields cover the common "fill in
-        // your name/date/address" case. See docs/DECISIONS.md.
-        if (field instanceof PDFTextField) {
-          field.setText(rawValue.slice(0, MAX_FIELD_VALUE_LENGTH));
-          filledFieldCount += 1;
-        }
-      }
-      if (filledFieldCount > 0) {
-        form.flatten();
-      }
-    } catch {
-      // pdfDoc.getForm() failing means there's no usable AcroForm here --
-      // expected for most PDFs, not an error, just nothing to fill.
-    }
-  }
-
   const rawEdits = Array.isArray(options.edits) ? (options.edits as unknown[]) : [];
-  const appliedEditCount = await applyEditElements(pdfDoc, rawEdits);
 
-  if (filledFieldCount === 0 && appliedEditCount === 0) {
-    throw new JobFailure("VALIDATION_ERROR");
-  }
+  const buffer = await downloadToBuffer(inputFile.storageKey);
 
-  const outputBuffer = Buffer.from(await pdfDoc.save());
+  const outputBuffer = await withTempDir((dir) =>
+    runPureCompute(
+      "fillSignPdf",
+      [{ buffer, mimeType: "application/pdf" }],
+      { fields: rawFields, edits: rawEdits },
+      dir,
+    ),
+  );
+
   const storageKey = `results/${randomUUID()}.pdf`;
   await uploadBuffer(storageKey, outputBuffer, "application/pdf");
 

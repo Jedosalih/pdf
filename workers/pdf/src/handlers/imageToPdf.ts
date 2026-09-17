@@ -1,15 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { PDFDocument } from "pdf-lib";
 import { prisma } from "../db.js";
 import { downloadToBuffer, uploadBuffer } from "../storage.js";
+import { withTempDir } from "../tempDir.js";
+import { runPureCompute } from "../runPureCompute.js";
 import { JobFailure } from "../errors.js";
 import { computeFileExpiry } from "../retention.js";
-
-// A4 at 72pt/inch — pages take the image's own orientation, image is
-// scaled to fit and centered (see docs/DECISIONS.md for why raw pixel
-// dimensions aren't used directly as PDF points).
-const A4_WIDTH = 595.28;
-const A4_HEIGHT = 841.89;
 
 interface ImageToPdfOptions {
   fileOrder?: string[];
@@ -38,38 +33,15 @@ export async function handleImageToPdf(jobId: string): Promise<void> {
     throw new JobFailure("VALIDATION_ERROR");
   }
 
-  const pdfDoc = await PDFDocument.create();
+  const inputs = await Promise.all(
+    orderedFiles.map(async (file) => ({
+      buffer: await downloadToBuffer(file.storageKey),
+      mimeType: file.mimeType,
+    })),
+  );
 
-  for (const file of orderedFiles) {
-    const buffer = await downloadToBuffer(file.storageKey);
+  const outputBuffer = await withTempDir((dir) => runPureCompute("imageToPdf", inputs, {}, dir));
 
-    let image;
-    try {
-      image =
-        file.mimeType === "image/png"
-          ? await pdfDoc.embedPng(buffer)
-          : await pdfDoc.embedJpg(buffer);
-    } catch {
-      throw new JobFailure("UNSUPPORTED_FILE");
-    }
-
-    const portrait = image.height >= image.width;
-    const pageWidth = portrait ? A4_WIDTH : A4_HEIGHT;
-    const pageHeight = portrait ? A4_HEIGHT : A4_WIDTH;
-    const scale = Math.min(pageWidth / image.width, pageHeight / image.height);
-    const drawWidth = image.width * scale;
-    const drawHeight = image.height * scale;
-
-    const page = pdfDoc.addPage([pageWidth, pageHeight]);
-    page.drawImage(image, {
-      x: (pageWidth - drawWidth) / 2,
-      y: (pageHeight - drawHeight) / 2,
-      width: drawWidth,
-      height: drawHeight,
-    });
-  }
-
-  const outputBuffer = Buffer.from(await pdfDoc.save());
   const storageKey = `results/${randomUUID()}.pdf`;
   await uploadBuffer(storageKey, outputBuffer, "application/pdf");
 

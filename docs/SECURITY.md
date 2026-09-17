@@ -105,12 +105,24 @@ against the freshly-loaded `PDFDocument` for that job's own input file.
   page-rasterization step in redact-pdf/compare-pdf, 300s for OCR
   (`ocrmypdf`, the single most expensive per-page operation in the
   codebase). Tunable per call site.
-  **This is a per-subprocess-call timeout, not a per-job timeout**: handlers
-  that never shell out to an engine binary — `edit-pdf`, `fill-sign-pdf`,
-  `page-numbers`, `watermark-pdf`, `pdf-metadata`, `image-to-pdf` (all
-  pure `pdf-lib` manipulation) — have no timeout mechanism at all today.
-  A pathological input that made `pdf-lib` itself hang would not be killed
-  by anything in this codebase. Known gap, not yet fixed.
+  **Handlers with no engine subprocess of their own** — `edit-pdf`,
+  `fill-sign-pdf`, `page-numbers`, `watermark-pdf`, `pdf-metadata`,
+  `image-to-pdf` (pure `pdf-lib`) and `pdf-to-md` (pure `pdfjs-dist`) — now
+  get the same real protection through a different mechanism
+  (`workers/pdf/src/runPureCompute.ts`): the actual computation runs in a
+  short-lived Node child process (`pureComputeRunner.ts`), invoked through
+  the same `runCommand`/`SIGKILL` machinery as every engine subprocess, with
+  a 45s default budget. This is deliberately *not* a `Promise.race`-style
+  timeout in the same process — Node is single-threaded, so a timer
+  callback can't run (and therefore can't "time out" anything) until the
+  current synchronous, CPU-bound block yields on its own; a real OS-level
+  `SIGKILL` on a genuinely separate process is the only honest way to bound
+  this. Verified, not assumed: a forced artificially-short timeout was
+  confirmed to actually kill the subprocess and fail the job cleanly before
+  this was shipped. Trade-off, documented rather than hidden: each
+  concurrent job now pays a real module cold-start cost a same-process call
+  never did; `pdf-processing`'s BullMQ concurrency was lowered from 4 to 2
+  after measuring real contention under concurrent load on dev hardware.
 - **No per-container memory/CPU limits are currently configured** —
   `docker-compose.yml` sets none, and there is no separate production
   orchestrator config in this repo. Known gap; add `deploy.resources`
