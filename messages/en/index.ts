@@ -38,6 +38,8 @@ import comparePdf from "./tool.compare-pdf.json";
 import pdfToPdfa from "./tool.pdf-to-pdfa.json";
 import flattenPdf from "./tool.flatten-pdf.json";
 import repairPdf from "./tool.repair-pdf.json";
+import pdfToHtml from "./tool.pdf-to-html.json";
+import pdfToMd from "./tool.pdf-to-md.json";
 
 const messages = {
   common,
@@ -81,6 +83,8 @@ const messages = {
     "fill-sign-pdf": fillSignPdf,
     "redact-pdf": redactPdf,
     "compare-pdf": comparePdf,
+    "pdf-to-html": pdfToHtml,
+    "pdf-to-md": pdfToMd,
   },
 };
 

@@ -1,0 +1,42 @@
+{
+  "seo": {
+    "title": "PDF'den Markdown'a Dönüştürücü — Ücretsiz ve Güvenli | JPdf",
+    "description": "Bir PDF'yi gerçek, yapılandırılmış bir Markdown dosyasına dönüştürün — sadece ham metin değil, başlıklar, paragraflar ve listeler. Ücretsiz, hızlı ve gizli."
+  },
+  "h1": "PDF'den Markdown'a",
+  "subtitle": "Bir PDF'yi yapılandırılmış bir .md dosyasına dönüştürün — sadece metin dökümü değil, başlıklar, paragraflar ve listeler.",
+  "howItWorks": {
+    "title": "PDF nasıl Markdown'a dönüştürülür",
+    "steps": [
+      "Dönüştürmek istediğiniz PDF dosyasını yükleyin.",
+      "Dönüştür'e tıklayın — başlıklar, paragraflar ve listeler otomatik olarak algılanır.",
+      "Ortaya çıkan .md dosyasını indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "PDF'den Markdown'a dönüştürmek ücretsiz mi?",
+        "a": "Evet, yukarıda gösterilen günlük kullanım sınırları dahilinde PDF'den Markdown'a dönüştürme ücretsizdir."
+      },
+      {
+        "q": "Bu, PDF'den Metne aracından farkı nedir?",
+        "a": "PDF'den Metne, size ham çıkarılmış metni verir. PDF'den Markdown'a ise gerçek yapıyı tespit etmek için yazı tipi boyutlarını ve yerleşimi analiz eder — başlıklar, madde işaretli ve numaralı listeler ile basit tablolar — ve bunu düzgün Markdown sözdizimi olarak yazar. Bu, belgenin gerçekte var olmayan bir yapısını tahmin etmek değil, mevcut yapının en iyi çabayla okunmasıdır."
+      },
+      {
+        "q": "Taranmış veya yalnızca görüntü içeren PDF'lerde çalışır mı?",
+        "a": "Doğrudan çalışmaz — taranmış bir sayfada analiz edilecek çıkarılabilir metin yoktur. Önce OCR PDF aracından geçirin, ardından OCR sonucunu Markdown'a dönüştürün."
+      },
+      {
+        "q": "Tablolar mükemmel şekilde çıkacak mı?",
+        "a": "Basit, tutarlı şekilde hizalanmış tablolar algılanır ve Markdown tablo sözdizimine dönüştürülür. Birleştirilmiş hücreler, iç içe tablolar veya tutarsız boşluklar düzgün dönüşmeyebilir — tablo ağırlıklı çıktıları kontrol edin."
+      },
+      {
+        "q": "Dosyalarım gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-text", "pdf-to-html"]
+}

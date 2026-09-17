@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "PDF'den HTML'ye Dönüştürücü — Ücretsiz ve Güvenli | JPdf",
+    "description": "Bir PDF'yi, okuma sırasını ve gömülü görselleri koruyarak kendi kendine yeten tek bir HTML dosyasına dönüştürün. Ücretsiz, hızlı ve gizli — kurulum gerektirmez."
+  },
+  "h1": "PDF'den HTML'ye",
+  "subtitle": "Bir PDF'yi, herhangi bir tarayıcıda veya düzenleyicide açabileceğiniz tek, kendi kendine yeten bir HTML dosyasına dönüştürün.",
+  "howItWorks": {
+    "title": "PDF nasıl HTML'ye dönüştürülür",
+    "steps": [
+      "Dönüştürmek istediğiniz PDF dosyasını yükleyin.",
+      "HTML sürümü oluşturmak için Dönüştür'e tıklayın.",
+      "Ortaya çıkan .html dosyasını indirin — görseller içine gömülüdür, yani tek bir dosyadır."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "PDF'den HTML'ye dönüştürmek ücretsiz mi?",
+        "a": "Evet, yukarıda gösterilen günlük kullanım sınırları dahilinde PDF'den HTML'ye dönüştürme ücretsizdir."
+      },
+      {
+        "q": "HTML, PDF ile piksel piksel aynı mı görünecek?",
+        "a": "Hayır. Bu araç belgenin okuma sırasını, metnini ve görsellerini korur, birebir görsel yerleşimi değil — bir PDF'nin hassas konumlandırması basit, düzenlenebilir HTML'ye tam olarak aktarılamaz. Ağırlıklı olarak metin ve görsellerden oluşan PDF'lerde sonuç çok yakın olur; karmaşık çok sütunlu veya yoğun tasarımlı PDF'lerde ise sadeleştirilmiş, doğrusal bir sürüm bekleyin."
+      },
+      {
+        "q": "PDF içindeki görsellere ne olur?",
+        "a": "Görseller doğrudan HTML dosyasının içine gömülür (veri URI'leri olarak), böylece indirilen dosya, takip edilmesi gereken ayrı görsel dosyaları olmayan tek bir dosya olur."
+      },
+      {
+        "q": "Dosyalarım gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-text", "pdf-to-md"]
+}

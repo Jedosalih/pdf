@@ -30,6 +30,8 @@ import {
   Signature,
   EyeOff,
   GitCompare,
+  Globe,
+  ScrollText,
 } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
@@ -1027,6 +1029,69 @@ export const tools: ToolDefinition[] = [
         maxFiles: 1,
         maxPages: 100,
         dailyOperations: 10,
+      },
+    },
+  },
+  {
+    id: "pdf-to-html",
+    slug: "pdf-to-html",
+    category: "convert",
+    icon: Globe,
+    inputTypes: ["application/pdf"],
+    outputType: "text/html",
+    processor: "poppler",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.pdf-to-html",
+    relatedTools: ["pdf-to-text", "pdf-to-md"],
+    limits: {
+      // Same cost profile as pdf-to-text (poppler, single pass, no
+      // heavier engine) -- modeled directly on its limits.
+      guest: {
+        maxFileSizeBytes: 20 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 50 * MB,
+        maxFiles: 1,
+        maxPages: 1000,
+        dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "pdf-to-md",
+    slug: "pdf-to-md",
+    category: "convert",
+    icon: ScrollText,
+    inputTypes: ["application/pdf"],
+    outputType: "text/markdown",
+    processor: "pdfjs",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.pdf-to-md",
+    relatedTools: ["pdf-to-text", "pdf-to-html"],
+    limits: {
+      // Per-page text-position analysis is more work than a single
+      // poppler pass but still pure in-process JS, no subprocess --
+      // between pdf-to-text's and ocr-pdf's cost profile.
+      guest: {
+        maxFileSizeBytes: 20 * MB,
+        maxFiles: 1,
+        maxPages: 150,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 50 * MB,
+        maxFiles: 1,
+        maxPages: 500,
+        dailyOperations: 30,
       },
     },
   },

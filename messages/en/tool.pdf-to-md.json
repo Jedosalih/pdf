@@ -1,0 +1,42 @@
+{
+  "seo": {
+    "title": "PDF to Markdown Converter — Free & Secure | JPdf",
+    "description": "Convert a PDF into a real, structured Markdown file — headings, paragraphs, and lists, not just raw text. Free, fast, and private."
+  },
+  "h1": "PDF to Markdown",
+  "subtitle": "Convert a PDF into a structured .md file — headings, paragraphs, and lists, not just a text dump.",
+  "howItWorks": {
+    "title": "How to convert PDF to Markdown",
+    "steps": [
+      "Upload the PDF file you want to convert.",
+      "Click Convert — headings, paragraphs, and lists are detected automatically.",
+      "Download the resulting .md file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is converting PDF to Markdown free?",
+        "a": "Yes, converting PDF to Markdown is free within the daily usage limits shown above."
+      },
+      {
+        "q": "How is this different from PDF to Text?",
+        "a": "PDF to Text gives you the raw extracted text. PDF to Markdown analyzes font sizes and layout to detect real structure — headings, bullet and numbered lists, and simple tables — and writes it as proper Markdown syntax. It's a best-effort structural reading of the document, not a guess at structure that isn't really there."
+      },
+      {
+        "q": "Does it work on scanned or image-only PDFs?",
+        "a": "Not directly — a scanned page has no extractable text to analyze. Run it through the OCR PDF tool first, then convert the OCR'd result to Markdown."
+      },
+      {
+        "q": "Will tables come out perfectly?",
+        "a": "Simple, consistently-aligned tables are detected and converted to Markdown table syntax. Merged cells, nested tables, or inconsistent spacing may not convert cleanly — check the output for anything table-heavy."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-text", "pdf-to-html"]
+}

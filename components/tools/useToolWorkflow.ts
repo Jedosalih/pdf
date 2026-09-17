@@ -60,6 +60,8 @@ export function errorMessageKey(code: string | undefined): string {
       return "unrecoverableFile";
     case "GUEST_NOT_ALLOWED":
       return "guestNotAllowed";
+    case "NO_EXTRACTABLE_TEXT":
+      return "noExtractableText";
     default:
       return "generic";
   }

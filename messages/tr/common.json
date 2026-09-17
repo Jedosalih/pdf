@@ -59,6 +59,7 @@
     "limitReached": "Bugünkü ücretsiz kullanım sınırınıza ulaştınız.",
     "invalidPassword": "Bu şifre yanlış.",
     "unrecoverableFile": "Bu dosya onarılamayacak kadar hasarlı.",
-    "guestNotAllowed": "Bu aracı kullanmak için lütfen giriş yapın."
+    "guestNotAllowed": "Bu aracı kullanmak için lütfen giriş yapın.",
+    "noExtractableText": "Bu dosyada çıkarılabilir metin yok (taranmış veya yalnızca görüntü içeren bir PDF gibi görünüyor). Önce OCR PDF aracını, ardından sonucu dönüştürmeyi deneyin."
   }
 }

@@ -23,6 +23,8 @@ import { handleEditPdf } from "./handlers/editPdf.js";
 import { handleFillSignPdf } from "./handlers/fillSignPdf.js";
 import { handleRedactPdf } from "./handlers/redactPdf.js";
 import { handleComparePdf } from "./handlers/comparePdf.js";
+import { handlePdfToHtml } from "./handlers/pdfToHtml.js";
+import { handlePdfToMarkdown } from "./handlers/pdfToMarkdown.js";
 import { JobFailure } from "./errors.js";
 
 const connection = new Redis(
@@ -59,6 +61,8 @@ const handlers: Record<string, (jobId: string) => Promise<void>> = {
   "fill-sign-pdf": handleFillSignPdf,
   "redact-pdf": handleRedactPdf,
   "compare-pdf": handleComparePdf,
+  "pdf-to-html": handlePdfToHtml,
+  "pdf-to-md": handlePdfToMarkdown,
 };
 
 const worker = new Worker<ProcessingJobPayload>(

@@ -141,6 +141,33 @@ ocrPage.drawImage(ocrImage, { x: 0, y: 0, width: 800, height: 300 });
 const ocrBytes = await ocrDoc.save();
 await writeFile("docs/fixtures/sample-image-only.pdf", ocrBytes);
 
+// Structured-document fixture for pdf-to-html/pdf-to-md: a real heading
+// (large font), a two-line wrapped paragraph (normal font, tight line
+// gap -- should join into one paragraph), a bullet list, and a simple
+// two-column table (each cell drawn as its own text-placement operation,
+// like a real generated PDF, so pdf.js reports them as separate
+// positioned items with a real horizontal gap -- not one string with
+// embedded spaces, which pdf.js would keep as a single item).
+const structuredDoc = await PDFDocument.create();
+const structuredFont = await structuredDoc.embedFont(StandardFonts.Helvetica);
+const structuredPage = structuredDoc.addPage([500, 700]);
+const drawS = (text, x, y, size) =>
+  structuredPage.drawText(text, { x, y, size, font: structuredFont, color: rgb(0, 0, 0) });
+drawS("Fixture Heading Marker", 40, 650, 28);
+drawS("This is the first line of a wrapped paragraph that", 40, 600, 12);
+drawS("continues on the very next line of the same paragraph.", 40, 586, 12);
+drawS("- First bullet item marker", 40, 540, 12);
+drawS("- Second bullet item marker", 40, 524, 12);
+drawS("- Third bullet item marker", 40, 508, 12);
+drawS("Name", 40, 460, 12);
+drawS("Score", 250, 460, 12);
+drawS("Alice", 40, 444, 12);
+drawS("92", 250, 444, 12);
+drawS("Bob", 40, 428, 12);
+drawS("88", 250, 428, 12);
+const structuredBytes = await structuredDoc.save();
+await writeFile("docs/fixtures/sample-structured.pdf", structuredBytes);
+
 console.log(
   "done",
   a.byteLength,
@@ -154,4 +181,5 @@ console.log(
   xlsxBytes.byteLength,
   pptxBytes.byteLength,
   ocrBytes.byteLength,
+  structuredBytes.byteLength,
 );

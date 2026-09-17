@@ -2061,6 +2061,80 @@ user still gets `403` attempting to start a *new* job against the first
 user's file (guards specifically against the workspace-chaining ownership
 widening having loosened actor scoping, which it did not).
 
+## 2026-09-17 — PDF to HTML and PDF to Markdown: two new conversion tools
+
+Kicked off the "Final Completion Mission" (`TASKS/JPdf_Final_Completion_Mission.md`)
+with its first concrete item: two genuinely new conversion directions,
+neither reusing an existing worker handler.
+
+- **`pdf-to-html`** (`workers/pdf/src/handlers/pdfToHtml.ts`) uses
+  poppler's `pdftohtml -noframes` (already installed for pdf-to-text/
+  pdf-to-pdfa — zero new system dependency). Verified empirically inside
+  the real container before writing the handler (established practice):
+  `-noframes` writes one `<base>.html` plus a *sibling* image file per
+  embedded raster, referenced by a relative `src="..."` — two files for
+  one logical job output, which doesn't fit this codebase's one-output-
+  file-per-job model. Fixed by inlining every sibling image as a base64
+  data URI before upload, producing one genuinely self-contained `.html`
+  file — verified by asserting zero non-`data:` `src` attributes survive
+  in the output. Deliberately did not use poppler's `-c` (complex/exact-
+  layout) mode: it absolutely-positions every text fragment, producing
+  far less readable/editable HTML for the common case; the simple mode's
+  reading-order text is a better fit for "useful HTML," honestly
+  documented in the tool's own FAQ as not pixel-perfect.
+- **`pdf-to-md`** (`workers/pdf/src/handlers/pdfToMarkdown.ts`, new
+  `pdfjs-dist` dependency in `workers/pdf` — previously only the main app
+  depended on it) is a from-scratch heuristic converter, not a wrapper
+  around an existing engine: per-page `getTextContent()` items are
+  grouped into lines by Y-position clustering, then classified into
+  headings (font size ranked against the document's own modal/body size,
+  capped at H1–H3), bullet/numbered lists (prefix matching), simple
+  tables (≥3 consecutive lines sharing the same horizontal-gap-derived
+  cell count — a real, bounded heuristic, not a fabrication: a single
+  oddly-spaced line never becomes a one-row table), and paragraphs
+  (consecutive lines joined when the vertical gap to the next line
+  matches the page's own modal line-spacing, split into a new paragraph
+  otherwise). A page with zero extractable text gets an honest inline
+  note pointing at the OCR PDF tool instead of silently producing
+  nothing; a *wholly* image-only PDF fails the whole job with a new,
+  specific, translated error code (`NO_EXTRACTABLE_TEXT`) rather than
+  shipping an empty file. Explicitly does not attempt bold/italic
+  emphasis detection (pdf.js's per-item `fontName` is an internal
+  resource alias, not a reliable weight signal without deeper font-
+  descriptor inspection) or merged/spanning table cells — stated as scope
+  limits in the tool's own FAQ, not silently absent.
+- **Two real bugs found only by actually running both tools against a
+  new fixture** (`docs/fixtures/sample-structured.pdf`: a real heading,
+  a two-line wrapped paragraph, a bullet list, and a two-column table,
+  each drawn with pdf-lib the way a real generator would), not by
+  reasoning about the code: (1) pdf.js synthesizes a pure-whitespace
+  *item* to represent a large positional gap between two real text runs
+  — the first implementation treated this item as pure noise to skip and
+  advanced its internal "last seen X position" tracker to the
+  whitespace's own end, which silently erased the very gap the table-
+  detection heuristic depends on (two full table rows collapsed into one
+  run with no spacing at all, e.g. "NameScore"). Fixed by leaving that
+  tracker untouched across a skipped whitespace item, so the next real
+  item's own gap computation correctly spans the whole distance. (2)
+  Consecutive list-item blocks were being joined with the same blank-line
+  separator as every other block transition, producing a "loose" list
+  with unwanted blank lines between items; fixed by tracking each block's
+  list-item-ness and joining consecutive list blocks with a single
+  newline instead.
+- Added `"pdfjs"` to `ToolProcessor` (`lib/tools/types.ts`) — an honest,
+  new label, since neither `"poppler"` nor `"pdf-lib"` describes what's
+  actually running for pdf-to-md.
+- **Verification**: both tools manually driven end-to-end (upload → job →
+  poll → download → inspect actual output bytes) against the structured
+  fixture and the existing image-only OCR fixture before writing the
+  permanent E2E tests, per this project's established discipline. New
+  `tests/e2e/pdf-to-html.spec.ts`/`pdf-to-md.spec.ts` (4 specs) assert
+  real Markdown/HTML syntax and real fixture text survived, not just "a
+  file came back." Existing `html-to-pdf`/`markdown-to-pdf` E2E specs
+  re-run and confirmed still green (neither tool nor `workers/html` was
+  touched this pass). Screenshots taken and inspected in en/ar (RTL) +
+  mobile for both new tool pages.
+
 ## Template for future entries
 
 ```

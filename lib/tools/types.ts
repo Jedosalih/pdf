@@ -10,7 +10,8 @@ export type ToolProcessor =
   | "libreoffice"
   | "pdf-lib"
   | "sharp"
-  | "playwright";
+  | "playwright"
+  | "pdfjs";
 
 export type ToolQueue =
   | "pdf-processing"

@@ -518,11 +518,72 @@ original text and are confirmed *not* rasterized (`OPS.paintImageXObject`
 absent) -- proving both the removal guarantee and that non-redacted pages
 keep full fidelity.
 
+### PDF → HTML (`pdf-to-html`) — Poppler (`pdftohtml`)
+
+```
+pdftohtml -noframes -q <in.pdf> <out-base>
+```
+
+Writes `<out-base>.html` plus a sibling image file per embedded raster
+(`<out-base>-N_M.png`/`.jpg`), referenced by a relative `src="..."`. Every
+sibling image is read back and inlined into the HTML as a base64 data URI
+before upload, so the job's single output file is genuinely self-
+contained (verified: zero non-`data:` `src` attributes survive). Uses
+poppler's simple/reading-order mode, not `-c` (complex, absolutely-
+positioned layout) — the simple mode produces materially more readable,
+editable HTML for the common case; this is a deliberate fidelity trade-
+off, stated in the tool's own FAQ ("not pixel-for-pixel"), not an
+oversight.
+
+### PDF → Markdown (`pdf-to-md`) — `pdfjs-dist`, heuristic structure detection
+
+No subprocess — pure in-process JS using `pdfjs-dist` (added as a new
+`workers/pdf` dependency; previously only the main app depended on it).
+Per page: `page.getTextContent()` items are grouped into lines by
+Y-position clustering (plus pdf.js's own per-item `hasEOL` flag as a
+secondary signal), then each line is classified as:
+
+- **Heading** — font size ranked against the document's own modal/body
+  font size, mapped to H1–H3 (capped at 3 levels).
+- **List item** — bullet/numbered prefix pattern matching, normalized to
+  `- ` or `N. `.
+- **Table row** — ≥3 consecutive lines whose text items share the same
+  horizontal-gap-derived cell count render as a real Markdown table;
+  anything short of that confidence threshold is left as plain lines,
+  never fabricated into a one-row table.
+- **Paragraph** — consecutive lines joined when the vertical gap to the
+  next line matches the page's own modal line-spacing; a larger gap
+  starts a new paragraph.
+
+A page with zero extractable text gets an inline note pointing at the OCR
+PDF tool rather than silently producing nothing; a PDF with *no*
+extractable text on *any* page fails the whole job with a dedicated
+`NO_EXTRACTABLE_TEXT` error rather than shipping an empty file. Does not
+attempt bold/italic detection (`TextItem.fontName` is an internal PDF
+resource alias, not a reliable weight signal without deeper font-
+descriptor inspection) or merged/spanning table cells — stated as scope
+limits in the tool's own FAQ.
+
+**Real bug found only by dumping pdf.js's raw `getTextContent()` output**
+for a table-shaped test fixture: pdf.js synthesizes a pure-whitespace
+*item* spanning exactly the gap between two real text runs (e.g. between
+two table cells) rather than leaving a gap with no item at all. Treating
+this item as pure noise and advancing the "last seen X position" tracker
+to its own end point silently erased the very gap the table heuristic
+measures, collapsing whole rows together with no spacing
+(`"NameScore"` instead of two cells). Fixed by leaving that tracker
+untouched across a skipped whitespace item.
+
 ## Shared worker safety rules (blueprint §6)
 
-- Every job: max input file size, max page count (checked via `pdfinfo`
-  before running the real operation), and a hard wall-clock timeout — kill
-  the child process on timeout (`SIGKILL` after a grace period).
+- Every job: max input file size (checked at upload), max total page count
+  across all PDF inputs (checked once at job creation in
+  `app/api/jobs/route.ts` via `pdfjs-dist`, not inside each worker or via
+  `pdfinfo` — see `docs/SECURITY.md` §1), and for engine-subprocess-backed
+  handlers, a per-call wall-clock timeout — kill the child process on
+  timeout (`SIGKILL` after a grace period). Pure-`pdf-lib`/`pdfjs-dist`
+  handlers with no subprocess have no timeout of their own yet — a known
+  gap, see `docs/SECURITY.md` §3.
 - Every job runs in its own randomly-named temp directory under a worker
   temp root; deleted in a `finally` regardless of success/failure.
 - No worker process needs outbound network access to do its job (all

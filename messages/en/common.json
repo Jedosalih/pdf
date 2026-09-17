@@ -59,6 +59,7 @@
     "limitReached": "You've reached today's free limit.",
     "invalidPassword": "That password is incorrect.",
     "unrecoverableFile": "This file is too damaged to repair.",
-    "guestNotAllowed": "Please sign in to use this tool."
+    "guestNotAllowed": "Please sign in to use this tool.",
+    "noExtractableText": "This file has no extractable text (it looks like a scanned or image-only PDF). Try the OCR PDF tool first, then convert the result."
   }
 }

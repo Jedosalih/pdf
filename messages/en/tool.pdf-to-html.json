@@ -1,0 +1,38 @@
+{
+  "seo": {
+    "title": "PDF to HTML Converter — Free & Secure | JPdf",
+    "description": "Convert a PDF into a self-contained HTML file, preserving reading order and embedded images. Free, fast, and private — no installation required."
+  },
+  "h1": "PDF to HTML",
+  "subtitle": "Convert a PDF into a single, self-contained HTML file you can open in any browser or editor.",
+  "howItWorks": {
+    "title": "How to convert PDF to HTML",
+    "steps": [
+      "Upload the PDF file you want to convert.",
+      "Click Convert to generate an HTML version.",
+      "Download the resulting .html file — images are embedded, so it's a single file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is converting PDF to HTML free?",
+        "a": "Yes, converting PDF to HTML is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will the HTML look pixel-for-pixel identical to the PDF?",
+        "a": "No. This preserves the document's reading order, text, and images, not an exact visual layout — a PDF's precise positioning doesn't translate into simple, editable HTML. For PDFs made mostly of body text and images, the result is very close; for complex multi-column or design-heavy PDFs, expect a simplified, linear version."
+      },
+      {
+        "q": "What happens to images in the PDF?",
+        "a": "Images are embedded directly inside the HTML file (as data URIs), so the download is a single file with no separate image files to keep track of."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-text", "pdf-to-md"]
+}
