@@ -1584,6 +1584,48 @@ shipped and verified). Still entirely unbuilt, separate later phases: the
 real PDF editor/canvas, Fill & Sign/e-signature, redaction, Compare
 documents, and batch processing.
 
+## 2026-09-17 — Batch processing shipped (batch-process): client-side fan-out, zero worker changes
+
+Fifth unit past the core-conversion phase.
+
+- **Decision**: "batch" means running an already-existing single-file
+  tool across many files at once, each producing its own independent
+  result -- not a new engine capability. The client uploads each file and
+  creates one independent job per file (`POST /api/jobs` once per file,
+  reusing the exact same request shape every other tool already uses),
+  polls each job independently, and shows per-file progress/download.
+  Zero worker code was touched -- every batchable tool's handler runs
+  completely unaware it's part of a batch.
+- **Scope, deliberately curated, not generic**: only tools with *no
+  required option* are batchable for this pass (`compress-pdf`,
+  `flatten-pdf`, `repair-pdf`, `pdf-to-pdfa`, `pdf-to-text` --
+  `lib/tools/batch.ts`), each verified zero-required-option by reading its
+  own single-file component before being added. Tools needing per-file
+  input (e.g. watermark text) would need a per-file options UI, a
+  materially larger and separate piece of work not attempted here.
+- **A real bug caught by actually running the feature**: the first
+  version capped a batch's file count using the *selected tool's own*
+  `ToolLimits.maxFiles` (1, for every batchable tool here, since they're
+  all single-file-per-job tools) -- silently capping every batch to
+  exactly one file regardless of how many were dropped. Fixed with a
+  dedicated `BATCH_MAX_FILES` constant (20), independent of any tool's
+  own per-job file cap, which is a different axis entirely (files per job
+  vs. jobs per batch). The per-file size/page limits shown in the UI
+  still correctly come from the selected tool's own real entitlement.
+- **No new registry entry**: batch-process has no processor/queue of its
+  own (it orchestrates *other* tools' existing ones), so it deliberately
+  isn't a `ToolDefinition` and doesn't appear in `getEnabledTools()`'s
+  registry-driven grids. Added one explicit, clearly-labeled card to
+  `/tools` (not blended into the category grid as if it were another
+  category) so it's still discoverable rather than URL-only.
+- **Verification**: E2E test uploads two different-page-count fixtures to
+  the default batch tool, starts the batch, and downloads *both* results
+  independently -- checking each has the page count matching its own
+  source file (2 and 3, as a set, since concurrent jobs don't guarantee
+  completion order) rather than assuming order or risking a
+  cross-contaminated/merged result, the real risk this feature could get
+  wrong. Full suite green, `tsc`/ESLint clean.
+
 ## 2026-09-17 — Fixed a real, pre-existing gap: `maxPages` was never actually enforced
 
 Found while setting `compare-pdf`'s own page limits in the registry, not

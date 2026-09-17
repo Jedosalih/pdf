@@ -1,0 +1,45 @@
+{
+  "seo": {
+    "title": "PDF Toplu İşleme — Birden Çok Dosyada Tek Bir Aracı Çalıştırın | JPdf",
+    "description": "Aynı PDF işlemini birden çok dosyaya tek seferde uygulayın — her dosya bağımsız olarak işlenir ve tamamlanır tamamlanmaz indirilmeye hazır olur. Ücretsiz, hızlı ve gizli."
+  },
+  "h1": "PDF Toplu İşleme",
+  "subtitle": "Aynı işlemi birden çok dosyaya tek seferde uygulayın — her biri bağımsız olarak işlenir ve indirilir.",
+  "toolLabel": "Bir işlem seçin",
+  "dropLabel": "Birden çok PDF'i buraya bırakın",
+  "hint": "{count, plural, other {Toplu işlem başına en fazla # dosya, dosya başına en fazla {size}}}",
+  "startBatch": "Toplu işlemi başlat",
+  "entry": {
+    "done": "Tamamlandı"
+  },
+  "someUploadsFailed": "Bazı dosyalar yüklenemedi — kaldırıp tekrar deneyin veya kalanlarla devam edin.",
+  "howItWorks": {
+    "title": "Toplu işleme nasıl çalışır",
+    "steps": [
+      "Çalıştırılacak işlemi seçin.",
+      "İşlemek istediğiniz kadar dosya yükleyin.",
+      "Toplu işlemi başlat'a tıklayın — her dosya bağımsız olarak işlenir ve hazır olur olmaz indirilebilir."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "Başarısız olan bir dosya tüm toplu işlemi durdurur mu?",
+        "a": "Hayır. Her dosya kendi bağımsız işidir — biri başarısız olursa, diğerleri işlenmeye devam eder ve ayrı ayrı indirilebilir kalır."
+      },
+      {
+        "q": "Toplu işleme için herhangi bir aracı kullanabilir miyim?",
+        "a": "Toplu işleme modu şu anda dosyanın kendisi dışında ek girdi gerektirmeyen seçili bir işlem grubunu destekler. Belirli bir filigran metni gibi dosya başına özel girdi gerektiren araçlar henüz dahil değildir."
+      },
+      {
+        "q": "Toplu işler günlük limitime dahil edilir mi?",
+        "a": "Evet — işlenen her dosya, o aracı normal şekilde kullanmakla aynı şekilde bir işlem olarak sayılır."
+      },
+      {
+        "q": "Dosyalarım gizli kalır mı?",
+        "a": "Evet. Her dosya güvenli şekilde işlenir ve diğer tüm araçlarda olduğu gibi kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  }
+}

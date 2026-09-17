@@ -1,0 +1,45 @@
+{
+  "seo": {
+    "title": "Batch Process PDFs — Run One Tool on Many Files at Once | JPdf",
+    "description": "Apply the same PDF operation to multiple files in one go — each file is processed independently and ready to download as soon as it's done. Free, fast, and private."
+  },
+  "h1": "Batch Process PDFs",
+  "subtitle": "Apply the same operation to many files at once — each one processed and downloaded independently.",
+  "toolLabel": "Choose an operation",
+  "dropLabel": "Drop multiple PDFs here",
+  "hint": "{count, plural, one {Up to # file} other {Up to # files}} per batch, up to {size} each",
+  "startBatch": "Start batch",
+  "entry": {
+    "done": "Done"
+  },
+  "someUploadsFailed": "Some files couldn't be uploaded — remove them and try again, or continue with the rest.",
+  "howItWorks": {
+    "title": "How batch processing works",
+    "steps": [
+      "Choose which operation to run.",
+      "Upload as many files as you want to process.",
+      "Click Start batch — each file is processed independently and downloadable as soon as it's ready."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Does one failed file stop the whole batch?",
+        "a": "No. Each file is its own independent job — if one fails, the rest keep processing and remain downloadable individually."
+      },
+      {
+        "q": "Can I use any tool for batch processing?",
+        "a": "Batch mode currently supports a curated set of operations that don't need any extra input beyond the file itself. Tools that need custom input per file, like a specific watermark's text, aren't included yet."
+      },
+      {
+        "q": "Do batch jobs count against my daily limit?",
+        "a": "Yes — each file processed is one operation, counted the same way as using that tool normally."
+      },
+      {
+        "q": "Will my files be kept private?",
+        "a": "Yes. Every file is processed securely and automatically deleted after a short retention period, the same as any other tool."
+      }
+    ]
+  }
+}

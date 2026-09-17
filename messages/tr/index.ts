@@ -4,6 +4,7 @@ import workspace from "./workspace.json";
 import toolsDirectory from "./tools-directory.json";
 import home from "./home.json";
 import tools from "./tools.json";
+import batch from "./batch.json";
 import mergePdf from "./tool.merge-pdf.json";
 import splitPdf from "./tool.split-pdf.json";
 import compressPdf from "./tool.compress-pdf.json";
@@ -45,6 +46,7 @@ const messages = {
   toolsDirectory,
   home,
   tools,
+  batch,
   tool: {
     "merge-pdf": mergePdf,
     "split-pdf": splitPdf,

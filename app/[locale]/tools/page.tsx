@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Layers, RefreshCw, Gauge, PenSquare, ShieldCheck } from "lucide-react";
+import { Layers, RefreshCw, Gauge, PenSquare, ShieldCheck, ListChecks } from "lucide-react";
 import { buildLocalizedMetadata } from "@/lib/seo/metadata";
 import { getEnabledTools } from "@/lib/tools/registry";
 import type { ToolCategory } from "@/lib/tools/types";
@@ -45,6 +45,7 @@ export default async function ToolsDirectoryPage({ params }: PageProps) {
   setRequestLocale(locale);
   const t = await getTranslations("toolsDirectory");
   const tCommon = await getTranslations("common");
+  const tBatch = await getTranslations("batch");
 
   const tools = getEnabledTools();
   const toolCards: (ToolsDirectoryToolItem & { category: ToolCategory })[] = await Promise.all(
@@ -93,6 +94,15 @@ export default async function ToolsDirectoryPage({ params }: PageProps) {
               count={t("categoryCount", { count: group.tools.length })}
             />
           ))}
+          {/* Not a category -- batch-process runs an existing single-file
+           * tool across many files at once, so it has no registry entry of
+           * its own and wouldn't otherwise appear in this directory. */}
+          <CategoryCard
+            href="/batch-process"
+            icon={ListChecks}
+            label={tBatch("h1")}
+            count={tBatch("subtitle")}
+          />
         </div>
 
         <div className="mt-10">
