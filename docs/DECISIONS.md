@@ -1584,6 +1584,47 @@ shipped and verified). Still entirely unbuilt, separate later phases: the
 real PDF editor/canvas, Fill & Sign/e-signature, redaction, Compare
 documents, and batch processing.
 
+## 2026-09-17 — Workspace file chaining shipped: reuse a prior job's output without re-uploading
+
+Sixth and final capability unit of the mission's execution order, before
+the closing full regression/security/documentation pass.
+
+- **Decision**: a "Use in a tool" action on any file in My Documents
+  opens the same tool-picker already built for the homepage's drop
+  flow, and the chosen tool page receives the file already marked
+  uploaded (its real name/size, no upload round trip) instead of forcing
+  a download-then-reselect-from-disk detour.
+- **Architecture**: extended `PendingUploadProvider` (already handling
+  "homepage drop, tool not chosen yet") with a second, parallel pending
+  slot carrying a file *reference* (`{id, name, mimeType, size}`) instead
+  of raw bytes. `useToolWorkflow`'s existing "consume pending upload on
+  mount" effect gained a second branch: a pending workspace reference
+  becomes a `TrackedFile` with `status: "uploaded"` and the existing file
+  id as `serverId` directly, skipping `/api/upload` entirely. A
+  zero-filled placeholder `File` of the *real* byte length stands in for
+  the browser File object every existing size/name/thumbnail display
+  already expects, so no other component needed to change.
+- **A real, latent bug found by actually running the chain, not by
+  review**: `app/api/jobs/route.ts`'s file-ownership check only ever
+  accepted `status: "UPLOADED"` files as job inputs. A prior job's output
+  is `status: "READY"` -- a completely different lifecycle state -- so
+  the very first chained job was silently rejected with `FORBIDDEN`.
+  Fixed by accepting either status (both represent complete, available
+  file bytes; PROCESSING/FAILED/EXPIRED/UPLOADING never do) and, since
+  READY files can be trashed unlike transient UPLOADED ones, adding an
+  explicit `deletedAt: null` guard that the original query never needed
+  but this change now requires.
+- **No action offered when it would silently do nothing**: "Use in a
+  tool" is omitted from a file's menu entirely (not shown-but-disabled)
+  when no enabled tool accepts that file's mime type, computed from the
+  same registry `inputTypes` data every other tool-matching path uses.
+- **Verification**: E2E test signs up, completes a real compress-pdf job,
+  opens that *output* file's "Use in a tool" menu, picks Watermark PDF,
+  asserts no upload state is ever shown, runs it, and checks the final
+  downloaded PDF contains both the new watermark text and the original
+  fixture's own page text on both pages -- proving the chained bytes
+  really came from the first job's output, not an empty or wrong file.
+
 ## 2026-09-17 — Batch processing shipped (batch-process): client-side fan-out, zero worker changes
 
 Fifth unit past the core-conversion phase.

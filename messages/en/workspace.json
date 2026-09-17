@@ -62,6 +62,7 @@
     "emptyCta": "Go to My Documents"
   },
   "fileActions": {
+    "useInTool": "Use in a tool",
     "rename": "Rename",
     "moreActions": "More actions",
     "star": "Star",

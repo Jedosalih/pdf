@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreVertical, Star, Trash2, RotateCcw, Pencil, Download } from "lucide-react";
+import { MoreVertical, Star, Trash2, RotateCcw, Pencil, Download, Wand } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { formatFileSize } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/routing";
@@ -31,6 +31,10 @@ interface DocumentRowProps {
   onRestore: () => void;
   onRename: () => void;
   onDeletePermanently: () => void;
+  /** Omitted entirely (not just disabled) when no enabled tool accepts
+   * this file's type, so the menu never offers an action that would
+   * silently do nothing. */
+  onUseInTool?: () => void;
 }
 
 export function DocumentRow({
@@ -41,6 +45,7 @@ export function DocumentRow({
   onRestore,
   onRename,
   onDeletePermanently,
+  onUseInTool,
 }: DocumentRowProps) {
   const t = useTranslations("workspace.fileActions");
   const locale = useLocale() as Locale;
@@ -64,6 +69,12 @@ export function DocumentRow({
         <DropdownContent align="end">
           {view !== "trash" ? (
             <>
+              {onUseInTool ? (
+                <DropdownItem onSelect={onUseInTool}>
+                  <Wand className="h-4 w-4" aria-hidden="true" />
+                  {t("useInTool")}
+                </DropdownItem>
+              ) : null}
               <DropdownItem onSelect={onRename}>
                 <Pencil className="h-4 w-4" aria-hidden="true" />
                 {t("rename")}

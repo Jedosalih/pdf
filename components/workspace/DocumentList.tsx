@@ -12,6 +12,10 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DocumentRow, type WorkspaceFileSummary } from "./DocumentRow";
 import type { FileView, FileSort } from "@/lib/workspace/files";
+import { usePendingUpload } from "@/components/upload/PendingUploadProvider";
+import { getEnabledTools } from "@/lib/tools/registry";
+import type { ToolDefinition } from "@/lib/tools/types";
+import { ToolPickerModal } from "@/components/marketing/ToolPickerModal";
 
 interface DocumentListProps {
   view: FileView;
@@ -34,6 +38,10 @@ export function DocumentList({ view }: DocumentListProps) {
   const [renameTarget, setRenameTarget] = useState<WorkspaceFileSummary | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<WorkspaceFileSummary | null>(null);
+  const [toolPicker, setToolPicker] = useState<{ fileName: string; tools: ToolDefinition[] } | null>(
+    null,
+  );
+  const pendingUpload = usePendingUpload();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,6 +96,20 @@ export function DocumentList({ view }: DocumentListProps) {
     await fetch(`/api/files/${deleteTarget.id}`, { method: "DELETE" });
     setDeleteTarget(null);
     void load();
+  }
+
+  function handleUseInTool(file: WorkspaceFileSummary) {
+    const matchingTools = getEnabledTools().filter((tool) =>
+      tool.inputTypes.includes(file.mimeType),
+    );
+    if (matchingTools.length === 0) return;
+    pendingUpload.setWorkspaceFile({
+      id: file.id,
+      name: file.originalName,
+      mimeType: file.mimeType,
+      size: file.size,
+    });
+    setToolPicker({ fileName: file.originalName, tools: matchingTools });
   }
 
   const emptyTitle = t(`${view}.emptyTitle`);
@@ -149,6 +171,11 @@ export function DocumentList({ view }: DocumentListProps) {
                 setRenameValue(file.originalName);
               }}
               onDeletePermanently={() => setDeleteTarget(file)}
+              onUseInTool={
+                getEnabledTools().some((tool) => tool.inputTypes.includes(file.mimeType))
+                  ? () => handleUseInTool(file)
+                  : undefined
+              }
             />
           ))}
         </ul>
@@ -195,6 +222,16 @@ export function DocumentList({ view }: DocumentListProps) {
           </Button>
         </div>
       </Modal>
+
+      {toolPicker ? (
+        <ToolPickerModal
+          fileName={toolPicker.fileName}
+          tools={toolPicker.tools}
+          onOpenChange={(open) => {
+            if (!open) setToolPicker(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

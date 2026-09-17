@@ -4,8 +4,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatFileSize } from "@/lib/i18n/format";
 import type { Locale } from "@/lib/i18n/routing";
-import { usePendingUpload } from "@/components/upload/PendingUploadProvider";
+import { usePendingUpload, type PendingWorkspaceFile } from "@/components/upload/PendingUploadProvider";
 import type { FileListItem } from "./FileList";
+
+/** A zero-filled buffer of the file's real byte length -- never uploaded
+ * (its bytes already live server-side), only used so the existing
+ * name/type/size-based UI (thumbnails, formatFileSize) displays correctly
+ * for a file chosen from the workspace instead of freshly dropped. */
+function createWorkspacePlaceholderFile(workspaceFile: PendingWorkspaceFile): File {
+  return new File([new Uint8Array(workspaceFile.size)], workspaceFile.name, {
+    type: workspaceFile.mimeType,
+  });
+}
 
 const POLL_INTERVAL_MS = 1500;
 
@@ -235,21 +245,39 @@ export function useToolWorkflow({ toolId, maxFiles }: UseToolWorkflowOptions) {
   const pendingUpload = usePendingUpload();
   const hasConsumedPendingUpload = useRef(false);
 
-  // Picks up a file dropped on the homepage's hero dropzone before this
-  // tool was chosen (see PendingUploadProvider) — runs at most once per
-  // mount regardless of how often `handleFilesSelected`'s identity changes.
-  // The state update is deferred to a microtask (not called synchronously
-  // in the effect body) to satisfy eslint-plugin-react-hooks's
-  // set-state-in-effect rule — same timing, just not a bare top-level
-  // setState call directly inside the effect.
+  const addWorkspaceFile = useCallback((workspaceFile: PendingWorkspaceFile) => {
+    setFiles((prev) => [
+      ...prev,
+      {
+        localId: crypto.randomUUID(),
+        file: createWorkspacePlaceholderFile(workspaceFile),
+        status: "uploaded",
+        serverId: workspaceFile.id,
+      },
+    ]);
+  }, []);
+
+  // Picks up a file dropped on the homepage's hero dropzone, or a file
+  // chosen via "Use in a tool" on an existing workspace document, before
+  // this tool was chosen (see PendingUploadProvider) — runs at most once
+  // per mount regardless of how often `handleFilesSelected`'s identity
+  // changes. The state update is deferred to a microtask (not called
+  // synchronously in the effect body) to satisfy
+  // eslint-plugin-react-hooks's set-state-in-effect rule — same timing,
+  // just not a bare top-level setState call directly inside the effect.
   useEffect(() => {
     if (hasConsumedPendingUpload.current) return;
     hasConsumedPendingUpload.current = true;
+    const workspaceFile = pendingUpload.consumeWorkspaceFile();
+    if (workspaceFile) {
+      void Promise.resolve().then(() => addWorkspaceFile(workspaceFile));
+      return;
+    }
     const file = pendingUpload.consume();
     if (file) {
       void Promise.resolve().then(() => handleFilesSelected([file]));
     }
-  }, [pendingUpload, handleFilesSelected]);
+  }, [pendingUpload, handleFilesSelected, addWorkspaceFile]);
 
   const uploadedCount = files.filter((f) => f.status === "uploaded").length;
   const hasErrors = files.some((f) => f.status === "error");

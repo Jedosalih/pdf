@@ -62,6 +62,7 @@
     "emptyCta": "Belgelerime git"
   },
   "fileActions": {
+    "useInTool": "Bir araçta kullan",
     "rename": "Yeniden adlandır",
     "moreActions": "Diğer işlemler",
     "star": "Yıldızla",

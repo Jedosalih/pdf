@@ -99,7 +99,14 @@ export async function POST(request: NextRequest) {
   const ownedFiles = await prisma.file.findMany({
     where: {
       id: { in: fileIds },
-      status: "UPLOADED",
+      // A fresh upload ("UPLOADED") or a previously-completed job's own
+      // output ("READY") are both complete, available file bytes and
+      // valid job input -- workspace chaining (blueprint: "use an
+      // existing workspace file as input without re-upload") reuses a
+      // prior job's result exactly this way. PROCESSING/FAILED/EXPIRED/
+      // UPLOADING files are never valid inputs.
+      status: { in: ["UPLOADED", "READY"] },
+      deletedAt: null,
       ...(actor.type === "guest"
         ? { guestId: actor.guestId }
         : { userId: actor.userId }),
