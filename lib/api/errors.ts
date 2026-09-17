@@ -7,6 +7,7 @@ export type ApiErrorCode =
   | "GUEST_NOT_ALLOWED"
   | "DAILY_LIMIT_REACHED"
   | "TOO_MANY_FILES"
+  | "TOO_MANY_PAGES"
   | "NOT_FOUND"
   | "FORBIDDEN"
   | "VALIDATION_ERROR"
@@ -25,6 +26,7 @@ const statusByCode: Record<ApiErrorCode, number> = {
   GUEST_NOT_ALLOWED: 403,
   DAILY_LIMIT_REACHED: 429,
   TOO_MANY_FILES: 400,
+  TOO_MANY_PAGES: 400,
   NOT_FOUND: 404,
   FORBIDDEN: 403,
   VALIDATION_ERROR: 400,

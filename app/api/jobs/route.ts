@@ -8,6 +8,7 @@ import { resolveActor } from "@/lib/security/actor";
 import { enqueueProcessingJob } from "@/lib/queue/queues";
 import { apiError } from "@/lib/api/errors";
 import { listRecentJobs } from "@/lib/workspace/jobs";
+import { getStorage } from "@/lib/storage";
 
 export const runtime = "nodejs";
 
@@ -21,6 +22,31 @@ const listJobsQuerySchema = z.object({
   cursor: z.string().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
+
+/**
+ * `ToolLimits.maxPages` ("max total pages across all input files") had a
+ * real, per-tool/per-plan value in the registry and DB but was never
+ * actually compared against anything anywhere in the codebase -- found
+ * while adding compare-pdf's own page limits and confirmed with a
+ * repo-wide search. This is the fix: a real, generic gate at job
+ * creation, the one place every tool's input files are already gathered
+ * regardless of which tool it is. Only PDF inputs are counted (the
+ * overwhelming majority of tools and the ones with an unbounded-pages
+ * risk) -- non-PDF inputs are already bounded by file size and are
+ * skipped rather than guessed at. See docs/DECISIONS.md.
+ */
+async function countTotalPdfPages(files: { storageKey: string; mimeType: string }[]): Promise<number> {
+  const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const storage = getStorage();
+  let total = 0;
+  for (const file of files) {
+    if (file.mimeType !== "application/pdf") continue;
+    const buffer = await storage.getObject(file.storageKey);
+    const doc = await getDocument({ data: new Uint8Array(buffer), useWorkerFetch: false }).promise;
+    total += doc.numPages;
+  }
+  return total;
+}
 
 /** History listing — requires a real signed-in user (guests have no
  * persistent workspace). */
@@ -81,6 +107,19 @@ export async function POST(request: NextRequest) {
   });
   if (ownedFiles.length !== fileIds.length) {
     return apiError("FORBIDDEN");
+  }
+
+  let totalPdfPages: number;
+  try {
+    totalPdfPages = await countTotalPdfPages(ownedFiles);
+  } catch {
+    // An unparseable "PDF" here means the real engine will reject it with
+    // its own clearer error shortly -- don't block job creation on this
+    // best-effort structural check failing to even open the file.
+    totalPdfPages = 0;
+  }
+  if (totalPdfPages > limits.maxPages) {
+    return apiError("TOO_MANY_PAGES");
   }
 
   const job = await prisma.job.create({
