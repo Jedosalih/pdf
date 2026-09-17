@@ -26,6 +26,25 @@ Order of checks in `lib/security/validateUpload.ts`:
    reaches the worker, before the real operation runs — a job that fails
    this check is marked `FAILED` with `errorCode: "TOO_MANY_PAGES"` etc.
 
+**Exception: `edit-pdf`'s inserted images bypass this pipeline entirely.**
+The PDF editor (`components/tools/edit-pdf/`) builds its edit list
+client-side and only uploads the *original* PDF through the normal
+`/api/upload` path above — any image a user adds via the "Add image" tool
+is read locally as a base64 data URL and travels inside the job's
+`options.edits` JSON, which `app/api/jobs/route.ts` accepts as an opaque,
+minimally-validated record (`z.record(z.string(), z.unknown())`) by design
+(every tool's options shape differs). The worker
+(`workers/pdf/src/handlers/editPdf.ts`) is therefore the *only* gate for
+that image data: a strict regex requires an exact `data:image/(png|jpeg);
+base64,...` prefix, the decoded byte length is capped (8MB), and a failed
+`pdfDoc.embedPng`/`embedJpg` call is caught and that one edit is skipped
+rather than failing the whole job. There is no magic-byte cross-check
+beyond what `embedPng`/`embedJpg` themselves enforce by successfully
+decoding the image — acceptable here because the bytes are only ever
+handed to `pdf-lib`'s own image embedders (never written to disk, executed,
+or parsed by a native library), the same reasoning already applied to
+Markdown/HTML uploads in §5.
+
 ## 2. Command execution
 
 - All engine invocations use `child_process.execFile`/`spawn` with an

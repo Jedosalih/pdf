@@ -25,6 +25,10 @@ interface ToolPageProps {
   faqStructuredData: object;
   relatedToolsTitle?: string;
   relatedTools?: ToolGridItem[];
+  /** Widens the container for workspaces that need real horizontal room
+   * (e.g. the PDF editor's canvas + side panels) instead of the narrow
+   * single-column form every other tool uses. */
+  wide?: boolean;
 }
 
 /**
@@ -46,9 +50,10 @@ export function ToolPage({
   faqStructuredData,
   relatedToolsTitle,
   relatedTools,
+  wide = false,
 }: ToolPageProps) {
   return (
-    <PageContainer className="max-w-3xl py-12">
+    <PageContainer className={wide ? "max-w-[1440px] py-8" : "max-w-3xl py-12"}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}

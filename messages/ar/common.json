@@ -43,7 +43,12 @@
     "retry": "إعادة المحاولة",
     "tryAgain": "معالجة ملف آخر",
     "removeFile": "إزالة",
-    "startProcessing": "بدء"
+    "startProcessing": "بدء",
+    "undo": "تراجع",
+    "redo": "إعادة",
+    "zoomIn": "تكبير",
+    "zoomOut": "تصغير",
+    "delete": "حذف"
   },
   "errors": {
     "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",

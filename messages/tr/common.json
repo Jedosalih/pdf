@@ -43,7 +43,12 @@
     "retry": "Tekrar dene",
     "tryAgain": "Başka bir dosya işle",
     "removeFile": "Kaldır",
-    "startProcessing": "Başlat"
+    "startProcessing": "Başlat",
+    "undo": "Geri al",
+    "redo": "Yinele",
+    "zoomIn": "Yakınlaştır",
+    "zoomOut": "Uzaklaştır",
+    "delete": "Sil"
   },
   "errors": {
     "generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",

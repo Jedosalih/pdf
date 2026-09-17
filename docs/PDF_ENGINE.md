@@ -361,6 +361,59 @@ enough to cover them without changes.
 assumed**: see docs/DECISIONS.md for the `PLAYWRIGHT_BROWSERS_PATH`
 non-root install-location bug and the `/dev/shm` sizing requirement.
 
+### Edit PDF (`edit-pdf`) — `pdf-lib`, client-side canvas + server-side apply
+
+**What this is, stated plainly (blueprint §19/§20's "do not falsely
+advertise" requirement)**: an *annotation/overlay* editor. A user adds new
+text boxes, images, highlight/rectangle shapes, and freehand drawing on top
+of a page in an interactive browser canvas (`components/tools/edit-pdf/`,
+built on the same `pdfjs-dist` rendering path as `usePdfPageThumbnails`).
+None of this reads, reflows, or rewrites the PDF's *existing* text or
+vector content — PDF has no native "paragraph" model to safely rewrite,
+and no library in this stack (or realistically available at all) does
+that correctly for arbitrary real-world PDFs. Every element the user
+places is new content-stream drawing, added via `pdf-lib`, the same
+engine `watermark-pdf`/`page-numbers` already use for the same reason
+("draw on existing pages," not "parse and rewrite").
+
+**Architecture**: the editor keeps its edit list (`EditElement[]`, one
+entry per placed text/image/rect/highlight/path) entirely in client state
+until the user clicks Export. At that point the *original* PDF (already
+uploaded through the normal `/api/upload` path at file-selection time) and
+the edit list (sent as arbitrary job `options.edits` JSON — no new API
+surface needed, see `docs/SECURITY.md` §1 for how that JSON is validated)
+are handed to the existing job/queue pipeline exactly like every other
+tool. `workers/pdf/src/handlers/editPdf.ts` re-validates every field
+independently (bounds-checked numbers, length-capped strings, a strict
+`data:image/(png|jpeg);base64,...` regex for images, a 300-element cap)
+since the client payload is untrusted input, not just UI state.
+
+**Coordinate system**: elements are stored in PDF-point units with a
+top-left origin (matching the on-screen canvas), converted to `pdf-lib`'s
+bottom-left-origin space only at export. Freehand paths are drawn via
+`page.drawSvgPath`, which internally flips the path's own y-axis and
+*then* translates by the given `(x, y)` anchor (verified directly against
+`pdf-lib`'s compiled source, not assumed from the JSDoc example alone) —
+points must stay in their natural top-down form and only the anchor needs
+the page-height flip, not the individual points a second time.
+
+**A real focus-stealing bug found and fixed**: a newly-placed text box's
+`<textarea autoFocus>` was immediately blurring itself and deleting the
+just-added (still-empty) element on the very next render. Root cause: the
+canvas overlay `<div>` isn't itself a focus target, and a browser's
+default `mousedown` handling ("blur current focus since the mousedown
+target isn't focusable") can run *after* React's `autoFocus` already
+focused the new textarea, stealing it back. Fixed with `event.
+preventDefault()` in the overlay's `pointerdown` handler, which suppresses
+that default focus-management step for the gesture (per the Pointer
+Events spec, canceling `pointerdown` suppresses its compatibility mouse
+events' default actions too).
+
+**Scope, stated in the tool's own UI copy, not just internal docs**: no
+in-place text editing, no page manipulation (reuses the existing dedicated
+tools), no signatures/redaction (separate, later blueprint capabilities
+with their own honesty requirements).
+
 ## Shared worker safety rules (blueprint §6)
 
 - Every job: max input file size, max page count (checked via `pdfinfo`

@@ -30,6 +30,7 @@ import pdfToPowerpoint from "./tool.pdf-to-powerpoint.json";
 import ocrPdf from "./tool.ocr-pdf.json";
 import htmlToPdf from "./tool.html-to-pdf.json";
 import markdownToPdf from "./tool.markdown-to-pdf.json";
+import editPdf from "./tool.edit-pdf.json";
 import pdfToPdfa from "./tool.pdf-to-pdfa.json";
 import flattenPdf from "./tool.flatten-pdf.json";
 import repairPdf from "./tool.repair-pdf.json";
@@ -71,6 +72,7 @@ const messages = {
     "ocr-pdf": ocrPdf,
     "html-to-pdf": htmlToPdf,
     "markdown-to-pdf": markdownToPdf,
+    "edit-pdf": editPdf,
   },
 };
 

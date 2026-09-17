@@ -43,7 +43,12 @@
     "retry": "Retry",
     "tryAgain": "Try another file",
     "removeFile": "Remove",
-    "startProcessing": "Start"
+    "startProcessing": "Start",
+    "undo": "Undo",
+    "redo": "Redo",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "delete": "Delete"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",

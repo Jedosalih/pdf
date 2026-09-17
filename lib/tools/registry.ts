@@ -26,6 +26,7 @@ import {
   ScanText,
   Code2,
   FileCode,
+  FilePenLine,
 } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
@@ -837,6 +838,38 @@ export const tools: ToolDefinition[] = [
         maxFiles: 1,
         maxPages: 100,
         dailyOperations: 10,
+      },
+    },
+  },
+  {
+    id: "edit-pdf",
+    slug: "edit-pdf",
+    category: "edit",
+    icon: FilePenLine,
+    inputTypes: ["application/pdf"],
+    outputType: "application/pdf",
+    processor: "pdf-lib",
+    queue: "pdf-processing",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.edit-pdf",
+    relatedTools: ["watermark-pdf", "flatten-pdf"],
+    limits: {
+      // A large page count doesn't suit an interactive canvas editor the
+      // way it does a one-shot batch tool -- capped well below
+      // watermark/page-numbers' limits.
+      guest: {
+        maxFileSizeBytes: 20 * MB,
+        maxFiles: 1,
+        maxPages: 100,
+        dailyOperations: 8,
+      },
+      free: {
+        maxFileSizeBytes: 50 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 30,
       },
     },
   },

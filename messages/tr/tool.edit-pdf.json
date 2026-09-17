@@ -1,0 +1,58 @@
+{
+  "seo": {
+    "title": "PDF Düzenle — Metin, Görsel ve Not Ekleyin | JPdf",
+    "description": "Tarayıcınızda bir PDF'in üzerine doğrudan metin, görsel, vurgulama, şekil ve serbest çizim ekleyin, ardından yeni bir dosya olarak dışa aktarın. Ücretsiz, hızlı ve gizli."
+  },
+  "h1": "PDF Düzenle",
+  "subtitle": "PDF'inizin sayfalarının üzerine metin, görsel, vurgulama ve şekil ekleyin.",
+  "howItWorks": {
+    "title": "Bir PDF nasıl düzenlenir",
+    "steps": [
+      "Düzenlemek istediğiniz PDF'i yükleyin.",
+      "Bir araç seçin ve metin, görsel, vurgulama, şekil veya serbest çizim eklemek için sayfaya tıklayın veya sürükleyin.",
+      "Eklemelerinizin bulunduğu yeni bir PDF indirmek için Dışa Aktar'a tıklayın."
+    ]
+  },
+  "editor": {
+    "tools": {
+      "select": "Seç ve taşı",
+      "text": "Metin ekle",
+      "image": "Görsel ekle",
+      "highlight": "Vurgula",
+      "rect": "Dikdörtgen",
+      "draw": "Serbest çizim"
+    },
+    "export": "PDF'i dışa aktar",
+    "overlayNote": "Eklemeler sayfanın üzerine yeni içerik olarak çizilir — bu araç PDF'in mevcut metnini yeniden yazmaz veya yeniden düzenlemez.",
+    "properties": {
+      "title": "Özellikler",
+      "color": "Renk",
+      "fontSize": "Yazı boyutu",
+      "bold": "Kalın",
+      "fillShape": "Şekli doldur",
+      "outlineOnly": "Sadece çerçeve"
+    }
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "Bu araç PDF'imde zaten var olan metni düzenleyebilir mi?",
+        "a": "Hayır. PDF dosyaları metni bir kelime işlemci gibi depolamaz, bu yüzden mevcut metni doğrudan ve güvenilir şekilde yeniden yazmak burada mümkün değildir — bunun yerine bu araç, sayfanın üzerine not, etiket veya düzeltme eklemek gibi çoğu gerçek düzenleme ihtiyacını karşılayan yeni metin, görsel, vurgulama ve şekiller eklemenizi sağlar."
+      },
+      {
+        "q": "Bir sayfaya neler ekleyebilirim?",
+        "a": "Metin kutuları, görseller (PNG veya JPG), vurgulama kutuları, dikdörtgenler ve serbest çizim — her biri dışa aktarılan PDF'e gerçek ve kalıcı içerik olarak eklenir, yalnızca bir önizleme katmanı değildir."
+      },
+      {
+        "q": "Bir değişikliği geri alabilir miyim?",
+        "a": "Evet — düzenleme sırasında, dışa aktarmadan önce herhangi bir zamanda geri al/yinele düğmelerini veya Ctrl/Cmd+Z ve Ctrl/Cmd+Shift+Z kısayollarını kullanabilirsiniz."
+      },
+      {
+        "q": "Dosyam gizli kalır mı?",
+        "a": "Evet. Dosyanız tarayıcınızda düzenlenir ve yalnızca Dışa Aktar'a tıkladığınızda yüklenir; sonuçlar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["watermark-pdf", "flatten-pdf"]
+}

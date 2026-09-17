@@ -1,0 +1,58 @@
+{
+  "seo": {
+    "title": "Edit PDF — Add Text, Images & Annotations | JPdf",
+    "description": "Add text, images, highlights, shapes, and freehand markup directly onto a PDF in your browser, then export a new file. Free, fast, and private."
+  },
+  "h1": "Edit PDF",
+  "subtitle": "Add text, images, highlights, and shapes on top of your PDF's pages.",
+  "howItWorks": {
+    "title": "How to edit a PDF",
+    "steps": [
+      "Upload the PDF you want to mark up.",
+      "Pick a tool and click or drag on the page to add text, images, highlights, shapes, or freehand drawing.",
+      "Click Export to download a new PDF with your additions."
+    ]
+  },
+  "editor": {
+    "tools": {
+      "select": "Select and move",
+      "text": "Add text",
+      "image": "Add image",
+      "highlight": "Highlight",
+      "rect": "Rectangle",
+      "draw": "Freehand draw"
+    },
+    "export": "Export PDF",
+    "overlayNote": "Additions are drawn as new content on top of the page — this tool doesn't rewrite or reflow a PDF's existing text.",
+    "properties": {
+      "title": "Properties",
+      "color": "Color",
+      "fontSize": "Font size",
+      "bold": "Bold",
+      "fillShape": "Fill shape",
+      "outlineOnly": "Outline only"
+    }
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Can this edit the existing text already in my PDF?",
+        "a": "No. PDF files don't store text the way a word processor does, so directly rewriting existing text reliably isn't possible here — this tool lets you add new text, images, highlights, and shapes on top of the page instead, which covers most real editing needs like adding notes, labels, or corrections."
+      },
+      {
+        "q": "What can I add to a page?",
+        "a": "Text boxes, images (PNG or JPG), highlighter boxes, rectangles, and freehand drawing — each is added as real, permanent content in the exported PDF, not just a preview overlay."
+      },
+      {
+        "q": "Can I undo a change?",
+        "a": "Yes — use the undo/redo buttons or Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z while editing, any time before you export."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Your file is edited in your browser and only uploaded when you click Export; results are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["watermark-pdf", "flatten-pdf"]
+}

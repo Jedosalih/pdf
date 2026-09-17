@@ -1584,6 +1584,67 @@ shipped and verified). Still entirely unbuilt, separate later phases: the
 real PDF editor/canvas, Fill & Sign/e-signature, redaction, Compare
 documents, and batch processing.
 
+## 2026-09-17 — Real PDF editor shipped (edit-pdf): the first capability beyond the core-conversion phase
+
+The document-capability roadmap's core-conversion phase (Tier A, Office,
+OCR, HTML/Markdown) was already complete. This is the first unit of the
+next phase from the original "Full Document Platform Implementation
+Mission" brief: a real, interactive PDF editor.
+
+- **Decision**: build an *annotation/overlay* editor (add text, images,
+  highlights, rectangles, freehand drawing on top of existing pages),
+  explicitly not an in-place text-rewriting editor. Every placed element
+  becomes genuine new content-stream drawing via `pdf-lib` on export
+  (`workers/pdf/src/handlers/editPdf.ts`) — not a viewer-only overlay that
+  never reaches the output file, and not a claim of arbitrary text
+  editing PDF's format doesn't support. Full technical writeup in
+  `docs/PDF_ENGINE.md`'s new "Edit PDF" section.
+- **Why**: the mission brief explicitly required distinguishing
+  "annotation/overlay editing" from "actual content-stream text editing"
+  and forbade "falsely advertising" the stronger claim. No library
+  available to this stack does reliable in-place PDF text rewriting for
+  arbitrary real-world files; overlay editing is the same honest scope
+  every mainstream consumer PDF tool (iLovePDF, Smallpdf, Sejda's free
+  tier) actually ships under an "Edit PDF" label.
+- **Architecture**: zero new infrastructure. Reuses the existing
+  `pdf-processing` queue and `pdf-lib` processor (same as
+  `watermark-pdf`/`page-numbers`), the existing generic `options: z.record
+  (z.string(), z.unknown())` job-creation contract (no API schema changes
+  needed for the new `edits` array shape), and the same `pdfjs-dist`
+  client-side rendering pattern `usePdfPageThumbnails` already
+  established. The interactive canvas is hand-rolled (pointer-event drag/
+  resize/select), not a third-party canvas library — the element set
+  (text/image/rect/highlight/path) and interaction model (click-to-place,
+  drag-to-draw, single bottom-right resize handle) are small enough that a
+  dependency wasn't justified.
+- **Two real bugs found only by actually running the feature in a
+  browser**, not by typecheck/lint/unit-level reasoning:
+  1. `Breadcrumbs.tsx` keyed its list by `item.label` (translated text)
+     instead of index. Harmless for every previous tool page since no two
+     crumbs ever shared a label — but `edit-pdf`'s own category ("Edit
+     PDF") and its page title ("Edit PDF") are identical strings by
+     coincidence, producing a real React duplicate-key warning. Fixed
+     generically (keyed by index instead) for every tool page, not just
+     this one.
+  2. A newly-placed text box's `autoFocus` textarea was immediately
+     blurring itself and silently deleting the just-added element, because
+     the browser's default mousedown focus-handling ran after React's
+     autoFocus already claimed it. Fixed with `event.preventDefault()` in
+     the canvas overlay's pointerdown handler. Full root-cause detail in
+     `docs/PDF_ENGINE.md`.
+- **Verification**: one E2E test drives the real canvas (click to place
+  text, set a hidden file input for image insertion, drag to draw a
+  rectangle, exercise undo/redo via keyboard shortcuts, export) and
+  verifies the downloaded PDF's actual content -- the placed text via real
+  text extraction, the image/rectangle via the PDF's own operator list
+  (`OPS.paintImageXObject`/`OPS.constructPath`), not just "a file came
+  back." Full 39-spec suite green, `tsc`/ESLint clean on the app and the
+  `pdf` worker.
+- **Explicitly not built here, still separate later phases**: page
+  manipulation inside the editor (existing dedicated tools already cover
+  this), Fill & Sign, redaction, Compare, batch processing, workspace
+  chaining.
+
 ## 2026-09-17 — Docker Desktop WSL2 data relocated from C: to D: (infrastructure, not product code)
 
 The local dev machine's C: drive filled to near-zero free space
