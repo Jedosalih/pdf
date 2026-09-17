@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PDF to Excel Converter — Free & Secure | JPdf",
+    "description": "Convert a PDF's text content into an Excel (.xlsx) spreadsheet. Free, fast, and private — no installation required."
+  },
+  "h1": "PDF to Excel",
+  "subtitle": "Extract a PDF's text into a spreadsheet — best for documents with real tables.",
+  "howItWorks": {
+    "title": "How to convert PDF to Excel",
+    "steps": [
+      "Upload the PDF file you want to convert.",
+      "Click Convert to extract its content into a spreadsheet.",
+      "Download the resulting .xlsx file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Does this work well for any PDF?",
+        "a": "It works best on PDFs that already contain clear, simple tables. Text is extracted with its layout spacing and split into columns automatically — a scanned image, a PDF with no real table structure, or a complex multi-column layout will convert with limited accuracy. This isn't equivalent to a commercial table-extraction tool."
+      },
+      {
+        "q": "Is converting PDF to Excel free?",
+        "a": "Yes, converting PDF to Excel is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["excel-to-pdf", "pdf-to-text"]
+}

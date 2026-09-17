@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PDF to PowerPoint Converter — Free & Secure | JPdf",
+    "description": "Convert a PDF into a PowerPoint presentation, one slide per page. Free, fast, and private — no installation required."
+  },
+  "h1": "PDF to PowerPoint",
+  "subtitle": "Convert a PDF into a PowerPoint presentation, one slide per page.",
+  "howItWorks": {
+    "title": "How to convert PDF to PowerPoint",
+    "steps": [
+      "Upload the PDF file you want to convert.",
+      "Click Convert to build a presentation from its pages.",
+      "Download the resulting .pptx file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Can I edit the text on each slide afterward?",
+        "a": "No — each PDF page becomes a picture filling its own slide, preserving the exact visual layout. The text in that picture isn't editable in PowerPoint. This trade-off keeps the visual result accurate; a fully editable conversion isn't reliably possible from an arbitrary PDF."
+      },
+      {
+        "q": "Is converting PDF to PowerPoint free?",
+        "a": "Yes, converting PDF to PowerPoint is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["powerpoint-to-pdf", "pdf-to-text"]
+}

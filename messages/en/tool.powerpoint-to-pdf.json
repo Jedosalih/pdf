@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PowerPoint to PDF Converter — Free & Secure | JPdf",
+    "description": "Convert a PowerPoint presentation into a PDF file. Free, fast, and private — no installation required."
+  },
+  "h1": "PowerPoint to PDF",
+  "subtitle": "Convert a PowerPoint (.pptx) presentation into a PDF file.",
+  "howItWorks": {
+    "title": "How to convert PowerPoint to PDF",
+    "steps": [
+      "Upload the PowerPoint presentation you want to convert.",
+      "Click Convert to create the PDF.",
+      "Download the resulting PDF file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is converting PowerPoint to PDF free?",
+        "a": "Yes, converting PowerPoint to PDF is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will my slide layout be preserved?",
+        "a": "Yes — each slide becomes one PDF page, with fonts, images, and layout carrying over well for most presentations."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-powerpoint", "merge-pdf"]
+}

@@ -38,9 +38,10 @@ export async function POST(request: NextRequest) {
   const limits = await getToolLimits(actor, toolId);
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const validation = validateUploadedFile({
+  const validation = await validateUploadedFile({
     buffer,
     declaredMimeType: file.type,
+    fileName: file.name,
     allowedMimeTypes: tool.inputTypes,
     maxSizeBytes: limits.maxFileSizeBytes,
   });

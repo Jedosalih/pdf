@@ -17,6 +17,12 @@ import {
   FileCheck2,
   Layers,
   Wrench,
+  FileType,
+  FileType2,
+  FileSpreadsheet,
+  Table,
+  Presentation,
+  MonitorPlay,
 } from "lucide-react";
 import type { ToolDefinition } from "./types";
 
@@ -606,6 +612,196 @@ export const tools: ToolDefinition[] = [
         maxFiles: 1,
         maxPages: 1000,
         dailyOperations: 30,
+      },
+    },
+  },
+  {
+    id: "word-to-pdf",
+    slug: "word-to-pdf",
+    category: "convert",
+    icon: FileType,
+    inputTypes: [
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ],
+    outputType: "application/pdf",
+    processor: "libreoffice",
+    queue: "office-conversion",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.word-to-pdf",
+    relatedTools: ["pdf-to-word", "merge-pdf"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 15 * MB,
+        maxFiles: 1,
+        maxPages: 100,
+        dailyOperations: 5,
+      },
+      free: {
+        maxFileSizeBytes: 30 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 15,
+      },
+    },
+  },
+  {
+    id: "pdf-to-word",
+    slug: "pdf-to-word",
+    category: "convert",
+    icon: FileType2,
+    inputTypes: ["application/pdf"],
+    outputType:
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    processor: "libreoffice",
+    queue: "office-conversion",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.pdf-to-word",
+    relatedTools: ["word-to-pdf", "pdf-to-text"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 15 * MB,
+        maxFiles: 1,
+        maxPages: 100,
+        dailyOperations: 5,
+      },
+      free: {
+        maxFileSizeBytes: 30 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 15,
+      },
+    },
+  },
+  {
+    id: "excel-to-pdf",
+    slug: "excel-to-pdf",
+    category: "convert",
+    icon: FileSpreadsheet,
+    inputTypes: [
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ],
+    outputType: "application/pdf",
+    processor: "libreoffice",
+    queue: "office-conversion",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.excel-to-pdf",
+    relatedTools: ["pdf-to-excel", "merge-pdf"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 15 * MB,
+        maxFiles: 1,
+        maxPages: 100,
+        dailyOperations: 5,
+      },
+      free: {
+        maxFileSizeBytes: 30 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 15,
+      },
+    },
+  },
+  {
+    id: "pdf-to-excel",
+    slug: "pdf-to-excel",
+    category: "convert",
+    icon: Table,
+    inputTypes: ["application/pdf"],
+    outputType:
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    // Not LibreOffice — verified empirically that PDF-to-Calc via
+    // soffice crashes outright. Real engine is poppler (pdftotext) +
+    // exceljs; see workers/office/src/handlers/pdfToExcel.ts.
+    processor: "poppler",
+    queue: "office-conversion",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.pdf-to-excel",
+    relatedTools: ["excel-to-pdf", "pdf-to-text"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 15 * MB,
+        maxFiles: 1,
+        maxPages: 100,
+        dailyOperations: 5,
+      },
+      free: {
+        maxFileSizeBytes: 30 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 15,
+      },
+    },
+  },
+  {
+    id: "powerpoint-to-pdf",
+    slug: "powerpoint-to-pdf",
+    category: "convert",
+    icon: Presentation,
+    inputTypes: [
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ],
+    outputType: "application/pdf",
+    processor: "libreoffice",
+    queue: "office-conversion",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.powerpoint-to-pdf",
+    relatedTools: ["pdf-to-powerpoint", "merge-pdf"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 15 * MB,
+        maxFiles: 1,
+        maxPages: 100,
+        dailyOperations: 5,
+      },
+      free: {
+        maxFileSizeBytes: 30 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 15,
+      },
+    },
+  },
+  {
+    id: "pdf-to-powerpoint",
+    slug: "pdf-to-powerpoint",
+    category: "convert",
+    icon: MonitorPlay,
+    inputTypes: ["application/pdf"],
+    outputType:
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    // Not LibreOffice — verified empirically that PDF-to-Impress via
+    // soffice silently produces a 0-slide file. Real engine is poppler
+    // (pdftoppm rasterization) + pptxgenjs (one image-slide per page);
+    // see workers/office/src/handlers/pdfToPowerpoint.ts.
+    processor: "poppler",
+    queue: "office-conversion",
+    enabled: true,
+    guestEnabled: true,
+    multipleFiles: false,
+    translationNamespace: "tool.pdf-to-powerpoint",
+    relatedTools: ["powerpoint-to-pdf", "pdf-to-text"],
+    limits: {
+      guest: {
+        maxFileSizeBytes: 15 * MB,
+        maxFiles: 1,
+        maxPages: 100,
+        dailyOperations: 5,
+      },
+      free: {
+        maxFileSizeBytes: 30 * MB,
+        maxFiles: 1,
+        maxPages: 300,
+        dailyOperations: 15,
       },
     },
   },

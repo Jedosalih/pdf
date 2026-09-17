@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PDF'den Excel'e Dönüştürücü — Ücretsiz ve Güvenli | JPdf",
+    "description": "Bir PDF'in metin içeriğini bir Excel (.xlsx) elektronik tablosuna dönüştürün. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "PDF'den Excel'e",
+  "subtitle": "Bir PDF'in metnini bir tabloya çıkarın — gerçek tablolar içeren belgelerde en iyi sonucu verir.",
+  "howItWorks": {
+    "title": "PDF nasıl Excel'e dönüştürülür",
+    "steps": [
+      "Dönüştürmek istediğiniz PDF dosyasını yükleyin.",
+      "İçeriğini bir tabloya çıkarmak için Dönüştür'e tıklayın.",
+      "Oluşan .xlsx dosyasını indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "Bu, her PDF için iyi çalışır mı?",
+        "a": "Zaten net, basit tablolar içeren PDF'lerde en iyi sonucu verir. Metin, düzen boşluklarıyla birlikte çıkarılır ve otomatik olarak sütunlara ayrılır — taranmış bir görsel, gerçek tablo yapısı olmayan bir PDF veya karmaşık çok sütunlu bir düzen sınırlı doğrulukla dönüştürülür. Bu araç ticari bir tablo çıkarma aracının yerini tutmaz."
+      },
+      {
+        "q": "PDF'den Excel'e dönüştürme ücretsiz mi?",
+        "a": "Evet, yukarıda belirtilen günlük kullanım sınırları dahilinde PDF'den Excel'e dönüştürme ücretsizdir."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["excel-to-pdf", "pdf-to-text"]
+}

@@ -21,6 +21,12 @@ import protectPdf from "./tool.protect-pdf.json";
 import unlockPdf from "./tool.unlock-pdf.json";
 import pdfMetadata from "./tool.pdf-metadata.json";
 import pdfToText from "./tool.pdf-to-text.json";
+import wordToPdf from "./tool.word-to-pdf.json";
+import pdfToWord from "./tool.pdf-to-word.json";
+import excelToPdf from "./tool.excel-to-pdf.json";
+import pdfToExcel from "./tool.pdf-to-excel.json";
+import powerpointToPdf from "./tool.powerpoint-to-pdf.json";
+import pdfToPowerpoint from "./tool.pdf-to-powerpoint.json";
 import pdfToPdfa from "./tool.pdf-to-pdfa.json";
 import flattenPdf from "./tool.flatten-pdf.json";
 import repairPdf from "./tool.repair-pdf.json";
@@ -53,6 +59,12 @@ const messages = {
     "pdf-to-pdfa": pdfToPdfa,
     "flatten-pdf": flattenPdf,
     "repair-pdf": repairPdf,
+    "word-to-pdf": wordToPdf,
+    "pdf-to-word": pdfToWord,
+    "excel-to-pdf": excelToPdf,
+    "pdf-to-excel": pdfToExcel,
+    "powerpoint-to-pdf": powerpointToPdf,
+    "pdf-to-powerpoint": pdfToPowerpoint,
   },
 };
 

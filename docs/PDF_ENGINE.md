@@ -9,8 +9,10 @@
 | **Poppler** (`pdftoppm`, `pdftotext`, `pdfinfo`) | GPL-2.0 | PDF → image, PDF → text, page count/inspection |
 | **OCRmyPDF** (wraps Ghostscript + Tesseract + qpdf) | MPL-2.0 | OCR / searchable PDF layer |
 | **Tesseract** | Apache-2.0 | OCR text recognition (used via OCRmyPDF) |
-| **LibreOffice** (headless) | MPL-2.0 | DOC/DOCX/XLS/XLSX/PPT/PPTX → PDF |
+| **LibreOffice** (headless) | MPL-2.0 | Word/Excel/PowerPoint → PDF, PDF → Word |
 | **Sharp** | Apache-2.0 | Image resizing/format conversion for JPG/PNG ↔ PDF page rasters |
+| **exceljs** (Node library) | MIT | PDF → Excel (reconstructing rows/columns from extracted text — LibreOffice cannot do this direction, see below) |
+| **pptxgenjs** (Node library) | MIT | PDF → PowerPoint (building image-per-slide decks — LibreOffice cannot do this direction either, see below) |
 
 ### Licensing note (blueprint §64)
 
@@ -195,16 +197,88 @@ Real, empirically-verified behavior this handler accounts for (see
 Read via `qpdf --json` or `pdf-lib`; write updates via `pdf-lib` (avoids a
 subprocess round-trip for a simple field edit).
 
-### Office → PDF (`doc-to-pdf`, `xls-to-pdf`, `ppt-to-pdf`) — LibreOffice headless
+### Word/Excel/PowerPoint → PDF (`word-to-pdf`, `excel-to-pdf`, `powerpoint-to-pdf`) — LibreOffice headless
 
 ```
-soffice --headless --convert-to pdf --outdir <dir> <in.docx>
+soffice --headless --norestore -env:UserInstallation=file://<per-job-profile> \
+   --convert-to pdf --outdir <dir> <in.docx|in.xlsx|in.pptx>
 ```
 
-LibreOffice conversions are the slowest and most resource-heavy path in the
-MVP — they get their own queue (`office-conversion`) with a longer timeout
-and lower concurrency than the `pdf-processing` queue, so a stuck LibreOffice
-instance can't starve fast qpdf jobs.
+One shared handler (`workers/office/src/handlers/officeConvert.ts`) backs
+all three directions — only the source/target extension differs.
+`-env:UserInstallation=file://<per-job-profile>` (a subdirectory of the
+job's own temp dir) is required under concurrency: without a per-job
+profile, concurrent `soffice` invocations collide on the same default
+profile lock file. LibreOffice conversions are the slowest and most
+resource-heavy path in this product — they get their own queue
+(`office-conversion`, concurrency 2) so a stuck LibreOffice instance can't
+starve fast qpdf jobs.
+
+### PDF → Word (`pdf-to-word`) — LibreOffice headless, with a required infilter override
+
+```
+soffice --headless --norestore -env:UserInstallation=file://<per-job-profile> \
+   --infilter=writer_pdf_import --convert-to docx --outdir <dir> <in.pdf>
+```
+
+**Two non-obvious things verified empirically against the real binary
+(LibreOffice 7.4.7.2), not assumed from documentation:**
+- Without `--infilter=writer_pdf_import`, `soffice`'s default PDF import
+  loads the file into **Draw** (graphics-only), which then has no export
+  path to `docx` at all (`Error: no export filter for ...docx found,
+  aborting.`). The infilter forces the PDF into **Writer** instead,
+  reconstructing reflowable text.
+- `--infilter` **must** be passed as one token
+  (`--infilter=writer_pdf_import`) — passing it as two separate argv
+  elements (`--infilter`, `writer_pdf_import`, the natural way to build an
+  argument array) makes `soffice` reject it outright
+  (`Error in option: --infilter`) and exit before doing anything. This is
+  easy to get wrong when building the argument array programmatically
+  rather than typing a shell command — caught by testing the real
+  end-to-end job, not just the bare CLI command by hand.
+
+Once both are correct, `soffice` auto-picks the "MS Word 2007 XML" export
+filter itself — no explicit filter name needed.
+
+### PDF → Excel (`pdf-to-excel`) — NOT LibreOffice — poppler + exceljs
+
+**Empirically verified that PDF → Excel via LibreOffice does not work at
+all**, not just "low fidelity": forcing a `writer_pdf_import`-loaded PDF to
+export as `xlsx:Calc MS Excel 2007 XML` crashes the `soffice` process
+outright (`Fatal exception: Signal 6`, a SIGABRT inside its OOXML Calc
+export filter). Real engine instead:
+
+```
+pdftotext -layout <in.pdf> <out.txt>
+```
+
+...then reconstruct rows/columns in Node with `exceljs`: one spreadsheet
+row per non-empty text line, columns split on runs of 2+ spaces. This is a
+real, working, honest **best-effort** table reconstruction — it only
+produces good results on PDFs with genuinely simple tabular layout, and
+the tool's own copy says so plainly. Not equivalent to a commercial table
+extractor (Stirling-PDF's own PDF→Excel path uses a dedicated PDFBox table
+extractor rather than routing through LibreOffice either, for the same
+underlying reason — see docs/DECISIONS.md).
+
+### PDF → PowerPoint (`pdf-to-powerpoint`) — NOT LibreOffice — poppler + pptxgenjs
+
+**Empirically verified that PDF → PowerPoint via LibreOffice silently
+"succeeds"**: a `writer_pdf_import`-loaded PDF exported as
+`pptx:Impress MS PowerPoint 2007 XML` returns exit 0 and writes a
+technically-valid `.pptx` file — with **zero slides**. Exit code alone
+cannot detect this; only inspecting the actual output structure did. Real
+engine instead:
+
+```
+pdftoppm -png -r 150 <in.pdf> <page-prefix>
+```
+
+...then build one slide per rasterized page image via `pptxgenjs`
+(`sizing: { type: "contain" }`, one full-bleed image per slide). This
+preserves exact visual layout at the cost of the result being pictures,
+not editable text — stated plainly in the tool's own copy, not presented
+as equivalent to a true content-aware PDF→PowerPoint converter.
 
 ## Shared worker safety rules (blueprint §6)
 

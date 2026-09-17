@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PDF'den PowerPoint'e Dönüştürücü — Ücretsiz ve Güvenli | JPdf",
+    "description": "Bir PDF'i, her sayfa bir slayt olacak şekilde bir PowerPoint sunumuna dönüştürün. Ücretsiz, hızlı ve gizli — kurulum gerekmez."
+  },
+  "h1": "PDF'den PowerPoint'e",
+  "subtitle": "Bir PDF'i, her sayfa bir slayt olacak şekilde bir PowerPoint sunumuna dönüştürün.",
+  "howItWorks": {
+    "title": "PDF nasıl PowerPoint'e dönüştürülür",
+    "steps": [
+      "Dönüştürmek istediğiniz PDF dosyasını yükleyin.",
+      "Sayfalarından bir sunum oluşturmak için Dönüştür'e tıklayın.",
+      "Oluşan .pptx dosyasını indirin."
+    ]
+  },
+  "faq": {
+    "title": "Sıkça sorulan sorular",
+    "items": [
+      {
+        "q": "Her slayttaki metni daha sonra düzenleyebilir miyim?",
+        "a": "Hayır — her PDF sayfası, kendi slaydını dolduran bir görsel haline gelir ve tam görsel düzeni korur. O görseldeki metin PowerPoint'te düzenlenemez. Bu ödünleşim, görsel sonucun doğru kalmasını sağlar; herhangi bir PDF'den tamamen düzenlenebilir bir dönüşüm güvenilir şekilde mümkün değildir."
+      },
+      {
+        "q": "PDF'den PowerPoint'e dönüştürme ücretsiz mi?",
+        "a": "Evet, yukarıda belirtilen günlük kullanım sınırları dahilinde PDF'den PowerPoint'e dönüştürme ücretsizdir."
+      },
+      {
+        "q": "Dosyam gizli tutulacak mı?",
+        "a": "Evet. Dosyalar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+      }
+    ]
+  },
+  "relatedTools": ["powerpoint-to-pdf", "pdf-to-text"]
+}

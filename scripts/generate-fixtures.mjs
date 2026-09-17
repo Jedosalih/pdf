@@ -1,6 +1,9 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { writeFile } from "node:fs/promises";
 import sharp from "sharp";
+import { Document, Packer, Paragraph, TextRun } from "docx";
+import ExcelJS from "exceljs";
+import PptxGenJS from "pptxgenjs";
 
 async function makePdf(label, pageCount, color) {
   const doc = await PDFDocument.create();
@@ -91,6 +94,36 @@ await writeFile("docs/fixtures/sample-mild-corrupt.pdf", Buffer.from(mildCorrupt
 const severeCut = Math.floor(repairBytes.length * 0.4);
 await writeFile("docs/fixtures/sample-severe-corrupt.pdf", repairBytes.subarray(0, severeCut));
 
+// Office fixtures: DOCX/XLSX/PPTX, each with a distinctive greppable
+// marker string so conversion E2E tests can assert real content survived
+// the LibreOffice round-trip, not just that some file came back.
+const docxDoc = new Document({
+  sections: [
+    {
+      children: [
+        new Paragraph({
+          children: [new TextRun("OfficeFixtureDocxMarker12345")],
+        }),
+      ],
+    },
+  ],
+});
+const docxBytes = await Packer.toBuffer(docxDoc);
+await writeFile("docs/fixtures/sample.docx", docxBytes);
+
+const workbook = new ExcelJS.Workbook();
+const sheet = workbook.addWorksheet("Sheet1");
+sheet.getCell("A1").value = "OfficeFixtureXlsxMarker12345";
+sheet.getCell("A2").value = 42;
+const xlsxBytes = await workbook.xlsx.writeBuffer();
+await writeFile("docs/fixtures/sample.xlsx", xlsxBytes);
+
+const pres = new PptxGenJS();
+const slide = pres.addSlide();
+slide.addText("OfficeFixturePptxMarker12345", { x: 1, y: 1, w: 6, h: 1, fontSize: 24 });
+const pptxBytes = await pres.write({ outputType: "nodebuffer" });
+await writeFile("docs/fixtures/sample.pptx", pptxBytes);
+
 console.log(
   "done",
   a.byteLength,
@@ -100,4 +133,7 @@ console.log(
   png.byteLength,
   flattenBytes.byteLength,
   repairBytes.byteLength,
+  docxBytes.byteLength,
+  xlsxBytes.byteLength,
+  pptxBytes.byteLength,
 );

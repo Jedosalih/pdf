@@ -9,13 +9,15 @@ export type ToolProcessor =
   | "ocrmypdf"
   | "libreoffice"
   | "pdf-lib"
-  | "sharp";
+  | "sharp"
+  | "playwright";
 
 export type ToolQueue =
   | "pdf-processing"
   | "ocr"
   | "office-conversion"
-  | "image-processing";
+  | "image-processing"
+  | "html-rendering";
 
 export interface ToolLimits {
   /** Max size per input file, in bytes. */

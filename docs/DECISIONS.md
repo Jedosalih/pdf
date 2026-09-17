@@ -1253,6 +1253,105 @@ pre-implementation draft.
   suite green (one transient browser-session flake, reproduced as passing
   in isolation — unrelated to this change).
 
+## 2026-09-17 — Office conversion suite shipped (Word/Excel/PowerPoint ↔ PDF, 6 tools) — second unit of the document capability roadmap
+
+Second shipped unit of the document-capability roadmap. New `workers/office`
+package (LibreOffice headless + Node-side engines), new `office-worker`
+Docker Compose service, `office-conversion` BullMQ queue (concurrency 2,
+deliberately lower than `pdf-processing` since LibreOffice is the slowest,
+most resource-heavy engine in this stack).
+
+**Three real engine-behavior discoveries, none assumed from documentation
+— all found by testing the actual binary inside the real container**:
+
+1. **PDF → Word requires `--infilter=writer_pdf_import`, and it must be
+   one token.** Without the infilter, `soffice`'s default PDF import
+   loads into Draw (graphics), which has no export path to `docx` at all.
+   With it, `soffice` correctly reconstructs Writer text — verified by
+   reading `word/document.xml` directly out of the resulting `.docx` and
+   confirming the exact fixture paragraph text survived. Passing
+   `--infilter` and its value as two separate `execFile` argv array
+   elements (the natural way to build an argument array in code) makes
+   `soffice` reject the flag outright (`Error in option: --infilter`) —
+   only the combined `--infilter=value` form works. This is a genuinely
+   easy mistake to make when translating a working shell command into a
+   programmatic argument array, and it produced a fast, silent-looking
+   failure (`PROCESSING_FAILED` in ~400ms) that could easily be
+   mis-diagnosed as something else without checking the worker's own
+   stderr.
+2. **PDF → Excel via LibreOffice does not work at all — it crashes.**
+   Forcing a `writer_pdf_import`-loaded PDF to export as
+   `xlsx:Calc MS Excel 2007 XML` triggers `Fatal exception: Signal 6`
+   (SIGABRT) inside `soffice`'s own OOXML Calc export filter. This is
+   worse than the "materially poor fidelity" the roadmap plan
+   anticipated — LibreOffice has no working path for this direction at
+   all. **Decision**: `pdf-to-excel` does not use LibreOffice. Real
+   engine: `pdftotext -layout` (already used by `pdf-to-text`) + `exceljs`
+   (MIT), reconstructing one spreadsheet row per non-empty line with
+   columns split on runs of 2+ spaces. This is an honest **best-effort**
+   table reconstruction, not a table-extraction algorithm — documented as
+   such in the tool's own copy ("best for documents with real tables").
+   `lib/tools/registry.ts`'s `processor` field for this tool is
+   `"poppler"`, not `"libreoffice"`, to reflect the real engine.
+3. **PDF → PowerPoint via LibreOffice silently produces an empty
+   file.** The same `writer_pdf_import` + explicit Impress filter
+   combination that works for Word exits 0 and writes a structurally
+   valid `.pptx` — with **zero slides**. Exit code and "a file exists"
+   are both insufficient signals here; only inspecting
+   `ppt/slides/slide*.xml` inside the actual output revealed the problem.
+   **Decision**: `pdf-to-powerpoint` does not use LibreOffice either.
+   Real engine: `pdftoppm -r 150` rasterizes each page, then `pptxgenjs`
+   (MIT) builds one image-filled slide per page
+   (`sizing: { type: "contain" }`). This preserves exact visual layout at
+   the honest, clearly-documented cost that the result is pictures, not
+   editable text — the tool's own FAQ states this plainly rather than
+   implying content-level fidelity it doesn't have. `processor` is
+   `"poppler"` for this tool too.
+
+**A real architectural gap, already discovered once for `pdf-to-text` in
+the previous unit, recurred here for a new reason**: `Job.toolId`'s
+Postgres FK to the `Tool` table needed a fresh `npm run db:seed` after
+adding these 6 registry entries — same fix as before, now reinforced as a
+standing checklist item for every future tool addition in this roadmap.
+
+**Fonts**: `fonts-noto-core` (Debian bookworm) already ships Noto
+Naskh/Kufi/Sans Arabic — verified via `fc-list` inside a scratch
+container before finalizing the Dockerfile. The originally-planned
+`fonts-noto-naskh-arabic` package name does not exist in bookworm's repos
+(`apt-get install` failed with "Unable to locate package"); no separate
+Arabic font package is needed on top of `fonts-noto-core`.
+
+**`pptxgenjs` TypeScript interop**: its shipped `.d.ts` uses an old
+UMD-style `export as namespace X` + `export default X` shape that
+TypeScript's `NodeNext` module resolution mis-resolves to the whole module
+namespace rather than the constructor (`This expression is not
+constructable`) — a type-only interop quirk, not a runtime bug (the
+identical import already works correctly in
+`scripts/generate-fixtures.mjs`, a plain-JS file with no type checking).
+Worked around with a small local interface covering only the API actually
+used (`workers/office/src/handlers/pdfToPowerpoint.ts`) rather than a
+blanket `any` cast.
+
+**Registry entries** (`word-to-pdf`, `pdf-to-word`, `excel-to-pdf`,
+`pdf-to-excel`, `powerpoint-to-pdf`, `pdf-to-powerpoint`) added with
+`enabled: false` first, flipped to `true` only after each tool's full
+pipeline was genuinely verified end to end.
+
+**Verified**: `tsc`/ESLint clean on the app and `workers/office`;
+`docker compose up -d --build office-worker` rebuilt cleanly across three
+iterations (each real bug found this way, not by inspection); full
+Playwright suite green including 6 new specs, each asserting real output
+content (exact paragraph text in `.docx` XML, exact cell values in a real
+`ExcelJS`-read workbook, exact slide/media counts in a real `.pptx`, exact
+extracted PDF text for every `→PDF` direction) — never "a file came
+back." Screenshots reviewed in `en`, `ar` (RTL), `tr`, and mobile.
+`docs/PDF_ENGINE.md` updated to the final verified command shapes,
+replacing the pre-implementation Phase-0 draft.
+
+**Still not started**: OCR, Markdown/HTML → PDF (next roadmap units), and
+the editor/Fill & Sign/redaction/Compare/batch capabilities — unrelated to
+and unaffected by this entry.
+
 ## Template for future entries
 
 ```

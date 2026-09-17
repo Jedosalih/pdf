@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "Excel to PDF Converter — Free & Secure | JPdf",
+    "description": "Convert an Excel spreadsheet into a PDF file. Free, fast, and private — no installation required."
+  },
+  "h1": "Excel to PDF",
+  "subtitle": "Convert an Excel (.xlsx) spreadsheet into a PDF file.",
+  "howItWorks": {
+    "title": "How to convert Excel to PDF",
+    "steps": [
+      "Upload the Excel spreadsheet you want to convert.",
+      "Click Convert to create the PDF.",
+      "Download the resulting PDF file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Is converting Excel to PDF free?",
+        "a": "Yes, converting Excel to PDF is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will my sheet's formatting be preserved?",
+        "a": "Yes — column widths, cell formatting, and print layout convert well for most spreadsheets. Very wide sheets may split across multiple PDF pages, matching how the sheet would print."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["pdf-to-excel", "merge-pdf"]
+}

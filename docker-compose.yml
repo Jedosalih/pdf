@@ -106,6 +106,29 @@ services:
       STORAGE_FORCE_PATH_STYLE: "true"
       NODE_ENV: production
 
+  ocr-worker:
+    build:
+      context: .
+      dockerfile: workers/ocr/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
+      REDIS_URL: redis://redis:6379
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_REGION: auto
+      STORAGE_BUCKET: jdpdf-dev
+      STORAGE_ACCESS_KEY: jdpdf
+      STORAGE_SECRET_KEY: jdpdf12345
+      STORAGE_FORCE_PATH_STYLE: "true"
+      NODE_ENV: production
+
 volumes:
   postgres_data:
   redis_data:

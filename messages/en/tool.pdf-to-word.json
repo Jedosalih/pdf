@@ -1,0 +1,34 @@
+{
+  "seo": {
+    "title": "PDF to Word Converter — Free & Secure | JPdf",
+    "description": "Convert a PDF into an editable Word (.docx) document. Free, fast, and private — no installation required."
+  },
+  "h1": "PDF to Word",
+  "subtitle": "Convert a PDF into an editable Word (.docx) document.",
+  "howItWorks": {
+    "title": "How to convert PDF to Word",
+    "steps": [
+      "Upload the PDF file you want to convert.",
+      "Click Convert to create the Word document.",
+      "Download the resulting .docx file."
+    ]
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": [
+      {
+        "q": "Will the Word document look exactly like the PDF?",
+        "a": "Text and basic layout convert well for most documents, but complex designs, scanned pages, or unusual fonts may not convert perfectly — this is a known limitation of automated PDF-to-Word conversion in general, not unique to this tool."
+      },
+      {
+        "q": "Is converting PDF to Word free?",
+        "a": "Yes, converting PDF to Word is free within the daily usage limits shown above."
+      },
+      {
+        "q": "Will my file be kept private?",
+        "a": "Yes. Files are processed securely and automatically deleted after a short retention period."
+      }
+    ]
+  },
+  "relatedTools": ["word-to-pdf", "pdf-to-text"]
+}
