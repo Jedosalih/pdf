@@ -1220,6 +1220,39 @@ representative tool) — no truncation/overflow/mirroring issues.
 command shapes and security controls, not left describing a
 pre-implementation draft.
 
+## 2026-09-17 — Product renamed JDpdf → JPdf
+
+- **Decision**: replace "JDpdf"/"JDPdf" with "JPdf" everywhere it represents
+  product/project branding — UI strings and translations (all 3 locales),
+  OpenGraph `siteName`, docs (including renaming
+  `docs/JPdf_Master_Product_Redesign_and_Expansion_Blueprint.md`,
+  previously `JDpdf_...`), `AGENTS.md`, npm package `name` fields (root
+  `package.json` → `jpdf`, `workers/pdf/package.json` →
+  `jpdf-worker-pdf`, both lockfiles synced), the downloaded ZIP filename
+  (`jpdf-result.zip`), and the worker's per-job temp-directory prefix
+  (`jpdf-` — trivial, zero-risk, done for consistency).
+- **Deliberately left unchanged** (internal identifiers, not product
+  branding — renaming would be pure churn/risk with zero user-visible
+  benefit): Postgres/MinIO dev credentials and the local storage bucket
+  name in `docker-compose.yml`/`.env.example` (`jdpdf`/`jdpdf-dev`/etc.);
+  the session and guest cookie names (`jdpdf_session`,
+  `jdpdf_guest` — `lib/auth/session.ts`, `lib/security/guestIdCore.ts`);
+  one test's internal temp-file prefix
+  (`tests/e2e/unlock-pdf.spec.ts`). Cookie names in particular are
+  invisible to users; renaming them would only force every existing
+  session/guest identity to reset for no visible gain.
+- **Why**: explicit product rebrand request. The distinction above
+  (branding vs. internal identifier) mirrors the same reasoning already
+  applied to database/table naming in this project — see the "Schema
+  scope for MVP" entry above.
+- **Verified**: a repo-wide search for `JDpdf`/`JDPdf` (excluding
+  `node_modules`) returns zero remaining matches; every remaining
+  lowercase `jdpdf` occurrence was individually inspected and confirmed to
+  be one of the intentionally-preserved internal identifiers listed
+  above. `tsc`/ESLint clean, full `next build` clean, full Playwright
+  suite green (one transient browser-session flake, reproduced as passing
+  in isolation — unrelated to this change).
+
 ## Template for future entries
 
 ```
