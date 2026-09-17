@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/client";
 import { getToolById } from "@/lib/tools/registry";
-import { canUseTool, getToolLimits, recordToolUsage } from "@/lib/entitlements";
+import { canUseTool, getToolLimits, tryReserveToolUsage } from "@/lib/entitlements";
 import { computeExpiry } from "@/lib/entitlements/retention";
 import { resolveActor } from "@/lib/security/actor";
 import { enqueueProcessingJob } from "@/lib/queue/queues";
@@ -174,6 +174,13 @@ export async function POST(request: NextRequest) {
     return apiError("TOO_MANY_PAGES");
   }
 
+  // Atomic check-and-record — see tryReserveToolUsage's own docs for why
+  // this can't be a separate check-then-insert like every check above it.
+  const reserved = await tryReserveToolUsage(actor, toolId);
+  if (!reserved) {
+    return apiError("DAILY_LIMIT_REACHED");
+  }
+
   const job = await prisma.job.create({
     data: {
       userId: actor.type === "user" ? actor.userId : null,
@@ -190,7 +197,6 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  await recordToolUsage(actor, toolId);
   await enqueueProcessingJob(tool.queue, job.id);
 
   return NextResponse.json({ jobId: job.id, status: job.status });

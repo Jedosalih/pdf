@@ -241,17 +241,24 @@ quota entirely. IP-based rate limiting exists elsewhere in the codebase
 `/api/auth/login` — it is not applied to upload/job-creation usage
 counting. Known gap, not yet fixed.
 
-Separately, `getRemainingUsage`'s read (`canUseTool`) and
-`recordToolUsage`'s write are not atomic with each other — concurrent
-requests from the same actor can all read the same pre-increment count and
-all pass the check before any of their writes lands, so `dailyOperations`
-is a soft, best-effort limit rather than a hard cap under concurrency. The
-batch-processing feature (`components/batch/BatchProcessTool.tsx`)
-deliberately sends its job-creation requests one at a time rather than in
-parallel specifically to avoid being the one deterministic, one-click way
-to trigger this; the general race (e.g. multiple browser tabs) remains
-open. A real fix needs an atomic check-and-increment (a DB row-level
-`UPDATE ... WHERE count < limit` or a Redis `INCR`), not attempted here.
+`dailyOperations` is now a hard cap under concurrency, not a soft/best-
+effort one: `tryReserveToolUsage` (`lib/entitlements/index.ts`) checks and
+records usage atomically inside one Postgres transaction, guarded by a
+transaction-scoped advisory lock (`pg_advisory_xact_lock`, keyed by a hash
+of `actor:tool`) so concurrent requests from the *same* actor+tool are
+serialized while different actors/tools never contend. This replaced a
+previous check-then-write (`canUseTool`'s old daily-limit check, a
+separate `recordToolUsage` insert after the job was created) that let
+concurrent requests all read the same pre-increment count and all pass.
+Verified, not assumed: `tests/e2e/daily-limit-atomic.spec.ts` fires 20
+genuinely concurrent job-creation requests as one guest against an 8/day
+limit and asserts *exactly* 8 succeed — this was the batch-processing
+feature's own trigger for this race before the fix (it now also sends its
+own requests one at a time as an additional, redundant safeguard, but the
+real fix is this one). One accepted, narrow trade-off: usage is now
+recorded *before* `Job.create()` rather than after, so a DB-level failure
+during job creation itself (not entitlement-related, already-rare) would
+consume a usage slot for a job that was never created.
 
 ## 8. Logging
 

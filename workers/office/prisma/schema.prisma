@@ -148,12 +148,10 @@ model UsageRecord {
   guestId     String?
   toolId      String
   tool        Tool     @relation(fields: [toolId], references: [id])
-  count       Int      @default(1)
-  windowStart DateTime
   createdAt   DateTime @default(now())
 
-  @@index([userId, toolId, windowStart])
-  @@index([guestId, toolId, windowStart])
+  @@index([userId, toolId, createdAt])
+  @@index([guestId, toolId, createdAt])
 }
 
 // --- Tools ---
@@ -252,8 +250,6 @@ model File {
   originalName String
   mimeType     String
   size         Int
-  pageCount    Int?
-  checksum     String?
   status       FileStatus @default(UPLOADING)
   createdAt    DateTime   @default(now())
   expiresAt    DateTime?

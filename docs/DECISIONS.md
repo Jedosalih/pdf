@@ -2201,6 +2201,60 @@ Two items from the Final Completion Mission's production-hardening list
   contention sensitivity. Documented as an accepted cost of genuine
   timeout safety, not silently absorbed.
 
+## 2026-09-18 — Atomic daily usage limits; removed vestigial Prisma columns
+
+Two more items from the Final Completion Mission's production-hardening
+list (§4.6, §4.8).
+
+- **Atomic `dailyOperations`** (`lib/entitlements/index.ts`): replaced the
+  check-then-write race (`canUseTool`'s daily-limit check, then a
+  separate `recordToolUsage` insert after the job was created) with
+  `tryReserveToolUsage`, which checks and records usage in one Postgres
+  transaction guarded by a transaction-scoped advisory lock
+  (`pg_advisory_xact_lock(hashtext('actor:tool'))`). This serializes
+  concurrent requests for the *same* actor+tool without any contention
+  between different actors or tools. Chose a DB-level fix over Redis:
+  Redis isn't otherwise part of this project's data-integrity story
+  (BullMQ queues and auth rate-limiting only) and Postgres already is.
+  `canUseTool` now only checks `TOOL_DISABLED`/`GUEST_NOT_ALLOWED` (cheap,
+  no usage read) — the atomic reservation happens once, right before
+  `Job.create()`, in `app/api/jobs/route.ts`. One accepted, narrow
+  trade-off: usage is now recorded *before* job creation rather than
+  after, so an unrelated DB failure during `Job.create()` itself (already
+  rare — every other validation already passed by that point) would
+  consume a usage slot for a job that was never created.
+
+  **Verified with a real concurrency test, not just reasoning about the
+  code**: fired 20 genuinely simultaneous `POST /api/jobs` requests (via
+  `Promise.all`, not sequential awaits) as one fresh guest against
+  compress-pdf's 8/day guest limit. Before this fix this would have let
+  meaningfully more than 8 through (the whole point of the race); after
+  the fix, exactly 8 succeeded and exactly 12 got `DAILY_LIMIT_REACHED`,
+  every time. Captured permanently in
+  `tests/e2e/daily-limit-atomic.spec.ts`.
+
+- **Removed four vestigial Prisma columns**, checked individually rather
+  than assumed as a group (a prior audit had already flagged these as
+  suspects): `File.checksum` and `File.pageCount` were never read *or*
+  written anywhere in the app. `UsageRecord.count` was written but only
+  ever as its schema `@default(1)`, never explicitly set or read back —
+  the real usage tally is `prisma.usageRecord.count()`, counting rows.
+  `UsageRecord.windowStart` was written (`new Date()` on every record) but
+  never read — the actual lookback query filters on `createdAt` instead,
+  so its two compound indexes were dead weight measuring the wrong
+  column. Migration `20260917204053_remove_unused_columns` drops all
+  four and replaces the `windowStart`-keyed indexes with `createdAt`-keyed
+  ones that actually match the real query
+  (`UsageRecord_{user,guest}Id_toolId_createdAt_idx`).
+
+  **Operational note worth recording**: every one of the four worker
+  containers (`pdf`/`office`/`ocr`/`html`) bakes its own generated Prisma
+  Client into its image at build time — after applying this migration,
+  all four had to be rebuilt, not just the main app, or they'd have kept
+  querying columns that no longer exist in the database. This applies to
+  *any* schema migration in this architecture, not just this one; worth
+  remembering next time.
+
 ## Template for future entries
 
 ```
