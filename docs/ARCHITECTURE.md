@@ -87,9 +87,10 @@ build.
 - Real-time job updates via WebSocket/SSE — short-poll (e.g. every 1–2s) is
   sufficient for an MVP where most P0 jobs finish in seconds; revisit if
   OCR/office-conversion latency makes polling feel bad.
-- Multi-region storage, CDN in front of downloads, malware scanning
-  (ClamAV) — architecture should stay pluggable (`lib/storage`,
-  `lib/security/scan.ts` interface) but is not implemented in the MVP.
+- Multi-region storage, CDN in front of downloads — still deferred.
+  Malware scanning (ClamAV) is no longer deferred — see
+  `lib/security/scan.ts` and `docs/SECURITY.md` §9 for the real,
+  implemented version.
 - Payments/webhooks, email provider, analytics SDK — entitlement and job
   systems are built so these can be added without a rewrite (see
   `docs/MONETIZATION.md`), but no provider is wired up yet.

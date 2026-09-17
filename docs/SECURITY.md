@@ -284,17 +284,47 @@ Structured logs include: job id, tool id, user/guest id, duration, worker
 name, result, error code. Logs never include: passwords, auth tokens/session
 secrets, file contents, or extracted document text.
 
-## 9. Malware scanning (not implemented)
+## 9. Malware scanning
 
-**No malware-scanning code exists in this codebase today** — no
-`lib/security/scan.ts` or equivalent. Uploaded files are validated
-structurally (magic bytes, size, page count — §1) but never scanned for
-malicious payloads. A ClamAV-backed (or similar) scan step is a real gap
-for a product that stores and later serves back arbitrary user-uploaded
-files; if built, it should sit as one more check in
-`lib/security/validateUpload.ts`'s pipeline, returning a distinct
-`INFECTED_FILE`-style error rather than the generic `UNSUPPORTED_FILE`
-(blueprint §43).
+Uploaded files are scanned by a real ClamAV daemon (`clamav` service in
+`docker-compose.yml`) after structural validation (magic bytes, size —
+§1) and before persisting to storage or the DB. `lib/security/scan.ts`
+hand-rolls clamd's `INSTREAM` wire protocol over a raw TCP socket
+(connect, `zINSTREAM\0`, length-prefixed chunks, a zero-length terminator,
+then read the one-line reply) rather than adding a third-party client
+dependency — most such packages are thin, sparsely-maintained wrappers
+around this exact same protocol.
+
+**Fails open, deliberately**: `scanFile()` returns `"skipped"` (not
+`"clean"`) if `CLAMD_HOST` is unset (e.g. a dev/CI environment without the
+`clamav` Compose service) or if the scanner is unreachable, times out, or
+errors. This is one defense-in-depth layer on top of structural
+validation, not the only gate — a transient scanner outage should not
+take down the entire upload path for every user. An infected result is
+rejected with the same generic `UNSUPPORTED_FILE` code (413/415 territory)
+a structural validation failure would use — the client is never told a
+scan ran or what it found, and the server log records only that an
+upload was rejected as infected (mime type, size), never file contents,
+per §8.
+
+**Verified against a real detection, not assumed from the client code
+working**: `tests/e2e/malware-scan.spec.ts` builds a genuine PDF (via
+`pdf-lib`, never written to disk — an in-memory buffer is handed directly
+to Playwright's `setInputFiles`) with the industry-standard, harmless
+EICAR test payload attached as a real embedded-file stream, and asserts
+the upload is rejected; a second test confirms a clean PDF is unaffected.
+
+**Real, non-obvious finding from testing this against the actual
+daemon**: ClamAV's PDF-aware content extraction did *not* detect EICAR
+bytes appended after a bare `%PDF-` header with no real PDF structure
+behind it, nor EICAR bytes placed in a document metadata field (`Subject`)
+of an otherwise-valid PDF — only a genuine embedded-file attachment
+stream (`pdf-lib`'s `.attach()`) was reliably detected. This matters
+because it means ClamAV's real detection surface for this format is
+narrower than "scans every byte of the file" — anyone extending this
+scanning integration to other formats should verify detection against
+the *actual* daemon with a realistic payload shape for that format,
+not assume a raw-byte match applies to every parser it has.
 
 ## 10. Dependency/licensing hygiene
 

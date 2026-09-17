@@ -5,6 +5,7 @@ import { getToolLimits } from "@/lib/entitlements";
 import { computeExpiry } from "@/lib/entitlements/retention";
 import { resolveActor } from "@/lib/security/actor";
 import { validateUploadedFile } from "@/lib/security/validateUpload";
+import { scanFile } from "@/lib/security/scan";
 import { generateStorageKey, getStorage } from "@/lib/storage";
 import { apiError } from "@/lib/api/errors";
 
@@ -47,6 +48,23 @@ export async function POST(request: NextRequest) {
   });
   if (!validation.ok) {
     return apiError(validation.error);
+  }
+
+  // Structural validation above only checks the file *shape* (magic
+  // bytes/size/format) — a well-formed PDF/image/document can still
+  // carry an embedded malicious payload. Scanning is a separate,
+  // defense-in-depth layer: see lib/security/scan.ts for why an
+  // unreachable/unconfigured scanner fails open rather than blocking
+  // every upload, and docs/SECURITY.md §9 for the full trade-off.
+  // Rejects with the same generic UNSUPPORTED_FILE code a structural
+  // validation failure would — never reveal to the client that a scan
+  // ran or what it found.
+  const scanResult = await scanFile(buffer);
+  if (scanResult === "infected") {
+    console.error(
+      `[upload] rejected an infected upload (mimeType=${file.type}, size=${buffer.byteLength})`,
+    );
+    return apiError("UNSUPPORTED_FILE");
   }
 
   const extension = file.name.includes(".") ? file.name.split(".").pop()! : "";

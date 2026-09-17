@@ -69,6 +69,28 @@ services:
       "
     networks: [restricted]
 
+  # Malware scanning (docs/SECURITY.md §9) -- on `default`, not
+  # `restricted`: unlike the workers, clamd needs outbound internet
+  # access for `freshclam` to keep virus definitions current, which is
+  # essential to the scanner's own effectiveness, not just "nice to have."
+  # It never processes a URL or executes anything based on a scanned
+  # file's content, so its trust/risk profile is closer to
+  # postgres/redis/minio (trusted, vendored infrastructure) than to a
+  # worker parsing hostile input with an engine that could be exploited.
+  clamav:
+    image: clamav/clamav-debian:stable
+    restart: unless-stopped
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+
   pdf-worker:
     build:
       context: .
@@ -208,6 +230,7 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
+  clamav_data:
 
 networks:
   # Two networks, not one, because a single `internal: true` network

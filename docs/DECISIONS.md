@@ -2314,6 +2314,67 @@ This closes the network-level backstop `workers/html`'s own SSRF
 mitigation (`context.route()` blocking) already documented as required
 but not configured — see `docs/SECURITY.md` §5.
 
+## 2026-09-18 — Malware scanning (ClamAV), real end-to-end
+
+Section 4.1 of the Final Completion Mission's production-hardening list.
+
+- New `clamav` service in `docker-compose.yml` (`clamav/clamav-debian:stable`).
+  Deliberately on `default`, not the workers' `restricted` network:
+  unlike the workers, clamd needs outbound internet for `freshclam` to
+  keep virus definitions current, which is essential to the scanner's
+  own effectiveness, not optional polish. It never processes a URL or
+  executes anything based on a scanned file's content, so its trust
+  profile is closer to postgres/redis/minio than to a worker parsing
+  hostile input with an engine that could itself be exploited.
+- `lib/security/scan.ts` hand-rolls clamd's `INSTREAM` protocol over a
+  raw TCP socket rather than adding a third-party client dependency —
+  most such packages are thin wrappers around this exact same protocol,
+  and this project already screens new dependencies for necessity.
+  Fails **open** (`"skipped"`, not `"clean"`) if unconfigured or
+  unreachable — a deliberate choice: this is one defense-in-depth layer
+  on top of existing structural validation, not the only gate, so a
+  scanner outage should not take down every upload for every user.
+  Wired into `app/api/upload/route.ts` right after the existing
+  structural validation; an infected result reuses the same generic
+  `UNSUPPORTED_FILE` code a structural failure would, and the server log
+  never records more than "rejected as infected" plus mime type/size —
+  never file contents, never which signature matched.
+
+- **Real, non-obvious finding from testing against the actual daemon,
+  not assumed from the client code compiling**: getting a genuinely
+  working detection test took three attempts. Raw EICAR bytes with no
+  PDF structure at all: detected. The same bytes appended after a bare
+  `%PDF-1.4` header with no real PDF structure behind it (a naive
+  "make it pass the magic-byte check" test file): **not** detected —
+  ClamAV's PDF-aware parser evidently doesn't fall back to raw
+  substring scanning when its own PDF structure parsing gives up. EICAR
+  placed in a genuinely valid PDF's `Subject` metadata field: **also not**
+  detected — metadata isn't treated as scannable content by ClamAV's PDF
+  module. Only EICAR embedded as a genuine embedded-file attachment
+  stream (`pdf-lib`'s `.attach()`) inside a valid PDF was reliably
+  detected (`stream: Eicar-Test-Signature FOUND`) — which also happens to
+  be the realistic malware-delivery vector this control actually needs to
+  catch. `tests/e2e/malware-scan.spec.ts` uses this construction.
+  Documented in `docs/SECURITY.md` §9 as a real detection-boundary
+  finding for anyone extending scanning to other formats later.
+- A second, unrelated annoyance hit while building the test fixture:
+  Windows Defender (the *host* machine's own antivirus, unrelated to
+  ClamAV) quarantined/locked EICAR-containing files the moment they
+  touched disk during manual testing. Solved by never writing the test
+  payload to a file at all — `pdf-lib` builds it as an in-memory buffer,
+  handed directly to Playwright's `setInputFiles({name, mimeType,
+  buffer})` form, which never touches the OS filesystem as a real file.
+  Also why the EICAR bytes are stored as a char-code array in the test
+  file rather than a literal string constant — a committed literal EICAR
+  string has a real history of tripping unrelated tooling (editors, other
+  scanners, some CI providers) even though the string itself is
+  harmless.
+
+**Verified**: full Playwright suite green with the scanner wired into the
+live upload path (no regressions to any of the ~30 other tools that
+upload real fixtures); a genuinely clean PDF confirmed unaffected
+(no false positive).
+
 ## Template for future entries
 
 ```
