@@ -2375,6 +2375,80 @@ live upload path (no regressions to any of the ~30 other tools that
 upload real fixtures); a genuinely clean PDF confirmed unaffected
 (no false positive).
 
+## 2026-09-18 — `workers/cleanup`: the last production-hardening item
+
+Section 4.5 of the Final Completion Mission — closes out all eight items
+on the production-hardening list.
+
+- New `workers/cleanup` package, structurally the lightest of the five
+  worker packages (no engine binaries at all — pure Postgres/Redis/S3
+  client code, `0.5` CPU / `256M` memory in `docker-compose.yml`).
+  Schedules its own recurring BullMQ job via `Queue.upsertJobScheduler`
+  (a stable scheduler id, idempotent across restarts — never creates a
+  duplicate schedule) rather than an external cron daemon or a bespoke
+  `setInterval` loop, reusing the same queue infrastructure every other
+  background-work path in this codebase already depends on. Runs hourly;
+  also runs once immediately at startup (an explicit call, confirmed
+  necessary by testing against the real container — `upsertJobScheduler`
+  does *not* auto-trigger an immediate run for an `every`-based schedule,
+  only cron `pattern` ones do, per BullMQ's own docs and confirmed
+  empirically here) so a freshly-deployed container doesn't leave expired
+  files sitting for up to an hour before its first sweep.
+- Three sweeps, each independently exported and callable
+  (`workers/cleanup/src/sweep.ts`), all logging counts only — never file
+  names, storage keys, or job ids (docs/SECURITY.md §8):
+  1. **Expired guest files** (`File.expiresAt <= now`): storage object
+     deleted, row marked `EXPIRED` (kept, not hard-deleted — mirrors how
+     Trash already works elsewhere, and nothing reads an `EXPIRED` file
+     back since job creation's ownership query only accepts
+     `UPLOADED`/`READY`).
+  2. **Old trashed files** (`File.deletedAt` past a 30-day retention
+     window): storage object *and* row both hard-deleted — past this
+     point nothing in the product ever shows a trashed file again. This
+     closes a real, previously-undocumented gap: the existing Trash
+     feature (`POST /api/files/[id]/trash`) only ever sets `deletedAt`
+     and never touches the storage object at all — a file sitting
+     trashed-but-not-explicitly-permanently-deleted kept its bytes in
+     object storage forever until this sweep existed.
+  3. **Stale `PROCESSING` jobs** (`Job.startedAt` more than 30 minutes
+     ago while still `PROCESSING`): marked `FAILED`
+     (`errorCode: "WORKER_CRASHED"`). 30 minutes is deliberately generous
+     — the single longest per-subprocess timeout anywhere in this
+     codebase is OCR's 300s, so this only ever reaps a job whose worker
+     has clearly crashed or been killed mid-job without updating its own
+     row, never a legitimately slow one.
+- **"Never delete active jobs" is enforced structurally, not just by
+  convention**: the expired-file sweep explicitly excludes any file that
+  is *currently* the input to a job still `QUEUED` or `PROCESSING`, even
+  if that file's own `expiresAt` has already passed (a guest returning
+  right at the 24h boundary). Verified with a real seeded scenario, not
+  just reasoned about: an expired file linked to an actively-processing
+  job survived a real sweep untouched, while an otherwise-identical
+  expired file with no active job was correctly swept.
+- **Orphaned temp directories were deliberately scoped out, not silently
+  skipped**: `withTempDir()` already deletes its own directory in a
+  `finally` block on every normal code path, and the temp root itself
+  (`/tmp`, `os.tmpdir()`) is each container's own ephemeral filesystem
+  with no persistent volume backing it — a hard-killed worker's leftover
+  temp files vanish the moment that container is recreated, which
+  `restart: unless-stopped` already guarantees happens. There is no
+  persistent, shared temp location in this architecture for a periodic
+  sweep to meaningfully act on; documented as "not applicable here"
+  rather than left unmentioned or implemented as dead code.
+- **Made cleanup logic testable, with a real caveat stated plainly**:
+  every other test in this codebase drives real behavior through the
+  app's own UI/API (`tests/e2e/*.spec.ts`), but this feature's scenarios
+  (a file that expired 25 hours ago, a job stuck in `PROCESSING` for 2
+  hours) need backdated timestamps the product itself never exposes a
+  way to set — there is no user action that produces "a file whose
+  `expiresAt` is in the past" on demand. `workers/cleanup/src/
+  sweep.test.ts` is a plain script (not a Playwright test) that seeds
+  six real scenarios directly via Prisma, runs the unmodified real sweep
+  function, and asserts on both the returned counts and resulting DB
+  state, then cleans up everything it created. All nine assertions
+  (three counts, six per-scenario outcomes) pass against the real dev
+  database.
+
 ## Template for future entries
 
 ```

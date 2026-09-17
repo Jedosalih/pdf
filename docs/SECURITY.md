@@ -134,10 +134,14 @@ against the freshly-loaded `PDFDocument` for that job's own input file.
   runs this (ECS task definitions, Kubernetes resource limits, etc.) —
   this only covers the Compose-based deployment shape.
 - Randomized temp directories, deleted in a `finally` block on every code
-  path (success, failure, timeout). **The scheduled sweep for anything
-  orphaned despite that (a crashed worker, a killed container) does not
-  exist yet** — see §4's identical caveat for the guest-file-expiry sweep;
-  it's the same missing `workers/cleanup` service.
+  path (success, failure, timeout). A dedicated sweep for anything
+  orphaned despite that was considered and deliberately not built: the
+  temp root (`/tmp`, `os.tmpdir()`) is each container's own ephemeral
+  filesystem with no persistent volume backing it in `docker-compose.yml`,
+  so a hard-killed worker's leftover temp files vanish the moment that
+  container is recreated, which `restart: unless-stopped` already
+  guarantees happens. There is no persistent, shared temp location in
+  this architecture for a periodic sweep to act on.
 - **No worker needs outbound internet access to process a file, and none
   can reach it**: `docker-compose.yml`'s network is now `internal: true`
   — Docker configures no default route to the outside world for any
@@ -160,7 +164,7 @@ against the freshly-loaded `PDFDocument` for that job's own input file.
 ## 4. Storage & access control
 
 - PDF binaries are never stored in Postgres — only metadata (`storageKey`,
-  `size`, `checksum`, `status`, `expiresAt`, owning `userId`/`guestId`).
+  `size`, `status`, `expiresAt`, owning `userId`/`guestId`).
 - Downloads go through an authorization check
   (`app/api/files/[id]/download/route.ts`'s `isOwnedByActor()`, from
   `lib/security/actor.ts`): caller must own the `File` (matching `userId`
@@ -174,11 +178,21 @@ against the freshly-loaded `PDFDocument` for that job's own input file.
   Authenticated-user-owned files/jobs get `expiresAt: null` (never
   expire on their own) so they can persist in My Documents/History —
   deletion for those is by explicit user action (Trash → permanent
-  delete) instead. **The `workers/cleanup` scheduled expiry sweep that
-  would actually act on a guest row's `expiresAt` does not exist yet**
-  — this is a known, pre-existing gap (rows/objects are not currently
-  reaped automatically); do not assume guest data is actually deleted
-  after 24h until that worker is built.
+  delete) instead. `workers/cleanup` (a dedicated, lightweight worker
+  package — no engine binaries, pure Postgres/Redis/S3 client code) runs
+  an hourly sweep (also once immediately at startup) that deletes the
+  storage object and marks a guest file `EXPIRED` once its `expiresAt`
+  has passed, unless it's currently the input to a job still queued or
+  processing — verified with a real seeded scenario, not just reasoned
+  about, that an expired-but-actively-used file survives a sweep
+  untouched. The same worker also permanently removes files sitting in
+  Trash for more than 30 days (a real, previously-undocumented gap: the
+  Trash feature itself only ever sets `deletedAt` and never touches the
+  storage object, so a trashed-but-never-explicitly-purged file kept its
+  bytes forever before this existed) and marks any job stuck in
+  `PROCESSING` for more than 30 minutes as failed (a worker crash
+  signature, not a legitimately slow job — the longest per-subprocess
+  timeout anywhere in this codebase is 300s). See `docs/DECISIONS.md`.
 
 ## 5. SSRF
 

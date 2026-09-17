@@ -226,6 +226,42 @@ services:
       NODE_ENV: production
     networks: [restricted]
 
+  # Periodic housekeeping (docs/DECISIONS.md, workers/cleanup/src/sweep.ts):
+  # expired guest files, old trashed files, and jobs stuck in PROCESSING
+  # from a crashed worker. Schedules its own recurring BullMQ job at
+  # startup (idempotent) rather than relying on an external cron daemon,
+  # keeping it the same "long-running container" shape as every other
+  # worker here. Pure DB/Redis/storage operations, no engine binaries --
+  # lightweight limits reflect that.
+  cleanup-worker:
+    build:
+      context: .
+      dockerfile: workers/cleanup/Dockerfile
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
+      REDIS_URL: redis://redis:6379
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_REGION: auto
+      STORAGE_BUCKET: jdpdf-dev
+      STORAGE_ACCESS_KEY: jdpdf
+      STORAGE_SECRET_KEY: jdpdf12345
+      STORAGE_FORCE_PATH_STYLE: "true"
+      NODE_ENV: production
+    networks: [restricted]
+
 volumes:
   postgres_data:
   redis_data:
