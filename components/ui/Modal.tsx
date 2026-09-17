@@ -40,12 +40,12 @@ export function Modal({
             // intentionally uses physical left/top rather than logical
             // inset-inline-start (which would double up with the
             // translate in RTL instead of mirroring it).
-            "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2",
+            "fixed left-1/2 top-1/2 z-50 flex max-h-[85vh] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col",
             "rounded-lg bg-background p-6 shadow-md",
             "data-[state=open]:animate-[content-in_150ms_ease-out]",
           )}
         >
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex shrink-0 items-start justify-between gap-4">
             <div>
               <DialogPrimitive.Title className="text-h3 font-semibold text-foreground">
                 {title}
@@ -63,7 +63,12 @@ export function Modal({
               <X className="h-5 w-5" aria-hidden="true" />
             </DialogPrimitive.Close>
           </div>
-          {children ? <div className="mt-4">{children}</div> : null}
+          {/* Only the body scrolls once content grows past the modal's own
+           * max-height — the title/close button stay fixed in view. This
+           * matters in practice now: the tool registry has grown enough
+           * that ToolPickerModal's list genuinely overflows a typical
+           * viewport, which previously had no way to reach lower items. */}
+          {children ? <div className="mt-4 min-h-0 overflow-y-auto">{children}</div> : null}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

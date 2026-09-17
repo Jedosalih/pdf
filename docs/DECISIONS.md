@@ -1352,6 +1352,49 @@ replacing the pre-implementation Phase-0 draft.
 the editor/Fill & Sign/redaction/Compare/batch capabilities — unrelated to
 and unaffected by this entry.
 
+## 2026-09-17 — Fixed: shared `Modal` had no max-height/scroll — a real, previously-latent bug the growing registry finally exposed
+
+Found by the full regression suite, not by inspection: after this
+session's tools brought the number of PDF-accepting tools to ~21,
+`tests/e2e/homepage-upload-handoff.spec.ts` started failing reproducibly
+(not the transient kind) — Playwright could not click a tool row in
+`ToolPickerModal` because it was genuinely outside the viewport with no
+way to scroll to it.
+
+- **Root cause**: `components/ui/Modal.tsx` ("the one modal system in the
+  app") centers its content with `top-1/2 -translate-y-1/2` and had no
+  `max-height` or `overflow-y-auto` at all. This was never a problem while
+  every modal's content was short enough to fit a typical viewport — with
+  enough rows, the dialog's rendered height exceeds the viewport, and
+  since it's `position: fixed` with no internal scroll region, the excess
+  content is simply unreachable. This affects real users on real screens,
+  not just the test: anyone with a shorter viewport (a laptop, a phone in
+  landscape, a browser with dev tools docked) hitting any modal with
+  enough content would already have been unable to reach the bottom items
+  before this fix — the tool registry crossing a growth threshold is just
+  what finally made the E2E suite exercise it.
+- **Fix**: `Modal`'s content is now `flex flex-col` with `max-h-[85vh]`;
+  the title/close-button row is `shrink-0` (stays fixed in view), and the
+  `children` wrapper gets `min-h-0 overflow-y-auto` so only the body
+  scrolls once it overflows. Verified visually (screenshot: a 21-item tool
+  list now shows ~10 rows with a visible cutoff, scrollable) and via the
+  real E2E test passing again.
+- **Blast radius checked before shipping**: `Modal` is reused by
+  `ToolPickerModal`, `WorkspaceUploadButton`, and `DocumentList`'s
+  rename/delete confirmations — all short-content cases where
+  `max-h-[85vh]`/`overflow-y-auto` are no-ops (only engage once content
+  actually exceeds the height), so this is a strictly additive fix, not a
+  behavior change for any existing short modal. `CommandPalette` is a
+  separate, hand-rolled Radix Dialog usage (not built on this shared
+  `Modal`) and is unaffected either way.
+- **Lesson for this roadmap going forward**: every new tool added to the
+  registry is also implicitly adding one more row to
+  `ToolPickerModal`/`ToolsDirectorySearch`/`PopularToolsRow` — components
+  whose original design assumptions (16 tools) are now visibly stretched
+  at 26+. Worth a deliberate look once the roadmap's remaining units
+  (OCR, HTML/Markdown, and beyond) push the count meaningfully higher
+  again, rather than only reacting to the next E2E failure.
+
 ## Template for future entries
 
 ```
