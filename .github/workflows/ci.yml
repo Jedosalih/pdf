@@ -1,0 +1,188 @@
+name: CI
+
+# Runs on every push to main and every PR — never requires production
+# secrets (see docs/DEPLOYMENT.md): the .env this workflow writes is
+# generated fresh each run with CI-only dummy values, matching
+# .env.example's shape, never a real credential.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck (app)
+        run: npm run typecheck
+
+      # Each worker is an independently deployable package with its own
+      # node_modules/tsconfig (see AGENTS.md) — typechecking the app alone
+      # does not cover them. `prisma generate` only needs the schema file
+      # on disk, not a live database connection, so this runs with no
+      # service containers.
+      - name: Typecheck workers
+        run: |
+          for worker in pdf office ocr html cleanup; do
+            echo "::group::workers/$worker"
+            (cd "workers/$worker" && npm ci && npm run db:generate && npx tsc --noEmit)
+            echo "::endgroup::"
+          done
+
+  build:
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install app dependencies
+        run: npm ci
+
+      # `next build` prerenders some routes at build time, which touches
+      # env vars even though nothing here is a real credential.
+      - name: Write CI env file
+        run: |
+          cat > .env <<'EOF'
+          DATABASE_URL="postgresql://jdpdf:jdpdf@localhost:5432/jdpdf?schema=public"
+          REDIS_URL="redis://localhost:6379"
+          STORAGE_ENDPOINT="http://localhost:9000"
+          STORAGE_REGION="auto"
+          STORAGE_BUCKET="jdpdf-dev"
+          STORAGE_ACCESS_KEY="jdpdf"
+          STORAGE_SECRET_KEY="jdpdf12345"
+          STORAGE_FORCE_PATH_STYLE="true"
+          AUTH_SECRET="ci-only-not-a-real-secret-0000000000000000000000"
+          GUEST_ID_SECRET="ci-only-not-a-real-secret-1111111111111111111111"
+          NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+          NODE_ENV="production"
+          EOF
+
+      - name: Build app
+        run: npm run build
+
+      - name: Build workers
+        run: |
+          for worker in pdf office ocr html cleanup; do
+            echo "::group::workers/$worker"
+            (cd "workers/$worker" && npm ci && npm run db:generate && npm run build)
+            echo "::endgroup::"
+          done
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: build
+    # A full `docker compose up --build` from a cold cache (LibreOffice,
+    # Tesseract, and Chromium images are all large) is genuinely slow on
+    # a fresh runner — generous but not unbounded, so a real hang still
+    # fails loudly instead of silently consuming Actions minutes forever.
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Write CI env file
+        run: |
+          cat > .env <<'EOF'
+          DATABASE_URL="postgresql://jdpdf:jdpdf@localhost:5432/jdpdf?schema=public"
+          REDIS_URL="redis://localhost:6379"
+          STORAGE_ENDPOINT="http://localhost:9000"
+          STORAGE_REGION="auto"
+          STORAGE_BUCKET="jdpdf-dev"
+          STORAGE_ACCESS_KEY="jdpdf"
+          STORAGE_SECRET_KEY="jdpdf12345"
+          STORAGE_FORCE_PATH_STYLE="true"
+          CLAMD_HOST="localhost"
+          CLAMD_PORT="3310"
+          AUTH_SECRET="ci-only-not-a-real-secret-0000000000000000000000"
+          GUEST_ID_SECRET="ci-only-not-a-real-secret-1111111111111111111111"
+          NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+          NODE_ENV="development"
+          EOF
+
+      # Brings up postgres/redis/minio/clamav plus all five worker
+      # containers from this repo's own Dockerfiles — the same command
+      # (and the same docker-compose.yml) used in local dev, not a
+      # separate CI-only setup. `--wait` blocks until every service with
+      # a healthcheck actually reports healthy (clamav's freshclam
+      # database download is the slowest of these) rather than racing
+      # ahead before the stack is really ready.
+      - name: Start the full stack (docker compose)
+        run: docker compose up -d --build --wait --wait-timeout 300
+
+      # `--wait` above was verified (by actually running it, not assumed)
+      # to return successfully while clamav still reports "starting" --
+      # it has no dependents in docker-compose.yml (`depends_on:`), which
+      # Compose's `--wait` seems to treat differently from a service
+      # something else is actually waiting on. Poll explicitly so the
+      # malware-scan E2E test can't flake based on whether clamd happened
+      # to finish its first healthcheck cycle in time.
+      - name: Wait for ClamAV to report healthy
+        run: |
+          for i in $(seq 1 60); do
+            status=$(docker inspect pdf-clamav-1 --format '{{.State.Health.Status}}')
+            echo "clamav health: $status ($i/60)"
+            if [ "$status" = "healthy" ]; then exit 0; fi
+            sleep 5
+          done
+          echo "::error::clamav did not become healthy in time"
+          docker logs pdf-clamav-1 --tail 50
+          exit 1
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+
+      - name: Seed the database
+        run: npm run db:seed
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the E2E suite
+        run: npx playwright test --workers=1
+
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose logs --tail 200
+
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          # playwright.config.ts uses the "list" console reporter only
+          # (no html report is generated) -- test-results/ is where
+          # Playwright actually writes per-failure traces/screenshots.
+          path: test-results/
+          retention-days: 7
+
+      - name: Tear down the stack
+        if: always()
+        run: docker compose down -v

@@ -3,6 +3,7 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   DeleteObjectCommand,
+  HeadBucketCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { StorageProvider } from "./types";
@@ -28,6 +29,10 @@ export function createS3StorageProvider(): StorageProvider {
   });
 
   return {
+    async headBucket() {
+      await client.send(new HeadBucketCommand({ Bucket: bucket }));
+    },
+
     async putObject(key, body, contentType) {
       await client.send(
         new PutObjectCommand({
