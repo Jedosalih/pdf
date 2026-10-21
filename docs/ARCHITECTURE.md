@@ -23,7 +23,7 @@ Worker processes (separate Node processes, own Dockerfiles)
   │  - workers/image → Sharp
   │  - workers/cleanup → scheduled expiry sweep
   ▼
-Object storage (MinIO locally / R2 or S3 in production)
+Object storage (SeaweedFS, S3 API; R2 or S3 also work)
   │
   ▼
 Job status flips to COMPLETED, output File row created

@@ -1,10 +1,142 @@
-# JPdf maintenance report (2026-10-21)
+# JPdf maintenance report
+
+Two passes on 2026-10-21. The newest is first. Reasoning for every change
+is in `docs/DECISIONS.md`.
+
+# Pass 2: productization (auth, tool UX, CI/CD, production stack)
+
+## A. Status
+
+**Code, CI and the production template are done and verified; JPdf is not
+publicly deployed.** No hosting account, domain or SMTP credentials exist
+in this environment, so there is no public URL (none was invented). CD is
+complete but disabled until a host is configured.
+
+- Repository: https://github.com/Jedosalih/pdf (pushed `main`, fast-forward
+  from `49f7d02`; no remote work overwritten).
+- CI on GitHub Actions: **PASS**, run 39689372434 on `159a9f8`
+  (https://github.com/Jedosalih/pdf/actions/runs/39689372434): static,
+  dependency audit, build + images, and full-stack E2E (183 Playwright
+  tests passed). The Deploy workflow ran and was skipped, as designed,
+  because `DEPLOY_ENABLED` is not set.
+
+## B. What changed
+
+| Area | Change | Proof |
+|---|---|---|
+| Auth | Email verification + password reset on the existing system (`AuthToken`, one migration): single-use HMAC'd tokens, 24h / 30min, atomic consume, verify via button POST. Registration/forgot/resend never reveal whether an account exists; login timing-equalized; `EMAIL_NOT_VERIFIED` only after the right password; new session per login; reset revokes all sessions, password change revokes the others. Same-origin check, JSON-only, 8KB cap, strict schemas, per-IP + per-email limits on every auth POST; password policy (>=10 chars, <=72 bytes, not common, not the email) | `tests/e2e/auth-flows.spec.ts` (11), plus every sign-up in the suite via the real email link |
+| Email | Plain SMTP via nodemailer (STARTTLS/TLS required in production, certs verified, timeouts); localized HTML/text templates (en/ar/tr, RTL), values escaped, links only from `NEXT_PUBLIC_SITE_URL`; Mailpit captures mail in dev/CI | Real SMTP delivery to Mailpit in E2E. **Real mailbox delivery: NOT TESTED** (no credentials) |
+| Cleanup | Removed 7 verified-unused components and `@types/bcryptjs`; dead env vars dropped from `.env.example` (knip candidates each checked by hand; false positives kept) | typecheck/lint/build |
+| Tools | Audited all 35. Fixed: compress returning bigger files as "success"; no page navigation on phones in edit/redact/fill-sign (+ fit-to-width zoom); un-cancelled pdf.js renders on zoom/page change; compare original couldn't be replaced; "How it works" naming buttons that don't exist (en/ar/tr) | `tool-pages.spec.ts` (94: every tool/page, en/ar, phone width, no console errors/overflow/raw keys/wrong `accept`), real-compression test, phone page-2 redaction, compare replacement |
+| CI | 4 jobs: static (lint, all typechecks, prisma, prod compose), security (audit gate with reviewed allowlist), build (next build, workers, app image), e2e (full stack, migration drift check, worker-image security tests, full Playwright suite) | See A |
+| CD | `deploy.yml`: deploys only the CI-tested SHA from `main` via the `production` environment over SSH (pinned host key); skipped until `DEPLOY_ENABLED=true`. `deploy/deploy.sh`: backup, checkout, `--wait` rollout, health check, automatic rollback | Input validation exercised; full deploy run blocked locally (see D) |
+| Production stack | Caddy (only public service, auto HTTPS, HSTS/security headers); SeaweedFS replaces unmaintained MinIO images (verified signed URLs, scoped keys, unsigned/tampered refused); public storage host GET/HEAD only; storage and workers with no outbound network; per-service Postgres roles | Local HTTPS smoke test: health, headers, redirect, real job + signed download, spoofed X-Forwarded-For ignored, only 80/443 published, 21 privilege/network checks |
+| Backups | `deploy/backup.sh` (pg_dump verified complete + storage archive, retention); restore runbook | Failure path fails loudly (fixed a pg_dump-pipe bug that produced empty "successful" dumps); dump restored into a fresh DB with all data |
+| MinIO removed everywhere | The first real CI run failed: `minio/minio` and `minio/mc` are no longer pullable from Docker Hub (anonymous 401); local runs had worked only from cached images. Dev/CI now use SeaweedFS as well (host port 9000, existing `.env` unchanged; region `auto` verified on a native SeaweedFS binary). CI uses an explicit readiness check instead of `compose up --wait` | Registry check of every pinned image; green CI (see A, D2) |
+| Lockfile | npm on Windows drops optional `@emnapi/*` entries, breaking Linux `npm ci` (already broken at HEAD). Re-resolved on Linux; rule in AGENTS.md | Linux `npm ci --dry-run` OK; CI install |
+
+## C. Verification (PASS / FAIL / BLOCKED / NOT RUN)
+
+| Check | Result |
+|---|---|
+| App typecheck, 5 worker typechecks, ESLint | PASS (local and GitHub) |
+| Prisma validate; migrate deploy on disposable DB; migration drift check | PASS |
+| Production build (`next build`) | PASS (local and GitHub) |
+| Worker images + app image | PASS (GitHub build/e2e jobs; locally before the disk incident) |
+| Dependency gate | PASS (GitHub): app prod deps 0; 2 allowlisted, reviewed office-worker advisories |
+| Auth suite (11) + all sign-up specs | PASS (local, 22/22) |
+| Tool page checks (94), changed tool specs | PASS (local) |
+| Worker-image security tests (redaction 14, passwords 13, cleanup 13) | PASS (local; also in CI e2e job) |
+| Full E2E suite | PASS on GitHub Actions: 183/183 (run 39689372434), after five failing runs, each traced to a real cause (D2) |
+| Production stack HTTPS smoke test + privilege checks | PASS (local, `*.localhost`) |
+| Backup / restore | PASS (DB restore into fresh DB); full in-place restore runbook NOT RUN |
+| `deploy.sh` full run | BLOCKED: local Docker became unusable during the test (disk full, see D) |
+| GitHub Actions CD | NOT RUN: disabled, no host |
+| Public HTTPS smoke test | NOT RUN: no deployment |
+| SMTP to a real mailbox | NOT RUN: no credentials |
+
+## D. Incident during this pass: D: drive filled, Docker data disk stuck
+
+Building the full production image set for the deploy test filled D: (0.02
+GB free); Docker Desktop's data disk lives there. I stopped all builds,
+freed 1.6 GB by deleting only the regenerable `.next/dev` cache, and
+restarted Docker Desktop (WSL distro `docker-desktop` only). The new Docker
+session then could not attach its data disk (it was still attached to the
+WSL VM) and **tried to format a device** -- the attempt failed. I stopped
+Docker Desktop immediately so it cannot retry.
+
+Current state, verified read-only: `docker_data.vhdx` (58 GB) last written
+20:33, before any restart; the disk still carries its ext4 filesystem (not
+formatted). Your dev volumes are inside it; your dev stack had been stopped
+before the incident. Docker Desktop is **stopped** and must stay stopped
+until you choose how to recover (it could otherwise retry the format).
+
+Safe recovery (owner decision -- it also stops your Ubuntu WSL distro):
+1. Make free space on D: first (ideally a copy of
+   `D:\DockerData\wsl\disk\docker_data.vhdx` somewhere safe -- 58 GB).
+2. `wsl --shutdown` (detaches the disk cleanly).
+3. Optional check before Docker touches it: `wsl --mount --vhd
+   D:\DockerData\wsl\disk\docker_data.vhdx --bare`, then in Ubuntu
+   `sudo e2fsck -n /dev/sdX` (read-only), then `wsl --unmount`.
+4. Start Docker Desktop and watch `docker ps`.
+5. Reclaim space inside Docker: `docker builder prune` (17.9 GB of build
+   cache, no data) and the throwaway images from this session
+   (`jpdf-prodtest-*`, `jpdf-test-*`); then compact the VHDX to return
+   space to D:.
+
+## D2. Getting CI green: real failures found on GitHub
+
+Each failing run's cause was read from run annotations, which are public.
+Downloading job logs needs repo-admin rights. No assertion was weakened.
+
+1. MinIO images not pullable: switched dev/CI to SeaweedFS.
+2. Building all five worker images in parallel thrashed the runner for
+   over an hour. Images are now built one at a time, with runner disk
+   freed first.
+3. `compose up` hung behind the one-shot bucket-init container. Bucket
+   creation moved into the storage entrypoint (dev and prod).
+4. Cleanup sweep test raced the running cleanup worker. The worker is now
+   paused for that test.
+5. All uploads failed (61 E2E tests). A new host-side storage probe showed
+   ECONNRESET. SeaweedFS was listening on only one of the container's two
+   networks; now `-ip.bind=0.0.0.0`. **This affected local dev on
+   SeaweedFS too**, not just CI.
+
+## E. Remaining blockers (owner actions)
+
+1. **Docker recovery** (D above) before using Docker locally again.
+2. **Revoke the old GitHub PAT** (it was in `.git/config`; removed from the
+   URL, not revoked). Pushing now works over SSH with your key.
+3. **Hosting**: a Linux VM with Docker, DNS for two hostnames, SMTP
+   credentials, `.env.production`, then GitHub `production` environment
+   secrets and `DEPLOY_ENABLED=true` (docs/DEPLOYMENT.md). No URL exists
+   until then.
+4. **SMTP**: real mailbox delivery has not been tested, because no
+   credentials were available. Mail was tested end to end only against
+   Mailpit. Send one verification email from the server once SMTP is set.
+5. Optional: local dev files stored before this pass are in the old
+   `pdf_minio_data` volume (untouched); dev now uses a new SeaweedFS
+   volume. They are dev data only; delete or migrate them as you prefer.
+
+## F. Git
+
+`main` = `origin/main` (pushed over SSH). Working tree clean apart from
+your untracked recovery note.
+
+
+---
+
+# Pass 1: post-interruption audit and maintenance
+
+> Historical record of the first pass. Where Pass 2 above differs (CI has
+> since run on GitHub, MinIO was replaced, the code was pushed), Pass 2 is
+> current.
 
 Post-interruption audit and maintenance pass. No push, no deployment.
 Detailed reasoning for every change is in `docs/DECISIONS.md` (three
 2026-10-21 entries plus the retroactive `a49626c` entry).
 
-## A. Overall status
+### A. Overall status
 
 **Maintenance mostly completed, with explicit blockers.** All
 13 audit findings plus 6 found during the work are fixed and verified
@@ -12,7 +144,7 @@ locally. Remaining blockers are owner actions (revoke the leaked GitHub
 token, choose hosting) and things only a real GitHub/production run can
 prove (CI on GitHub, deployment).
 
-## B. Fixes
+### B. Fixes
 
 | ID | Finding | Status | What changed | Proof |
 |---|---|---|---|---|
@@ -41,7 +173,7 @@ Found during the work:
 | F18 | Root `tsconfig.json` type-checked `workers/**`, so app typecheck/build failed without worker `node_modules` (CI's first job, any Docker build) | Workers excluded |
 | F19 | Login rate limit used the client-controlled leftmost `X-Forwarded-For` entry | Fixed with F3 |
 
-## C. Verification (all run on 2026-10-21, local machine)
+### C. Verification (all run on 2026-10-21, local machine)
 
 | Check | Command | Result |
 |---|---|---|
@@ -64,7 +196,7 @@ Found during the work:
 All tests ran against an isolated `jpdf-test` Compose project with its
 own volumes. Your dev volumes (`pdf_*`) were never used or modified.
 
-## D. Remaining risks
+### D. Remaining risks
 
 | Severity | Risk | Action |
 |---|---|---|
@@ -78,7 +210,7 @@ own volumes. Your dev volumes (`pdf_*`) were never used or modified.
 | Low | Guests behind one NAT share per-IP limits | Tune via env if needed |
 | Info | D: drive has 7.5 GB free (was 18.2 GB); the new test/prod-template images live in Docker's VHDX. Nothing was deleted (standing rule) | Owner decision: e.g. `docker image rm jpdf-prodtest-app jpdf-prodtest-pdf-worker jpdf-prodtest-cleanup-worker` |
 
-## E. Owner actions
+### E. Owner actions
 
 1. **Revoke the GitHub fine-grained PAT** that was embedded in the
    `origin` URL (GitHub → Settings → Developer settings → Personal access
@@ -91,7 +223,7 @@ own volumes. Your dev volumes (`pdf_*`) were never used or modified.
    prerequisites in `docs/DEPLOYMENT.md`. Nothing was deployed or created
    in any external account.
 
-## F. Git status
+### F. Git status
 
 - Branch `main`. Local maintenance commits were created on top of
   `a49626c` (listed with hashes in the final hand-off message).
@@ -103,7 +235,7 @@ own volumes. Your dev volumes (`pdf_*`) were never used or modified.
 - **Pushing is safe to consider only after E1–E2.** Fetch first to
   confirm nobody else pushed to `main`.
 
-## G. Readiness for new feature work
+### G. Readiness for new feature work
 
 **Ready, with conditions.** The codebase builds, typechecks and lints
 clean; the full E2E suite and all worker-level security tests pass; no
@@ -115,7 +247,7 @@ known Critical/High code defects remain. Before building on it:
 3. Treat the production template as unproven until it runs on a real host
    behind a real proxy.
 
-## H. Documentation updated
+### H. Documentation updated
 
 `docs/DECISIONS.md`, `docs/SECURITY.md` (§1, §2, §6, §7, §11),
 `docs/DEPLOYMENT.md` (rewritten), `README.md`, `AGENTS.md` (git rules),

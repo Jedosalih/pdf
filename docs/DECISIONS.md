@@ -2634,6 +2634,22 @@ items were never started.
   CI also stops using `compose up --wait` (a finished one-shot init
   container and workers restarting before migrations count as failures)
   in favour of `scripts/wait-for-stack.sh`.
+  Three more findings before CI went green (run 39689372434):
+  1. `compose up -d` hung on GitHub with dependents stuck "Created"
+     behind the one-shot bucket-init container; bucket creation is now in
+     the storage container's own entrypoint (`deploy/storage/entrypoint.sh`),
+     which reports healthy only once the bucket exists. Both compose files.
+  2. SeaweedFS without `-ip.bind` listens only on localhost plus one
+     auto-detected address. The dev storage container is on two networks;
+     Docker's host port forward hit the other one, so the host app got
+     ECONNRESET while the in-container healthcheck passed -- every upload
+     failed. Now `-ip.bind=0.0.0.0` (exposure is still set by compose).
+  3. The cleanup worker sweeps on every start; in CI it restarts until
+     migrations exist and raced the sweep test over the same rows. CI
+     pauses it for that test.
+  CI now fails fast with exact errors as annotations (job logs need admin
+  rights): a host-side S3 probe (`scripts/ci-storage-probe.mjs`), an app
+  health check, worker-test and container diagnostics.
 - **Caddy** as the single public entry (auto HTTPS). The app now signs
   download URLs for a separate public storage host
   (`STORAGE_PUBLIC_ENDPOINT`) while talking to storage internally, so the

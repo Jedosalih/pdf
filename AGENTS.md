@@ -21,7 +21,7 @@ recorded in `docs/DECISIONS.md`.
 - `next-intl` for i18n/routing (`ar`, `en`, `tr`; `ar` is RTL)
 - PostgreSQL + Prisma ORM
 - Redis + BullMQ for job queues
-- Object storage via an S3-compatible abstraction (MinIO locally, R2/S3 in prod)
+- Object storage via an S3-compatible abstraction (SeaweedFS in dev/CI and in the self-hosted production stack; any S3 API such as R2/S3 also works)
 - PDF workers are separate Node processes (not Next.js request handlers),
   shelling out to qpdf / Ghostscript / Poppler / OCRmyPDF+Tesseract /
   LibreOffice via safe argument arrays (never a shell string).
