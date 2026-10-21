@@ -37,6 +37,20 @@ Order of checks in `lib/security/validateUpload.ts`:
    compared a page count against it until this fix (found while adding
    `compare-pdf`'s own page limits — see `docs/DECISIONS.md`). Non-PDF
    input files aren't page-counted (already bounded by file size).
+   **Correction (2026-10-21): this gate never actually worked at runtime
+   until then.** Inside the Next.js server bundle pdf.js could not load its
+   worker module, so every count threw, and the route turned any error
+   into "0 pages": every file passed `maxPages`. Counting now uses pdf-lib
+   (pure JS, `lib/security/pageCount.ts`) and **fails closed**: a PDF whose
+   pages can't be counted is refused, `ENCRYPTED_PDF` for
+   password-protected files and `UNSUPPORTED_FILE` otherwise
+   (`tests/e2e/page-limit-fail-closed.spec.ts` verifies 301 pages are
+   refused and 300 accepted for a guest). The two tools whose purpose is unreadable
+   input (`unlock-pdf`, `repair-pdf`, flagged `deferPageLimitToWorker` in
+   the registry) get the actor's `maxPages` stamped into the job options
+   server-side (overwriting anything the client sent), and their worker
+   enforces it on the decrypted/repaired output before storing it
+   (`workers/pdf/src/pageLimit.ts`).
 
 **Exception: `edit-pdf`'s inserted images bypass this pipeline entirely.**
 The PDF editor (`components/tools/edit-pdf/`) builds its edit list
@@ -59,9 +73,13 @@ Markdown/HTML uploads in §5. `fill-sign-pdf`'s signature elements travel
 the identical `options.edits` path and are validated by the exact same
 worker code (`applyEditElements()`, shared by both handlers). Per-image
 size and edit-count caps bound each element, but not the request as a
-whole; `app/api/jobs/route.ts`'s `MAX_JOB_BODY_BYTES` (50MB, checked via
-`Content-Length` before the body is parsed) bounds the aggregate — see the
-code comment there for what this does and does not defend against.
+whole; `app/api/jobs/route.ts`'s `MAX_JOB_BODY_BYTES` (50MB) bounds the
+aggregate. It is enforced on the bytes actually received
+(`lib/security/requestBody.ts` counts the stream and cancels it past the
+limit), so a caller that lies about or omits `Content-Length` can't make
+the route buffer more. Uploads work the same way: `/api/upload` takes
+`toolId` in the query string, resolves the actor's per-tool size limit
+first, and reads at most that (+64KB multipart overhead) before parsing.
 
 `fill-sign-pdf` also sends a separate `options.fields` record (field name
 → typed value) for AcroForm filling. Both keys and values are plain
@@ -79,6 +97,18 @@ against the freshly-loaded `PDFDocument` for that job's own input file.
   **argument array**. String interpolation into a shell command
   (`exec("qpdf " + userInput)`) is banned — code review must reject it on
   sight.
+- An argument array is still not enough for user-supplied *passwords*:
+  qpdf 11.3 only takes encryption passwords positionally and parses any
+  argument starting with `-` as an option, so `--help` or `-` as a
+  password could not be passed correctly at all. `protect-pdf` and
+  `unlock-pdf` therefore hand qpdf a job JSON file
+  (`workers/pdf/src/qpdfJob.ts`, `--job-json-file`) written mode 0600 to
+  the job's private temp dir, which also keeps passwords out of the
+  process list. Passwords are no longer trimmed (the protected file must
+  open with exactly what the user typed), and `protect-pdf` refuses
+  passwords over 127 UTF-8 bytes, since AES-256 (revision 6) silently
+  ignores everything after byte 127. Covered by
+  `workers/pdf/src/qpdfJob.test.ts` against the real binary.
 - Only a fixed, known set of flags/binaries can ever be invoked per tool;
   user-controlled values (e.g. rotation degrees, page ranges) are
   validated against a strict schema (numbers/ranges) before being placed
@@ -246,9 +276,19 @@ actually configured.
   verification, password reset) exists yet to require it; revisit if one
   is built.
 - Rate limiting (Redis-backed, `lib/security/rateLimit.ts`, reusing the
-  existing BullMQ Redis connection) on `/api/auth/register` (by IP) and
-  `/api/auth/login` (by IP and by normalized email) — upload/job-creation
-  rate limiting is not yet implemented (see §10/known gaps).
+  existing BullMQ Redis connection; `INCR` + `EXPIRE NX` in one MULTI so a
+  counter can never be left without an expiry) on `/api/auth/register`
+  (by IP), `/api/auth/login` (by IP and by normalized email), and — since
+  2026-10-21 — `/api/upload` and `POST /api/jobs` (per IP and per actor,
+  `lib/security/abuseLimits.ts`; defaults 200/IP and 100/actor per 10
+  minutes, overridable via env).
+- Client IP (`lib/security/clientIp.ts`) is the `X-Forwarded-For` entry
+  `TRUSTED_PROXY_HOPS` (default 1) from the right, i.e. the address the
+  nearest trusted proxy saw. The leftmost entry, used before, is
+  client-controlled and let anyone pick their own IP for every per-IP
+  limit. Next.js passes a client-supplied header through unchanged when
+  no proxy is in front, so production must run behind one that appends
+  the header (docs/DEPLOYMENT.md).
 - Login returns the same generic `401 INVALID_CREDENTIALS` for an unknown
   email, a wrong password, or a disabled account — never reveals which,
   to avoid user enumeration.
@@ -265,13 +305,14 @@ actually configured.
 
 Guests are identified by a signed, `httpOnly` cookie (`guestId`) set on
 first visit — not by fingerprinting. Usage counters (`UsageRecord`, keyed
-off this id) are the only mechanism enforcing `dailyOperations`; there is
-**no IP-based secondary limit** on top of it today, so clearing cookies
-(or any other way of obtaining a fresh `guestId`) resets a guest's daily
-quota entirely. IP-based rate limiting exists elsewhere in the codebase
-(`lib/security/rateLimit.ts`, §6) but only guards `/api/auth/register` and
-`/api/auth/login` — it is not applied to upload/job-creation usage
-counting. Known gap, not yet fixed.
+off this id) enforce `dailyOperations` per guest id. Because discarding the
+cookie yields a fresh guest id (and a fresh per-tool quota), guests are
+also bounded per IP across all guest ids (since 2026-10-21): at most
+`GUEST_DAILY_JOBS_PER_IP` (default 300) jobs per rolling day, plus the
+per-IP upload/job request rate limits in §6. Trade-off, accepted: guests
+behind one NAT share these IP buckets; signed-in users are bounded by
+their own account instead. `tests/e2e/abuse-controls.spec.ts` verifies
+that cookie-less requests from one IP hit the shared per-IP limit.
 
 `dailyOperations` is now a hard cap under concurrency, not a soft/best-
 effort one: `tryReserveToolUsage` (`lib/entitlements/index.ts`) checks and
@@ -287,10 +328,12 @@ genuinely concurrent job-creation requests as one guest against an 8/day
 limit and asserts *exactly* 8 succeed — this was the batch-processing
 feature's own trigger for this race before the fix (it now also sends its
 own requests one at a time as an additional, redundant safeguard, but the
-real fix is this one). One accepted, narrow trade-off: usage is now
-recorded *before* `Job.create()` rather than after, so a DB-level failure
-during job creation itself (not entitlement-related, already-rare) would
-consume a usage slot for a job that was never created.
+real fix is this one). Usage is recorded *before* `Job.create()`; if the
+job then can't be enqueued (Redis down), the route marks it `FAILED`
+(`QUEUE_UNAVAILABLE`) and releases the reservation (`releaseToolUsage`).
+A job whose queue entry is lost later is failed by the cleanup worker
+(`QUEUE_LOST`, only when BullMQ no longer holds it) but its reservation is
+not refunded, because usage records aren't linked to a job id.
 
 ## 8. Logging
 
@@ -348,25 +391,66 @@ Decisions are logged in `docs/DECISIONS.md`.
 
 ## 11. Redaction guarantee
 
-`redact-pdf` (`workers/pdf/src/handlers/redactPdf.ts`) is the one tool in
-this codebase whose entire purpose is a security property, not just a
-convenience, so its guarantee is stated explicitly here rather than left
-implicit: any page containing a redaction box is rasterized whole, the
-box is burned into that raster's pixels, and the page's original content
-(text, vectors, everything, not only the boxed region) is discarded and
-replaced by the flattened image. There is no code path that draws a box
-on top of otherwise-intact content — a rectangle-over-text or
-rectangle-over-image implementation was deliberately rejected specifically
-because it fails this property (the original content is still present
-underneath, recoverable by removing the rectangle or extracting text).
-This is verified, not assumed: `tests/e2e/redact-pdf.spec.ts` asserts the
-redacted page has zero extractable text anywhere on the page and carries
-an embedded raster image, while untouched pages keep their original
-extractable text and are confirmed not rasterized.
+`redact-pdf` is the one tool whose entire purpose is a security property,
+so its guarantee is stated precisely here. Pipeline:
+`workers/pdf/src/redaction.ts` (+ `pureCompute/redactAssemble.ts`).
 
-This tool also deviates from the "skip a bad element, keep going" pattern
-every other handler in this codebase uses: if any page the user asked to
-redact can't actually be processed, the whole job fails
-(`PROCESSING_FAILED`) rather than shipping a file that could be mistaken
-for fully redacted. See `docs/DECISIONS.md`'s 2026-09-17 redaction entry
-for the reasoning.
+**History (2026-10-21):** the first implementation rasterized redacted
+pages correctly but built the output by editing the source document in
+place with pdf-lib (`insertPage` + `removePage`). `removePage` only
+unlinks a page; `save()` still serializes every object, so the original
+content stream, form-field values and the Info dictionary all survived in
+the file as recoverable objects. The E2E test only checked the page's
+extractable text, which was empty, so it passed. Fixed and covered by
+byte-level regression tests (below); see `docs/DECISIONS.md`.
+
+**What is guaranteed now**
+
+- Encrypted input (including owner-password-only) and input qpdf can't
+  parse are refused (`ENCRYPTED_PDF` / `UNSUPPORTED_FILE`): removal is only
+  promised for structure the pipeline can fully read.
+- Visible annotations and form values are baked into page content first
+  (qpdf `--flatten-annotations=all --generate-appearances`), so a redacted
+  page's raster shows exactly what the user saw in the editor.
+- Each redacted page is rasterized with pdftoppm `-cropbox` (the same
+  CropBox-relative, rotation-applied space the editor's boxes use) and the
+  boxes are burned into the pixels. The output page holds only that image,
+  sized to the page's visible box, so rotated and cropped pages keep their
+  displayed geometry (verified pixel-by-pixel in the test). Before this
+  fix pdftoppm rendered the MediaBox, which put boxes in the wrong place
+  on cropped pages.
+- The output is a **new document**: no Info dictionary, XMP, AcroForm,
+  outline/bookmarks, names tree (attachments, named destinations,
+  document JavaScript), OpenAction, structure tree or page labels from the
+  source. Untouched pages are copied minus annotations (links, comments,
+  hidden annotations), page-level XMP, thumbnails, actions and private
+  application data.
+- qpdf then rebuilds the file from its pages (`--empty --pages`): only
+  objects reachable from those pages are written, and resources a page
+  lists but never uses are dropped, so a resource dictionary shared with a
+  redacted page can't carry that page's XObjects into the output (a plain
+  qpdf rewrite does not do this; verified).
+- Any page that can't be redacted fails the whole job, and a box outside
+  the page range or entirely outside the visible area is refused rather
+  than ignored. The job never "partially" succeeds.
+
+**Verification:** `workers/pdf/src/redaction.test.ts` (runs inside the
+pdf-worker image, and in CI) builds a fixture with unique markers in page
+text, a form value, a comment, a hidden annotation, an attachment, a
+bookmark, document JavaScript, Info and XMP metadata, a shared-resource
+XObject, a rotated page and a cropped page, then searches the fully
+decoded output (`qpdf --qdf --decode-level=all`) for each marker in raw,
+hex and UTF-16 forms. `tests/e2e/redact-pdf.spec.ts` repeats a byte-level
+check through the real UI.
+
+**Known limitations (documented, not hidden)**
+
+- Untouched pages are copied as-is: text the user didn't box, on pages
+  they didn't redact, stays, by design.
+- Interactive form fields are removed from the whole document (their
+  visible values remain as flattened content); links and comments are
+  removed from untouched pages too.
+- A redacted page's text is no longer selectable or searchable.
+- Content hidden inside an untouched page's own drawing (text drawn
+  off-page or in white) is not detected: only what is displayed is in
+  scope for "redact what you see".

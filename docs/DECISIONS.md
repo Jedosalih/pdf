@@ -2449,6 +2449,147 @@ on the production-hardening list.
   (three counts, six per-scenario outcomes) pass against the real dev
   database.
 
+## 2026-09-18 — Commit `a49626c` ("ll"): CI workflow, health endpoint, README, DEPLOYMENT.md (recorded retroactively on 2026-10-21)
+
+The session working on the Final Completion Mission was cut off by an
+unexpected shutdown; this commit was made by hand afterwards with the
+message "ll" and no log entry. What it contains:
+
+- `.github/workflows/ci.yml`: lint, typecheck (app + all five workers),
+  app/worker builds, then the full Compose stack + Playwright suite.
+  **It has never run** — the branch was never pushed.
+- `app/api/health/route.ts` (+ `StorageProvider.headBucket()`,
+  `tests/e2e/health.spec.ts`): checks Postgres, Redis and storage, returns
+  up/down only.
+- `README.md` rewrite and `docs/DEPLOYMENT.md`.
+
+Left inconsistent by the interruption and corrected on 2026-10-21:
+`docs/DEPLOYMENT.md` said `/api/health` didn't exist (the same commit
+added it) and called CI "real, working" although it had never executed;
+CI's app jobs never ran `prisma generate` (Prisma 7 doesn't generate on
+install). The mission's CD, deployment, HTTPS, push and public-smoke-test
+items were never started.
+
+## 2026-10-21 — Maintenance pass: redaction rebuilt after a confirmed content leak
+
+- **Finding (Critical, reproduced):** `redact-pdf` replaced each redacted
+  page via pdf-lib `insertPage` + `removePage` on the *source* document.
+  `removePage` only unlinks the page from the page tree and `save()`
+  serializes every object in the context, so the original content
+  stream, form-field values and the Info dictionary stayed in the output
+  as unreferenced objects. The E2E test checked only extractable page
+  text (empty), so it passed while the data was recoverable.
+- **Decision:** build the output as a *new* document
+  (`workers/pdf/src/redaction.ts` + `pureCompute/redactAssemble.ts`):
+  refuse encrypted/unparseable input → qpdf flatten annotations/forms →
+  pdftoppm `-cropbox` per redacted page → burn boxes (sharp) → new
+  document with raster-only redacted pages and copied untouched pages,
+  no source catalog structures → `qpdf --empty --pages` rebuild with
+  `--remove-unreferenced-resources=yes`.
+- **Non-obvious engine findings, verified in the real image:**
+  pdftoppm renders the MediaBox unless given `-cropbox`, while the editor
+  draws in pdf.js's CropBox space, so boxes landed offset on cropped pages
+  (F9). A plain qpdf rewrite with `--remove-unreferenced-resources=yes`
+  does **not** prune an unused shared XObject; rebuilding with
+  `--empty --pages` does (the regression test's shared-resource case
+  failed until this change).
+- **Why not just qpdf-rewrite the old output:** qpdf drops unreachable
+  objects, but the source's AcroForm (field values), Info, XMP, outlines
+  and attachments are all *reachable* from the catalog, so they would
+  survive. Only a fresh catalog removes them.
+- **Policy:** document metadata, form fields (values kept visible as
+  flattened content), all annotations incl. links/comments, bookmarks,
+  attachments and document JavaScript are removed document-wide;
+  untouched pages keep their content. Stated in the tool's UI copy (all
+  three locales) and `docs/SECURITY.md` §11.
+- **Tests:** `workers/pdf/src/redaction.test.ts` (inside the pdf-worker
+  image, in CI) and a byte-level check in `tests/e2e/redact-pdf.spec.ts`.
+
+## 2026-10-21 — Maintenance pass: abuse controls, fail-closed page limits, queue reliability
+
+- **Upload/job abuse controls** (`lib/security/abuseLimits.ts`): per-IP
+  and per-actor Redis rate limits on `/api/upload` and `POST /api/jobs`
+  (200/IP, 100/actor per 10 minutes) plus a per-IP guest job cap (300/day)
+  so discarding the guest cookie doesn't reset everything. All
+  env-overridable. Rejected requests still count. Accepted trade-off:
+  guests behind one NAT share the IP buckets.
+- **Client IP** now trusts only the entry `TRUSTED_PROXY_HOPS` from the
+  right of `X-Forwarded-For`. The leftmost entry (previously used, incl.
+  by the login limiter) is client-controlled. Next.js does not overwrite
+  a client-supplied header, so production needs a proxy that appends it.
+- **Bounded bodies** (`lib/security/requestBody.ts`): the upload route
+  takes `toolId` from the query string so the actor's real per-tool size
+  limit is known before reading; both routes count streamed bytes
+  instead of trusting `Content-Length`.
+- **`maxPages` was never enforced at runtime (found while testing the
+  fail-closed change).** The 2026-09-17 fix counted pages with pdf.js
+  inside the route; in the Next.js server bundle pdf.js can't load its
+  worker module ("Setting up fake worker failed: Cannot find module
+  .next/dev/server/chunks/pdf.worker.mjs"), so every count threw, and the
+  `catch` turned that into 0 pages. Its E2E coverage only ever checked
+  files under the limit, so nothing noticed. Confirmed in the dev server;
+  the production build was not separately checked for the old behavior.
+  Counting now uses pdf-lib (pure JS, already a dependency), and a test
+  proves 301 pages are refused / 300 accepted.
+- **Page limits fail closed** (`lib/security/pageCount.ts`). Tools whose
+  purpose is unreadable input (`unlock-pdf`, `repair-pdf`) carry a new
+  registry flag `deferPageLimitToWorker`: job creation stamps the actor's
+  `maxPages` into options (overwriting any client value) and the worker
+  enforces it on the decrypted/repaired output.
+- **Enqueue failure** marks the job FAILED (`QUEUE_UNAVAILABLE`) and
+  releases its usage reservation (`tryReserveToolUsage` now returns the
+  record id). **Lost queued jobs** are failed by the cleanup worker
+  (`QUEUE_LOST`) only when older than 30 minutes *and* absent from every
+  BullMQ processing queue, so a real backlog is never touched. Their usage
+  isn't refunded: `UsageRecord` has no job link, and adding one is a
+  schema change left for a later decision.
+- **Client polling** (tool pages and batch): network/5xx errors retried
+  (5 consecutive failures max), 4xx terminal, 15-minute client deadline
+  with an honest "taking longer than expected" message, and polling stops
+  on unmount/reset (generation counter).
+- **qpdf passwords** go through a qpdf job JSON file: qpdf 11.3 only
+  accepts encryption passwords positionally and parses `-`-prefixed
+  arguments as options (`--user-password=` was tried first and doesn't
+  exist in 11.3; the test against the real binary caught it). Passwords
+  are no longer trimmed; protect refuses >127 UTF-8 bytes (AES-256 R6
+  truncation, found by the same test).
+- **Content-Disposition** for downloads is RFC 6266/5987
+  (`lib/storage/contentDisposition.ts`); percent-escapes inside
+  `filename="..."` displayed literally for Arabic/Turkish names.
+- **Related copy fix:** the edit/fill-sign/redact FAQs claimed files are
+  "only uploaded when you click Export"; files upload on selection.
+  Corrected in all three locales.
+
+## 2026-10-21 — Maintenance pass: dependencies, images, production template
+
+- `next` 16.3.4 → 16.3.8 (all listed Next advisories, incl. the critical
+  `next/og` RCE, are fixed below 16.3.8; `next/og` was not used here).
+  `sharp` → 0.35.5; Prisma packages aligned at 7.10.1; markdown-it 14.3.3,
+  sanitize-html 2.18.1; transitive fixes via in-range updates. No major
+  upgrades. Remaining audit findings are only fixable by major
+  downgrades and judged unreachable: eslint tooling (dev-only);
+  pptxgenjs → image-size (only our own PNGs, never JXL/HEIF/ICNS);
+  exceljs → uuid (v3/v5/v6 buffer API unused).
+- The first `npm audit fix` hung for ~40 minutes in `@prisma/engines`'
+  postinstall and left `package-lock.json` out of sync with
+  `node_modules`; caught by comparing lockfile versions, re-run cleanly.
+- Worker Dockerfiles now `npm ci` from their lockfiles; a root
+  `.dockerignore` keeps `.env`, `node_modules` and local state out of the
+  build context (it was all being sent to the daemon before).
+- Dev `docker-compose.yml`: every published port bound to 127.0.0.1
+  (Redis had no auth and listened on all interfaces); images pinned by
+  digest. `docker-compose.test.yml` runs an isolated stack next to a
+  host service on 5432.
+- `docker-compose.prod.yml` (template, never deployed): secrets from
+  `.env.production`, per-service Postgres roles and MinIO keys
+  (`deploy/`), Redis password, workers on an internal network, app image
+  from a new root `Dockerfile`. **MinIO's community images stopped being
+  published in September 2025**; the pinned digest gets no security
+  fixes. Replace it before production (docs/DEPLOYMENT.md).
+- The plaintext GitHub token was removed from the `origin` URL in
+  `.git/config` (Git Credential Manager is already configured). The token
+  itself must still be revoked by the owner on GitHub.
+
 ## Template for future entries
 
 ```

@@ -121,11 +121,11 @@ must not contain PDF-processing logic (they enqueue jobs and query status).
 
 ## 10. Git rules
 
-- This repo currently has no commits — the first commit should be the
-  Phase 0 foundation, not accumulated WIP.
 - Prefer small, focused commits per subsystem over one giant commit, but do
   not commit half-working code paths.
 - Never force-push, never rewrite shared history, never skip hooks.
+- Never embed a credential in a git remote URL (one was found in
+  `.git/config` in 2026-10 and had to be revoked).
 - Do not commit `.env`, credentials, or generated artifacts (`node_modules`,
   `.next`, `prisma`'s generated client output, worker temp dirs).
 

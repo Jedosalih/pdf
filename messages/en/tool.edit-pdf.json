@@ -50,7 +50,7 @@
       },
       {
         "q": "Will my file be kept private?",
-        "a": "Yes. Your file is edited in your browser and only uploaded when you click Export; results are processed securely and automatically deleted after a short retention period."
+        "a": "Your file is uploaded securely as soon as you select it, so it's ready to process; the changes you draw stay in your browser until you click Export, and are then applied on our servers. Uploaded files and results are automatically deleted after a short retention period."
       }
     ]
   },

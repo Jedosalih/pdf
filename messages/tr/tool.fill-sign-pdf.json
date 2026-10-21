@@ -41,7 +41,7 @@
       },
       {
         "q": "Dosyam gizli kalır mı?",
-        "a": "Evet. Dosyanız tarayıcınızda doldurulur ve imzalanır, yalnızca Dışa Aktar'a tıkladığınızda yüklenir; sonuçlar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+        "a": "Dosyanız seçtiğiniz anda işlenmeye hazır olması için güvenli şekilde yüklenir; çizdiğiniz değişiklikler Dışa Aktar'a tıklayana kadar tarayıcınızda kalır ve ardından sunucularımızda uygulanır. Yüklenen dosyalar ve sonuçlar kısa bir saklama süresinin ardından otomatik olarak silinir."
       }
     ]
   },

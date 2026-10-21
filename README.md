@@ -58,11 +58,14 @@ flatten form fields into static content.
   plus a drawn/uploaded visual signature. This is a **visual** signature,
   not a cryptographic one (no PAdES/PKCS#7) — there is no PKI/certificate
   infrastructure in this project, by deliberate scope decision.
-- **Redaction** — the selected region's page is rasterized to an image
-  and the box is burned into the pixels *before* that image replaces the
-  page's own content. The original text/vectors are genuinely gone, not
-  hidden under a drawn rectangle — verified by asserting zero extractable
-  text survives on a redacted page. See `docs/SECURITY.md` §11.
+- **Redaction** — each redacted page is rasterized and the boxes are
+  burned into the pixels; the output is rebuilt as a new document, so the
+  original page content, metadata, form fields, annotations, bookmarks
+  and attachments are not carried over. Verified at the byte level (every
+  stream decoded and searched), not just by text extraction — an earlier
+  version passed a text-extraction test while the original content was
+  still in the file. Password-protected PDFs must be unlocked first. See
+  `docs/SECURITY.md` §11.
 - **Compare** — a text diff and a visual/pixel diff, shown and computed
   completely separately, never combined into one blended score.
 - Watermark, page numbers, metadata editing, password protect/unlock.
@@ -147,10 +150,12 @@ short:
 
 ## Testing
 
-This project has no separate unit-test layer — every tool is verified
-through a real Playwright E2E test that drives the actual UI, uploads a
-real generated fixture, waits for the real worker to process it, and
-inspects the actual downloaded bytes (not just "a file came back").
+Every tool is verified through a real Playwright E2E test that drives the
+actual UI (or, for server-side limits, the API the way a script would),
+uploads a real generated fixture, waits for the real worker to process
+it, and inspects the actual downloaded bytes. A few security helpers have
+direct, browser-less specs in the same suite
+(`tests/e2e/security-helpers.spec.ts`).
 
 ```bash
 npx playwright test --workers=1   # the full suite; workers=1 avoids a
@@ -160,18 +165,25 @@ npx playwright test --workers=1   # the full suite; workers=1 avoids a
                                    # docs/DECISIONS.md
 ```
 
-`workers/cleanup` has its own regression script instead (its scenarios
-need backdated timestamps the product itself never exposes a way to
-set — see `docs/DECISIONS.md`):
+Worker-level tests run inside the real worker images (same qpdf/poppler
+binaries as production):
 
 ```bash
-cd workers/cleanup && npm run test
+docker compose run --rm --no-deps pdf-worker node dist/redaction.test.js   # redaction security regression
+docker compose run --rm --no-deps pdf-worker node dist/qpdfJob.test.js     # protect/unlock password handling
+docker compose run --rm --no-deps cleanup-worker node dist/sweep.test.js   # cleanup sweeps (needs migrated DB)
 ```
+
+To test without touching your dev data, run an isolated stack with its own
+volumes: `docker compose -p jpdf-test -f docker-compose.yml -f docker-compose.test.yml up -d --build --wait`
+(Postgres on 127.0.0.1:55432; set `DATABASE_URL` for that shell).
 
 ## Deployment
 
-See `docs/DEPLOYMENT.md` for the GitHub Actions CI/CD pipeline and the
-current state of production hosting.
+JPdf is **not deployed** anywhere yet, and the CI workflow has not run on
+GitHub yet. `docs/DEPLOYMENT.md` describes the production Compose
+template (`docker-compose.prod.yml`) and what a real deployment still
+needs. `docker-compose.yml` is for local development and CI only.
 
 ## Security model
 
@@ -196,9 +208,10 @@ Stated here plainly, not left implicit:
   directions.
 - PDF→HTML/Markdown are heuristic conversions (reading-order text/font-
   size-based structure detection), not exact layout reconstruction.
-- The general `dailyOperations` usage-limit race for a single actor is
-  closed atomically (`lib/entitlements/index.ts`), but no IP-based
-  secondary limit exists — clearing cookies resets a guest's quota.
+- Guests are identified by a cookie; clearing it gives a fresh per-tool
+  quota, bounded by per-IP limits (`lib/security/abuseLimits.ts`). Guests
+  behind one NAT share those IP limits. Per-IP limits require a reverse
+  proxy that appends `X-Forwarded-For` in production.
 - No per-container network egress restriction beyond the worker
   containers themselves (the app and infrastructure services are on an
   unrestricted network, needed for local host access — see
