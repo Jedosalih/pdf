@@ -6,7 +6,7 @@ import { listRecentJobs } from "@/lib/workspace/jobs";
 import { getToolById } from "@/lib/tools/registry";
 import { formatRelativeTime } from "@/lib/i18n/format";
 import { buildLocalizedMetadata } from "@/lib/seo/metadata";
-import { Link } from "@/lib/i18n/navigation";
+import { Link, redirect } from "@/lib/i18n/navigation";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Greeting } from "@/components/workspace/Greeting";
@@ -34,8 +34,11 @@ export default async function WorkspaceHomePage({ params }: PageProps) {
   setRequestLocale(locale);
   const t = await getTranslations("workspace");
 
-  // Layout already guarantees a session exists (see workspace/layout.tsx).
-  const user = (await getSessionUser())!;
+  // The layout redirects signed-out visitors too, but layouts and pages
+  // render concurrently in the App Router -- the page can't assume the
+  // layout's redirect already happened (it 500'd on an expired session).
+  const user = await getSessionUser();
+  if (!user) return redirect({ href: "/login", locale });
   const { items: recentJobs } = await listRecentJobs({ userId: user.id, limit: 5 });
 
   const jobRows = await Promise.all(

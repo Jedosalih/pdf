@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getSessionUser } from "@/lib/auth/session";
+import { redirect } from "@/lib/i18n/navigation";
 import { buildLocalizedMetadata } from "@/lib/seo/metadata";
 import { SettingsForm } from "@/components/workspace/SettingsForm";
 import type { Locale } from "@/lib/i18n/routing";
@@ -24,8 +25,10 @@ export default async function SettingsPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("workspace");
-  // Layout already guarantees a session exists (see workspace/layout.tsx).
-  const user = (await getSessionUser())!;
+  // Layouts and pages render concurrently -- don't rely on the layout's
+  // redirect having already happened (see workspace/page.tsx).
+  const user = await getSessionUser();
+  if (!user) return redirect({ href: "/login", locale });
 
   return (
     <div className="flex max-w-lg flex-col gap-6">
