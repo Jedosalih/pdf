@@ -3,17 +3,21 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { prisma } from "../db.js";
 import { downloadToBuffer, uploadBuffer } from "../storage.js";
-import { runCommand } from "../exec.js";
 import { withTempDir } from "../tempDir.js";
 import { JobFailure } from "../errors.js";
 import { computeFileExpiry } from "../retention.js";
+import { encryptWithPassword } from "../qpdfJob.js";
 
 interface ProtectOptions {
   password?: string;
 }
 
 const MIN_PASSWORD_LENGTH = 4;
-const MAX_PASSWORD_LENGTH = 200;
+/** AES-256 PDF encryption (revision 6) only uses the first 127 UTF-8
+ * bytes of a password; a longer one would be silently truncated, so the
+ * user would believe a longer password protects the file than really
+ * does. Refused instead. */
+const MAX_PASSWORD_BYTES = 127;
 
 export async function handleProtectPdf(jobId: string): Promise<void> {
   const job = await prisma.job.findUniqueOrThrow({
@@ -27,8 +31,12 @@ export async function handleProtectPdf(jobId: string): Promise<void> {
   }
 
   const options = (job.options as ProtectOptions | null) ?? {};
-  const password = (options.password ?? "").trim();
-  if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+  const password = typeof options.password === "string" ? options.password : "";
+  if (
+    password.trim().length < MIN_PASSWORD_LENGTH ||
+    Buffer.byteLength(password, "utf8") > MAX_PASSWORD_BYTES ||
+    password.includes("\0")
+  ) {
     throw new JobFailure("VALIDATION_ERROR");
   }
 
@@ -43,11 +51,7 @@ export async function handleProtectPdf(jobId: string): Promise<void> {
       // password to open," it doesn't expose separate owner-permission
       // restrictions, so a distinct owner password would add no real
       // protection while confusing what "the password" means to the user.
-      await runCommand(
-        "qpdf",
-        [inputPath, "--encrypt", password, password, "256", "--", outputPath],
-        { timeoutMs: 60_000, cwd: dir },
-      );
+      await encryptWithPassword(inputPath, outputPath, password, dir);
     } catch {
       throw new JobFailure("PROCESSING_FAILED");
     }

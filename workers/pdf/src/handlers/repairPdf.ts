@@ -7,6 +7,7 @@ import { runCommandCaptureAll } from "../exec.js";
 import { withTempDir } from "../tempDir.js";
 import { JobFailure } from "../errors.js";
 import { computeFileExpiry } from "../retention.js";
+import { enforceDeferredPageLimit } from "../pageLimit.js";
 
 // Ghostscript's own repair path exits 0 even when it fails to reconstruct a
 // usable document — these are the diagnostic phrases it emits when it gave
@@ -88,6 +89,7 @@ export async function handleRepairPdf(jobId: string): Promise<void> {
     if (!verified) {
       throw new JobFailure("UNRECOVERABLE_FILE");
     }
+    await enforceDeferredPageLimit(outputPath, job.options, dir);
 
     const outputBuffer = await readFile(outputPath);
     const storageKey = `results/${randomUUID()}.pdf`;

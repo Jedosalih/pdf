@@ -14,7 +14,10 @@ import type { ProcessingStep } from "@/components/tools/ProcessingProgress";
 
 const TOOL_ID = "protect-pdf";
 const MIN_PASSWORD_LENGTH = 4;
-const MAX_PASSWORD_LENGTH = 200;
+/** AES-256 PDF encryption only uses the first 127 UTF-8 bytes of a
+ * password (PDF 2.0, revision 6) -- anything longer would be silently
+ * truncated, so it is refused instead (same limit as the worker). */
+const MAX_PASSWORD_BYTES = 127;
 
 interface ProtectPdfToolProps {
   maxFiles: number;
@@ -44,8 +47,8 @@ export function ProtectPdfTool({ maxFiles }: ProtectPdfToolProps) {
   const canStart =
     uploadedCount >= 1 &&
     !hasErrors &&
-    password.length >= MIN_PASSWORD_LENGTH &&
-    password.length <= MAX_PASSWORD_LENGTH &&
+    password.trim().length >= MIN_PASSWORD_LENGTH &&
+    new TextEncoder().encode(password).length <= MAX_PASSWORD_BYTES &&
     (flow === "selecting" || flow === "failed");
 
   if (flow === "completed") {
@@ -100,7 +103,7 @@ export function ProtectPdfTool({ maxFiles }: ProtectPdfToolProps) {
           placeholder={tProtect("options.passwordPlaceholder")}
           hint={tProtect("options.passwordHint")}
           value={password}
-          maxLength={MAX_PASSWORD_LENGTH}
+          maxLength={MAX_PASSWORD_BYTES}
           onChange={(event) => setPassword(event.target.value)}
         />
       ) : null}

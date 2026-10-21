@@ -3,10 +3,11 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { prisma } from "../db.js";
 import { downloadToBuffer, uploadBuffer } from "../storage.js";
-import { runCommand } from "../exec.js";
 import { withTempDir } from "../tempDir.js";
 import { JobFailure } from "../errors.js";
 import { computeFileExpiry } from "../retention.js";
+import { decryptWithPassword } from "../qpdfJob.js";
+import { enforceDeferredPageLimit } from "../pageLimit.js";
 
 interface UnlockOptions {
   password?: string;
@@ -30,8 +31,8 @@ export async function handleUnlockPdf(jobId: string): Promise<void> {
   }
 
   const options = (job.options as UnlockOptions | null) ?? {};
-  const password = (options.password ?? "").trim();
-  if (!password || password.length > MAX_PASSWORD_LENGTH) {
+  const password = typeof options.password === "string" ? options.password : "";
+  if (!password || password.length > MAX_PASSWORD_LENGTH || password.includes("\0")) {
     throw new JobFailure("VALIDATION_ERROR");
   }
 
@@ -42,11 +43,7 @@ export async function handleUnlockPdf(jobId: string): Promise<void> {
     await writeFile(inputPath, buffer);
 
     try {
-      await runCommand(
-        "qpdf",
-        [inputPath, `--password=${password}`, "--decrypt", "--", outputPath],
-        { timeoutMs: 60_000, cwd: dir },
-      );
+      await decryptWithPassword(inputPath, outputPath, password, dir);
     } catch (error) {
       // qpdf's own message for a wrong password mentions "password"; any
       // other failure (e.g. the file isn't encrypted at all, or is
@@ -57,6 +54,8 @@ export async function handleUnlockPdf(jobId: string): Promise<void> {
       }
       throw new JobFailure("PROCESSING_FAILED");
     }
+
+    await enforceDeferredPageLimit(outputPath, job.options, dir);
 
     const outputBuffer = await readFile(outputPath);
     const storageKey = `results/${randomUUID()}.pdf`;
