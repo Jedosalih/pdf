@@ -63,12 +63,19 @@ export function CompressPdfTool({ maxFiles }: CompressPdfToolProps) {
         downloadLabel={t("result.download")}
       >
         {originalSize !== undefined && resultSize !== undefined ? (
-          <p className="text-small text-muted-foreground">
-            {tCompress("result.sizeSummary", {
-              before: formatFileSize(originalSize, locale),
-              after: formatFileSize(resultSize, locale),
-            })}
-          </p>
+          resultSize < originalSize ? (
+            <p className="text-small text-muted-foreground" data-testid="compress-summary">
+              {tCompress("result.sizeSummary", {
+                before: formatFileSize(originalSize, locale),
+                after: formatFileSize(resultSize, locale),
+              })}{" "}
+              {tCompress("result.saved", { percent: Math.round((1 - resultSize / originalSize) * 100) })}
+            </p>
+          ) : (
+            <p className="text-small text-muted-foreground" data-testid="compress-summary">
+              {tCompress("result.alreadyOptimized")}
+            </p>
+          )
         ) : null}
         <StartOverButton label={t("result.processAnother")} onClick={reset} />
       </ResultState>

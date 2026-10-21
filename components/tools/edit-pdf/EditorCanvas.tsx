@@ -9,7 +9,7 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import type { PDFDocumentProxy } from "pdfjs-dist";
+import type { PDFDocumentProxy, RenderTask } from "pdfjs-dist";
 import type { EditElement, EditorTool, PathElement } from "./types";
 
 interface EditorCanvasProps {
@@ -88,22 +88,34 @@ export function EditorCanvas({
 
   useEffect(() => {
     let cancelled = false;
+    let task: RenderTask | null = null;
     (async () => {
       const page = await pdfDoc.getPage(pageIndex + 1);
       const viewport = page.getViewport({ scale: zoom });
       const canvas = canvasRef.current;
       if (!canvas || cancelled) return;
+      // Sized before rendering, so a render cancelled by a quick zoom or
+      // page change can't leave the editor collapsed to zero height.
+      const baseViewport = page.getViewport({ scale: 1 });
+      setPageSize({ width: baseViewport.width, height: baseViewport.height });
       canvas.width = viewport.width;
       canvas.height = viewport.height;
       const context = canvas.getContext("2d");
       if (!context) return;
-      await page.render({ canvasContext: context, viewport, canvas }).promise;
-      if (cancelled) return;
-      const baseViewport = page.getViewport({ scale: 1 });
-      setPageSize({ width: baseViewport.width, height: baseViewport.height });
+      task = page.render({ canvasContext: context, viewport, canvas });
+      try {
+        await task.promise;
+      } catch (error) {
+        // Expected when a newer zoom/page superseded this render.
+        if ((error as { name?: string })?.name !== "RenderingCancelledException") throw error;
+      }
     })();
     return () => {
       cancelled = true;
+      // pdf.js refuses a second render on a canvas that is still being
+      // drawn ("Cannot use the same canvas during multiple render()
+      // operations"); cancelling frees it synchronously.
+      task?.cancel();
     };
   }, [pdfDoc, pageIndex, zoom]);
 

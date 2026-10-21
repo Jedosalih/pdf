@@ -1,6 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -29,6 +30,7 @@ interface SlotProps {
   file: TrackedFile | undefined;
   disabled: boolean;
   removable: boolean;
+  removeLabel: string;
   dropLabel: string;
   browseLabel: string;
   statusLabel: (file: TrackedFile) => string;
@@ -42,6 +44,7 @@ function Slot({
   file,
   disabled,
   removable,
+  removeLabel,
   dropLabel,
   browseLabel,
   statusLabel,
@@ -59,7 +62,7 @@ function Slot({
             <p className="text-caption text-muted-foreground">{statusLabel(file)}</p>
           </div>
           {removable ? (
-            <IconButton label="Remove" variant="ghost" onClick={() => onRemove(file.localId)}>
+            <IconButton label={removeLabel} variant="ghost" onClick={() => onRemove(file.localId)}>
               <Trash2 className="h-4 w-4" aria-hidden="true" />
             </IconButton>
           ) : null}
@@ -91,13 +94,37 @@ export function CompareTool({ maxFiles }: CompareToolProps) {
     jobId,
     hasErrors,
     handleFilesSelected,
+    handleReorder,
     handleRemove,
     start,
     reset,
   } = useToolWorkflow({ toolId: TOOL_ID, maxFiles });
 
-  const original = files[0];
-  const revised = files[1];
+  // Slots are positional (files[0] = original, files[1] = revised, the
+  // order the job compares in). Removing the original while a revised
+  // file exists leaves only the revised one at index 0; this flag keeps it
+  // in the Revised slot, and a newly picked original is moved back to
+  // index 0 -- so the original can be replaced without losing the
+  // revised file or flipping the comparison direction.
+  const [originalRemoved, setOriginalRemoved] = useState(false);
+  const original = originalRemoved ? undefined : files[0];
+  const revised = originalRemoved ? files[0] : files[1];
+
+  const selectOriginal = (selected: File[]) => {
+    handleFilesSelected(selected);
+    if (originalRemoved) {
+      handleReorder(1, 0);
+      setOriginalRemoved(false);
+    }
+  };
+  const removeOriginal = (id: string) => {
+    if (revised) setOriginalRemoved(true);
+    handleRemove(id);
+  };
+  const removeRevised = (id: string) => {
+    setOriginalRemoved(false);
+    handleRemove(id);
+  };
   const bothUploaded = original?.status === "uploaded" && revised?.status === "uploaded";
   const canStart = bothUploaded && !hasErrors && (flow === "selecting" || flow === "failed");
 
@@ -142,24 +169,26 @@ export function CompareTool({ maxFiles }: CompareToolProps) {
           label={t("slots.original")}
           file={original}
           disabled={false}
-          removable={!revised}
+          removable
+          removeLabel={tCommon("buttons.removeFile")}
           dropLabel={t("slots.originalDrop")}
           browseLabel={tTools("upload.orBrowse")}
           statusLabel={statusLabel}
-          onFilesSelected={handleFilesSelected}
-          onRemove={handleRemove}
+          onFilesSelected={selectOriginal}
+          onRemove={removeOriginal}
         />
         <Slot
           testId="compare-slot-revised"
           label={t("slots.revised")}
           file={revised}
-          disabled={!original}
+          disabled={!original && !revised}
           removable
+          removeLabel={tCommon("buttons.removeFile")}
           dropLabel={t("slots.revisedDrop")}
           browseLabel={tTools("upload.orBrowse")}
           statusLabel={statusLabel}
           onFilesSelected={handleFilesSelected}
-          onRemove={handleRemove}
+          onRemove={removeRevised}
         />
       </div>
 

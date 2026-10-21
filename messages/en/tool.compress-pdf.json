@@ -14,14 +14,16 @@
     }
   },
   "result": {
-    "sizeSummary": "{before} → {after}"
+    "sizeSummary": "{before} → {after}",
+    "saved": "({percent}% smaller)",
+    "alreadyOptimized": "This PDF is already well optimized and couldn't be made smaller, so your download is the original file, unchanged."
   },
   "howItWorks": {
     "title": "How to compress a PDF file",
     "steps": [
       "Upload the PDF file you want to shrink.",
       "Choose a compression level.",
-      "Click Compress and download the smaller file."
+      "Click Start and download the smaller file."
     ]
   },
   "faq": {

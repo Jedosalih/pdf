@@ -14,14 +14,16 @@
     }
   },
   "result": {
-    "sizeSummary": "{before} → {after}"
+    "sizeSummary": "{before} → {after}",
+    "saved": "(%{percent} daha küçük)",
+    "alreadyOptimized": "Bu PDF zaten iyi optimize edilmiş ve daha fazla küçültülemedi; bu yüzden indireceğiniz dosya, değiştirilmemiş orijinal dosyadır."
   },
   "howItWorks": {
     "title": "Bir PDF dosyası nasıl sıkıştırılır",
     "steps": [
       "Küçültmek istediğiniz PDF dosyasını yükleyin.",
       "Bir sıkıştırma düzeyi seçin.",
-      "Sıkıştır'a tıklayın ve daha küçük dosyayı indirin."
+      "Başlat'a tıklayın ve daha küçük dosyayı indirin."
     ]
   },
   "faq": {

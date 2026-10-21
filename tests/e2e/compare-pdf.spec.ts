@@ -67,3 +67,34 @@ test("guest can compare two real PDFs and get both a text diff and a visual diff
   expect(html).toContain("has 2 page(s)");
   expect(html).toContain("has 3 page(s)");
 });
+
+// Before 2026-10-21 the Original slot had no remove button once a Revised
+// file was chosen, so a wrong original couldn't be replaced. Replacing it
+// must keep the revised file and the comparison direction.
+test("the original file can be replaced without losing the revised one", async ({ page }) => {
+  await page.goto("/en/compare-pdf");
+  await page.waitForLoadState("networkidle");
+  const originalSlot = page.getByTestId("compare-slot-original");
+  const revisedSlot = page.getByTestId("compare-slot-revised");
+
+  await originalSlot.locator('input[type="file"]').setInputFiles(path.join(__dirname, "../../docs/fixtures/sample-c-6page.pdf"));
+  await expect(page.getByText("Uploading…")).toHaveCount(0, { timeout: 20_000 });
+  await revisedSlot.locator('input[type="file"]').setInputFiles(revisedFixture);
+  await expect(page.getByText("Uploading…")).toHaveCount(0, { timeout: 20_000 });
+
+  await originalSlot.getByRole("button", { name: "Remove" }).click();
+  await expect(revisedSlot).toContainText("sample-b-3page.pdf");
+  await originalSlot.locator('input[type="file"]').setInputFiles(originalFixture);
+  await expect(page.getByText("Uploading…")).toHaveCount(0, { timeout: 20_000 });
+  await expect(originalSlot).toContainText("sample-a-2page.pdf");
+  await expect(revisedSlot).toContainText("sample-b-3page.pdf");
+
+  await page.getByRole("button", { name: "Start" }).click();
+  const downloadLink = page.getByRole("link", { name: "Download" });
+  await expect(downloadLink).toBeVisible({ timeout: 30_000 });
+  const [download] = await Promise.all([page.waitForEvent("download"), downloadLink.click()]);
+  const html = await readFile((await download.path()) as string, "utf8");
+  expect(html).toMatch(/<div class="line removed"><span class="marker">-<\/span>Fixture-A - page 1<\/div>/);
+  expect(html).toMatch(/<div class="line added"><span class="marker">\+<\/span>Fixture-B - page 1<\/div>/);
+  expect(html).not.toContain("Fixture-C");
+});

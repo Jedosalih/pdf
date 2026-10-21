@@ -9,7 +9,7 @@
     "title": "How to convert PDF to Markdown",
     "steps": [
       "Upload the PDF file you want to convert.",
-      "Click Convert — headings, paragraphs, and lists are detected automatically.",
+      "Click Start — headings, paragraphs, and lists are detected automatically.",
       "Download the resulting .md file."
     ]
   },

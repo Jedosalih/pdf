@@ -13,6 +13,8 @@ import { usePdfDocument } from "./usePdfDocument";
 import { useEditorState } from "./useEditorState";
 import { EditorToolbar } from "./EditorToolbar";
 import { EditorPageSidebar } from "./EditorPageSidebar";
+import { EditorPageNav } from "./EditorPageNav";
+import { useFitToWidthZoom } from "./useFitToWidthZoom";
 import { EditorPropertiesPanel } from "./EditorPropertiesPanel";
 import { EditorCanvas } from "./EditorCanvas";
 
@@ -66,7 +68,7 @@ export function EditPdfTool({ maxFiles }: EditPdfToolProps) {
 
   const file = files[0]?.file ?? null;
   const uploaded = files[0]?.status === "uploaded";
-  const { pdfDoc } = usePdfDocument(file);
+  const { pdfDoc, numPages } = usePdfDocument(file);
 
   const editor = useEditorState();
   const editorRef = useRef(editor);
@@ -76,6 +78,8 @@ export function EditPdfTool({ maxFiles }: EditPdfToolProps) {
 
   const [currentPage, setCurrentPage] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  useFitToWidthZoom(pdfDoc, canvasContainerRef, setZoom, MIN_ZOOM);
   const [pendingColor, setPendingColor] = useState("#111827");
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -255,10 +259,12 @@ export function EditPdfTool({ maxFiles }: EditPdfToolProps) {
         <Alert variant="error">{tCommon(`errors.${errorMessageKey(errorCode)}`)}</Alert>
       ) : null}
 
+      <EditorPageNav currentPage={currentPage} numPages={numPages} onSelectPage={setCurrentPage} />
+
       <div className="flex flex-col gap-3 sm:flex-row">
         <EditorPageSidebar file={file} currentPage={currentPage} onSelectPage={setCurrentPage} />
 
-        <div className="flex-1 overflow-auto rounded-lg border border-border bg-surface p-6">
+        <div ref={canvasContainerRef} className="flex-1 overflow-auto rounded-lg border border-border bg-surface p-3 sm:p-6">
           <div className="flex justify-center">
             {pdfDoc ? (
               <EditorCanvas

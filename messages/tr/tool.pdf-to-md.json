@@ -9,7 +9,7 @@
     "title": "PDF nasıl Markdown'a dönüştürülür",
     "steps": [
       "Dönüştürmek istediğiniz PDF dosyasını yükleyin.",
-      "Dönüştür'e tıklayın — başlıklar, paragraflar ve listeler otomatik olarak algılanır.",
+      "Başlat'a tıklayın — başlıklar, paragraflar ve listeler otomatik olarak algılanır.",
       "Ortaya çıkan .md dosyasını indirin."
     ]
   },

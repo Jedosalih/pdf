@@ -61,7 +61,12 @@ export async function handleCompressPdf(jobId: string): Promise<void> {
       throw new JobFailure("PROCESSING_FAILED");
     }
 
-    const outputBuffer = await readFile(outputPath);
+    // Ghostscript rewrites the whole file, which can make an already-lean
+    // PDF *larger* (a small pdf-lib file grew 2.1 KB -> 4.8 KB). Never hand
+    // back a bigger "compressed" file: keep the original bytes instead,
+    // and the UI says the file was already optimized.
+    const rewritten = await readFile(outputPath);
+    const outputBuffer = rewritten.byteLength < buffer.byteLength ? rewritten : buffer;
     const storageKey = `results/${randomUUID()}.pdf`;
     await uploadBuffer(storageKey, outputBuffer, "application/pdf");
 

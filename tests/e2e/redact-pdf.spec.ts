@@ -166,3 +166,46 @@ test("redaction leaves no recoverable copy of page content, form values, metadat
   expect(info.Title).toBeUndefined();
   expect(info.Author).toBeUndefined();
 });
+
+/**
+ * On a phone the page-thumbnail sidebar is hidden; before 2026-10-21 there
+ * was then no way to reach page 2+ at all. The pager must work, and the
+ * initial zoom must fit the page to the screen.
+ */
+test("on a phone, a later page can be reached and redacted", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/en/redact-pdf");
+  await page.waitForLoadState("networkidle");
+  await page.locator('input[type="file"]').first().setInputFiles(fixture);
+
+  const overlay = page.getByTestId("editor-overlay");
+  await overlay.waitFor({ timeout: 20_000 });
+  const pager = page.getByTestId("editor-page-nav");
+  await expect(pager).toContainText("Page 1 of 3");
+  const firstBox = (await overlay.boundingBox())!;
+  expect(firstBox.width).toBeLessThanOrEqual(375);
+
+  await pager.getByRole("button", { name: "Next page" }).click();
+  await expect(pager).toContainText("Page 2 of 3");
+
+  await page.getByRole("button", { name: "Redact" }).click();
+  const box = (await overlay.boundingBox())!;
+  await page.mouse.move(box.x + 10, box.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width - 10, box.y + box.height - 10, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.getByTestId("editor-element")).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Export PDF" }).click();
+  const downloadLink = page.getByRole("link", { name: "Download" });
+  await expect(downloadLink).toBeVisible({ timeout: 30_000 });
+  const [download] = await Promise.all([page.waitForEvent("download"), downloadLink.click()]);
+  const bytes = await readFile((await download.path()) as string);
+
+  const doc = await getDocument({ data: new Uint8Array(bytes), useWorkerFetch: false }).promise;
+  const textOf = async (n: number) =>
+    (await (await doc.getPage(n)).getTextContent()).items.map((i) => ("str" in i ? i.str : "")).join("");
+  expect(await textOf(1)).toContain("Fixture-B - page 1");
+  expect(await textOf(2)).toBe("");
+  expect(containsPdfString(decodedPdfText(bytes), "Fixture-B - page 2")).toBe(false);
+});

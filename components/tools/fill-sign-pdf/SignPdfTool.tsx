@@ -13,6 +13,8 @@ import { usePdfDocument } from "@/components/tools/edit-pdf/usePdfDocument";
 import { useEditorState } from "@/components/tools/edit-pdf/useEditorState";
 import { EditorToolbar } from "@/components/tools/edit-pdf/EditorToolbar";
 import { EditorPageSidebar } from "@/components/tools/edit-pdf/EditorPageSidebar";
+import { EditorPageNav } from "@/components/tools/edit-pdf/EditorPageNav";
+import { useFitToWidthZoom } from "@/components/tools/edit-pdf/useFitToWidthZoom";
 import { EditorPropertiesPanel } from "@/components/tools/edit-pdf/EditorPropertiesPanel";
 import { EditorCanvas } from "@/components/tools/edit-pdf/EditorCanvas";
 import type { EditorTool } from "@/components/tools/edit-pdf/types";
@@ -81,6 +83,8 @@ export function SignPdfTool({ maxFiles }: SignPdfToolProps) {
 
   const [currentPage, setCurrentPage] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  useFitToWidthZoom(pdfDoc, canvasContainerRef, setZoom, MIN_ZOOM);
   const [pendingColor, setPendingColor] = useState("#111827");
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -271,10 +275,12 @@ export function SignPdfTool({ maxFiles }: SignPdfToolProps) {
         <Alert variant="info">{t("editor.fieldsDetected", { count: fields.length })}</Alert>
       ) : null}
 
+      <EditorPageNav currentPage={currentPage} numPages={numPages} onSelectPage={setCurrentPage} />
+
       <div className="flex flex-col gap-3 sm:flex-row">
         <EditorPageSidebar file={file} currentPage={currentPage} onSelectPage={setCurrentPage} />
 
-        <div className="flex-1 overflow-auto rounded-lg border border-border bg-surface p-6">
+        <div ref={canvasContainerRef} className="flex-1 overflow-auto rounded-lg border border-border bg-surface p-3 sm:p-6">
           <div className="flex justify-center">
             {pdfDoc ? (
               <EditorCanvas

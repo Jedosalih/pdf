@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { PDFDocument } from "pdf-lib";
+import sharp from "sharp";
 
 const fixture = path.join(__dirname, "../../docs/fixtures/sample-b-3page.pdf");
 
@@ -38,4 +39,36 @@ test("guest can compress a real PDF and download a valid result", async ({ page 
   const bytes = await readFile(downloadPath as string);
   const compressed = await PDFDocument.load(bytes);
   expect(compressed.getPageCount()).toBe(3);
+
+  // This tiny vector fixture can't be made smaller (Ghostscript's rewrite
+  // grew it 2.1 KB -> 4.8 KB): the result must never be larger than the
+  // input, and the UI must say so instead of presenting it as compressed.
+  expect(bytes.byteLength).toBeLessThanOrEqual((await readFile(fixture)).byteLength);
+  await expect(page.getByTestId("compress-summary")).toContainText("already well optimized");
+});
+
+test("a PDF with a large photo really gets smaller", async ({ page }) => {
+  const width = 2400;
+  const height = 1800;
+  const noise = Buffer.alloc(width * height * 3);
+  for (let i = 0; i < noise.length; i++) noise[i] = (i * 2654435761) >>> 24;
+  const jpeg = await sharp(noise, { raw: { width, height, channels: 3 } }).jpeg({ quality: 100 }).toBuffer();
+  const doc = await PDFDocument.create();
+  const image = await doc.embedJpg(jpeg);
+  doc.addPage([600, 450]).drawImage(image, { x: 0, y: 0, width: 600, height: 450 });
+  const input = Buffer.from(await doc.save());
+
+  await page.goto("/en/compress-pdf");
+  await page.waitForLoadState("networkidle");
+  await page.locator('input[type="file"]').setInputFiles({ name: "photo.pdf", mimeType: "application/pdf", buffer: input });
+  await expect(page.getByText("Uploading…")).toHaveCount(0, { timeout: 20_000 });
+  await page.getByRole("button", { name: "Start" }).click();
+  const downloadLink = page.getByRole("link", { name: "Download" });
+  await expect(downloadLink).toBeVisible({ timeout: 60_000 });
+  const [download] = await Promise.all([page.waitForEvent("download"), downloadLink.click()]);
+  const output = await readFile((await download.path()) as string);
+
+  expect(output.byteLength).toBeLessThan(input.byteLength * 0.8);
+  expect((await PDFDocument.load(output)).getPageCount()).toBe(1);
+  await expect(page.getByTestId("compress-summary")).toContainText("% smaller");
 });

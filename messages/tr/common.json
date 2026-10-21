@@ -64,5 +64,10 @@
     "encryptedPdf": "Bu PDF parola korumalı. Önce PDF Kilidi Aç aracıyla kilidini açın, ardından tekrar deneyin.",
     "rateLimited": "Kısa sürede çok fazla istek gönderildi. Lütfen birkaç dakika bekleyip tekrar deneyin.",
     "processingTimeout": "Bu işlem beklenenden uzun sürüyor. Lütfen daha sonra tekrar deneyin."
+  },
+  "pager": {
+    "pageOf": "Sayfa {current} / {total}",
+    "previous": "Önceki sayfa",
+    "next": "Sonraki sayfa"
   }
 }
