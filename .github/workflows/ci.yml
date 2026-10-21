@@ -191,6 +191,17 @@ jobs:
       # One image per step: building all five in parallel (compose's
       # default) on a 2-vCPU / 7 GB runner thrashed for over an hour; one at
       # a time also makes each image's build time visible.
+      # Registry pulls on shared runners can stall; bounded, retried, and
+      # separate from builds so a stall is attributable.
+      - name: Pull service images
+        timeout-minutes: 15
+        run: |
+          for attempt in 1 2 3; do
+            docker compose pull --ignore-buildable && exit 0
+            echo "pull attempt $attempt failed; retrying"; sleep 20
+          done
+          exit 1
+
       - name: Build pdf-worker image
         run: docker compose build pdf-worker
 
@@ -207,6 +218,7 @@ jobs:
         run: docker compose build html-worker
 
       - name: Start the full stack (docker compose)
+        timeout-minutes: 10
         run: docker compose up -d
 
       # Explicit readiness instead of `--wait`, which counts the finished
@@ -266,9 +278,9 @@ jobs:
       - name: Run the E2E suite
         run: npx playwright test --workers=1 --reporter=list,github
 
-      - name: Show service logs on failure
-        if: failure()
-        run: docker compose logs --tail 200
+      - name: Show service state on failure
+        if: failure() || cancelled()
+        run: sh scripts/ci-diagnostics.sh
 
       - name: Upload Playwright traces on failure
         if: failure()
