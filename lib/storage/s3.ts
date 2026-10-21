@@ -7,6 +7,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { StorageProvider } from "./types";
+import { attachmentDisposition } from "./contentDisposition";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -68,7 +69,7 @@ export function createS3StorageProvider(): StorageProvider {
         Bucket: bucket,
         Key: key,
         ResponseContentDisposition: options?.downloadFilename
-          ? `attachment; filename="${encodeURIComponent(options.downloadFilename)}"`
+          ? attachmentDisposition(options.downloadFilename)
           : undefined,
       });
       return getSignedUrl(client, command, {
