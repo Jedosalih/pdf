@@ -31,6 +31,7 @@ const ALLOWED_COMPUTES = new Set([
   "editPdf",
   "fillSignPdf",
   "pdfToMarkdown",
+  "redactAssemble",
 ]);
 
 interface Manifest {

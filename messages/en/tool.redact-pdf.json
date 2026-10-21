@@ -34,12 +34,16 @@
         "a": "A redacted page becomes a static image, so its text is no longer selectable, searchable, or copyable in the exported file — a necessary trade-off for a genuine guarantee that the covered content is gone. Pages without any redaction keep their original text and quality."
       },
       {
+        "q": "What else is removed from the exported file?",
+        "a": "Anything that could carry hidden copies of your content is removed from the whole document, not just the redacted pages: document properties and metadata (title, author, XMP), interactive form fields (their visible values stay as flattened content), comments and other annotations including links, bookmarks, attachments, and embedded scripts. Password-protected PDFs must be unlocked first."
+      },
+      {
         "q": "Can I undo a redaction before exporting?",
         "a": "Yes — nothing is permanent until you export. Use undo/redo or delete a box like any other element while you're working."
       },
       {
         "q": "Will my file be kept private?",
-        "a": "Yes. Your file is marked up in your browser and only uploaded when you click Export; results are processed securely and automatically deleted after a short retention period."
+        "a": "Your file is uploaded securely as soon as you select it, so it's ready to process; the changes you draw stay in your browser until you click Export, and are then applied on our servers. Uploaded files and results are automatically deleted after a short retention period."
       }
     ]
   },

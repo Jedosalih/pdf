@@ -34,12 +34,16 @@
         "a": "Sansürlenen bir sayfa statik bir görsele dönüşür, bu yüzden dışa aktarılan dosyada metni artık seçilebilir, aranabilir veya kopyalanabilir olmaz — kapatılan içeriğin gerçekten kaybolduğuna dair gerçek bir garanti için gerekli bir ödünleşim. Sansür içermeyen sayfalar orijinal metnini ve kalitesini korur."
       },
       {
+        "q": "Dışa aktarılan dosyadan başka neler kaldırılır?",
+        "a": "İçeriğinizin gizli kopyalarını taşıyabilecek her şey yalnızca sansürlenen sayfalardan değil, belgenin tamamından kaldırılır: belge özellikleri ve meta veriler (başlık, yazar, XMP), etkileşimli form alanları (görünen değerleri düzleştirilmiş içerik olarak kalır), bağlantılar dahil yorumlar ve diğer ek açıklamalar, yer imleri, ekler ve gömülü betikler. Parola korumalı PDF'lerin önce kilidinin açılması gerekir."
+      },
+      {
         "q": "Dışa aktarmadan önce bir sansürü geri alabilir miyim?",
         "a": "Evet — dışa aktarana kadar hiçbir şey kalıcı değildir. Çalışırken geri al/yinele kullanabilir veya diğer öğeler gibi bir kutuyu silebilirsiniz."
       },
       {
         "q": "Dosyam gizli kalır mı?",
-        "a": "Evet. Dosyanız tarayıcınızda işaretlenir ve yalnızca Dışa Aktar'a tıkladığınızda yüklenir; sonuçlar güvenli şekilde işlenir ve kısa bir saklama süresinin ardından otomatik olarak silinir."
+        "a": "Dosyanız seçtiğiniz anda işlenmeye hazır olması için güvenli şekilde yüklenir; çizdiğiniz değişiklikler Dışa Aktar'a tıklayana kadar tarayıcınızda kalır ve ardından sunucularımızda uygulanır. Yüklenen dosyalar ve sonuçlar kısa bir saklama süresinin ardından otomatik olarak silinir."
       }
     ]
   },
