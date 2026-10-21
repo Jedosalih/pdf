@@ -261,8 +261,10 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # `github` reporter: each failing test becomes a workflow annotation
+      # (file, line, message), readable without downloading logs.
       - name: Run the E2E suite
-        run: npx playwright test --workers=1
+        run: npx playwright test --workers=1 --reporter=list,github
 
       - name: Show service logs on failure
         if: failure()
