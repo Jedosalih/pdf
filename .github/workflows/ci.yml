@@ -143,12 +143,21 @@ jobs:
     name: Full stack E2E
     runs-on: ubuntu-latest
     needs: build
-    # A full `docker compose up --build` from a cold cache (LibreOffice,
-    # Tesseract and Chromium images are large) is slow on a fresh runner;
-    # generous but bounded, so a real hang still fails loudly.
-    timeout-minutes: 60
+    # Building all five worker images from a cold cache (LibreOffice,
+    # Tesseract and Chromium layers) on a 2-vCPU runner is slow; generous
+    # but bounded, so a real hang still fails loudly.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+
+      # The worker images need well over the ~14 GB a stock runner has
+      # free. Remove preinstalled toolchains this job never uses.
+      - name: Free runner disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force > /dev/null
+          df -h /
 
       - uses: actions/setup-node@v4
         with:
@@ -179,8 +188,26 @@ jobs:
       # Postgres/Redis/SeaweedFS/ClamAV/Mailpit plus all five workers, built
       # from this repo's Dockerfiles: the same docker-compose.yml used in
       # local development, on fresh volumes.
+      # One image per step: building all five in parallel (compose's
+      # default) on a 2-vCPU / 7 GB runner thrashed for over an hour; one at
+      # a time also makes each image's build time visible.
+      - name: Build pdf-worker image
+        run: docker compose build pdf-worker
+
+      - name: Build cleanup-worker image
+        run: docker compose build cleanup-worker
+
+      - name: Build ocr-worker image
+        run: docker compose build ocr-worker
+
+      - name: Build office-worker image
+        run: docker compose build office-worker
+
+      - name: Build html-worker image
+        run: docker compose build html-worker
+
       - name: Start the full stack (docker compose)
-        run: docker compose up -d --build
+        run: docker compose up -d
 
       # Explicit readiness instead of `--wait`, which counts the finished
       # one-shot storage-init and workers restarting before migrations as
