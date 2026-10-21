@@ -48,7 +48,8 @@ git checkout --quiet --detach "$sha"
 
 if compose up -d --build --remove-orphans --wait --wait-timeout 900 && healthy; then
   echo "deploy: $sha is live"
-  docker image prune -f >/dev/null
+  # Old image layers from previous builds; set DEPLOY_PRUNE=0 to keep them.
+  [ "${DEPLOY_PRUNE:-1}" = 1 ] && docker image prune -f >/dev/null
   exit 0
 fi
 
