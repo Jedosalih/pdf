@@ -72,6 +72,13 @@ services:
       CLAMD_PORT: "3310"
       AUTH_SECRET: ${AUTH_SECRET:?}
       GUEST_ID_SECRET: ${GUEST_ID_SECRET:?}
+      # Verification / password-reset email over plain SMTP (TLS required).
+      SMTP_HOST: ${SMTP_HOST:?}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_TLS_MODE: ${SMTP_TLS_MODE:-starttls}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:?}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?}
       TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-1}
       NODE_ENV: production

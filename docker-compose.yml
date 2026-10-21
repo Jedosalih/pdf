@@ -74,6 +74,25 @@ services:
       "
     networks: [restricted]
 
+  # Local SMTP capture server (dev/CI only): every email the app sends is
+  # caught here instead of being delivered -- read it at
+  # http://localhost:8025, and the E2E suite reads verification/reset
+  # links from its API. With SMTP_HOST unset outside production the app
+  # sends to localhost:1025 (lib/email/mailer.ts).
+  mailpit:
+    image: axllent/mailpit:v1.27@sha256:e22dce5b36f93c77082e204a3942fb6b283b7896e057458400a4c88344c3df68
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    environment:
+      MP_MAX_MESSAGES: "5000"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   # Malware scanning (docs/SECURITY.md §9) -- on `default`, not
   # `restricted`: unlike the workers, clamd needs outbound internet
   # access for `freshclam` to keep virus definitions current, which is

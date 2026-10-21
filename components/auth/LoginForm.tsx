@@ -5,11 +5,13 @@ import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
-import { useRouter } from "@/lib/i18n/navigation";
+import { Link, useRouter } from "@/lib/i18n/navigation";
+import { ResendVerificationButton } from "./ResendVerificationButton";
 
 const errorKeyByCode: Record<string, string> = {
   INVALID_CREDENTIALS: "invalidCredentials",
   RATE_LIMITED: "rateLimited",
+  VALIDATION_ERROR: "invalidCredentials",
 };
 
 export function LoginForm() {
@@ -52,6 +54,7 @@ export function LoginForm() {
         type="email"
         autoComplete="email"
         required
+        maxLength={254}
         value={email}
         onChange={(event) => setEmail(event.target.value)}
       />
@@ -60,10 +63,23 @@ export function LoginForm() {
         type="password"
         autoComplete="current-password"
         required
+        maxLength={200}
         value={password}
         onChange={(event) => setPassword(event.target.value)}
       />
-      {errorCode ? (
+      <Link href="/forgot-password" className="-mt-2 self-end text-small font-medium text-primary hover:underline">
+        {t("login.forgotPassword")}
+      </Link>
+      {errorCode === "EMAIL_NOT_VERIFIED" ? (
+        <>
+          <Alert variant="warning">{t("login.notVerified")}</Alert>
+          <ResendVerificationButton
+            email={email}
+            label={t("login.resendVerification")}
+            sentMessage={t("login.verificationResent")}
+          />
+        </>
+      ) : errorCode ? (
         <Alert variant="error">{t(`errors.${errorKeyByCode[errorCode] ?? "generic"}`)}</Alert>
       ) : null}
       <Button type="submit" disabled={submitting} loading={submitting} className="mt-2">

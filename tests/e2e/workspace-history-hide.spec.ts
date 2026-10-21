@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { signUpAndVerify } from "./helpers/auth";
 import path from "node:path";
 
 const fixture = path.join(__dirname, "../../docs/fixtures/sample-a-2page.pdf");
@@ -12,11 +13,7 @@ test("hiding a history entry removes it from Recent without deleting the underly
   page,
 }) => {
   const email = `e2e-history-hide-${Date.now()}@example.com`;
-  await page.goto("/en/signup");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill("correcthorsebattery");
-  await page.getByRole("button", { name: "Sign up" }).click();
-  await page.waitForURL("**/workspace");
+  await signUpAndVerify(page, email, "correcthorsebattery");
 
   await page.goto("/en/compress-pdf");
   await page.locator('input[type="file"]').setInputFiles(fixture);

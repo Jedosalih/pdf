@@ -1,6 +1,7 @@
 import { test, expect, request as playwrightRequest } from "@playwright/test";
 import { PDFDocument } from "pdf-lib";
 import { createJob, downloadFile, randomTestIp, runTool, uploadFile } from "./helpers/api";
+import { registerAndVerifyViaApi, uniqueEmail } from "./helpers/auth";
 
 /**
  * The maxPages gate fails closed (lib/security/pageCount.ts). A PDF whose
@@ -106,11 +107,7 @@ test("the deferred page limit is enforced by the worker and can't be overridden 
   // 300. A 301-page encrypted file is only countable after decryption.
   const userIp = randomTestIp();
   const userContext = await browser.newContext();
-  const register = await userContext.request.post("/api/auth/register", {
-    data: { email: `page-limit-${Date.now()}@example.com`, password: "correcthorsebattery" },
-    headers: { "x-forwarded-for": userIp },
-  });
-  expect(register.ok()).toBe(true);
+  await registerAndVerifyViaApi(userContext.request, uniqueEmail("page-limit"), { "x-forwarded-for": userIp });
   const encrypted = await protect(userContext.request, await blankPdf(301), userIp);
   await userContext.close();
 

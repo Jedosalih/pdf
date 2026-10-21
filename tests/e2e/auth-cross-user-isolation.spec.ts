@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { signUpAndVerify } from "./helpers/auth";
 import path from "node:path";
 
 const compressFixture = path.join(__dirname, "../../docs/fixtures/sample-a-2page.pdf");
@@ -25,11 +26,7 @@ test("a second user cannot access another user's files or jobs through any route
   const pageA = await contextA.newPage();
 
   const emailA = `e2e-user-a-${Date.now()}@example.com`;
-  await pageA.goto("/en/signup");
-  await pageA.getByLabel("Email").fill(emailA);
-  await pageA.getByLabel("Password", { exact: true }).fill("correcthorsebattery");
-  await pageA.getByRole("button", { name: "Sign up" }).click();
-  await pageA.waitForURL("**/workspace");
+  await signUpAndVerify(pageA, emailA, "correcthorsebattery");
 
   // A real completed single-output job (for the File-level checks).
   await pageA.goto("/en/compress-pdf");
@@ -61,11 +58,7 @@ test("a second user cannot access another user's files or jobs through any route
   const contextB = await browser.newContext();
   const pageB = await contextB.newPage();
   const emailB = `e2e-user-b-${Date.now()}@example.com`;
-  await pageB.goto("/en/signup");
-  await pageB.getByLabel("Email").fill(emailB);
-  await pageB.getByLabel("Password", { exact: true }).fill("anotherSecurePass1");
-  await pageB.getByRole("button", { name: "Sign up" }).click();
-  await pageB.waitForURL("**/workspace");
+  await signUpAndVerify(pageB, emailB, "anotherSecurePass1");
 
   const listAsB = await pageB.request.get("/api/files?view=documents");
   expect(((await listAsB.json()) as { items: unknown[] }).items).toHaveLength(0);

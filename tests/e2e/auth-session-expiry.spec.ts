@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { signUpAndVerify } from "./helpers/auth";
 
 /**
  * An invalid session (corrupted/unknown token — the same code path an
@@ -11,11 +12,7 @@ test("an invalid session falls back to guest and redirects /workspace to /login"
   context,
 }) => {
   const email = `e2e-session-expiry-${Date.now()}@example.com`;
-  await page.goto("/en/signup");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill("correcthorsebattery");
-  await page.getByRole("button", { name: "Sign up" }).click();
-  await page.waitForURL("**/workspace");
+  await signUpAndVerify(page, email, "correcthorsebattery");
 
   const cookies = await context.cookies();
   const sessionCookie = cookies.find((cookie) => cookie.name === "jdpdf_session");

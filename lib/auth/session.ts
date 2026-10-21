@@ -108,6 +108,15 @@ export async function destroySessionByToken(token: string): Promise<void> {
   await prisma.session.deleteMany({ where: { tokenHash: hashToken(token) } });
 }
 
+/** Signs a user out everywhere -- after a password reset, so whoever knew
+ * the old password loses any session they already had. `exceptToken`
+ * keeps the caller's own session (password change while signed in). */
+export async function destroyUserSessions(userId: string, exceptToken?: string | null): Promise<void> {
+  await prisma.session.deleteMany({
+    where: { userId, ...(exceptToken ? { tokenHash: { not: hashToken(exceptToken) } } : {}) },
+  });
+}
+
 /** Reads the raw token from the request cookie, for logout to hash+destroy. */
 export async function readSessionToken(): Promise<string | null> {
   const store = await cookies();

@@ -1,26 +1,35 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
-import { useRouter } from "@/lib/i18n/navigation";
+import { ResendVerificationButton } from "./ResendVerificationButton";
 
 const errorKeyByCode: Record<string, string> = {
-  EMAIL_TAKEN: "emailTaken",
   RATE_LIMITED: "rateLimited",
   VALIDATION_ERROR: "weakPassword",
+  EMAIL_UNAVAILABLE: "emailUnavailable",
 };
 
+const MIN_PASSWORD_LENGTH = 10;
+
+/**
+ * Signing up never signs in directly: the account must be confirmed via
+ * the emailed link first. The confirmation screen is shown for every
+ * accepted request -- the server's response doesn't reveal whether the
+ * address already had an account, and neither does this screen.
+ */
 export function SignupForm() {
   const t = useTranslations("auth");
-  const router = useRouter();
+  const locale = useLocale();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -31,7 +40,7 @@ export function SignupForm() {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim() || undefined, email, password }),
+        body: JSON.stringify({ name: name.trim() || undefined, email, password, locale }),
       });
       if (!response.ok) {
         const body = await response.json().catch(() => null);
@@ -39,19 +48,29 @@ export function SignupForm() {
         setSubmitting(false);
         return;
       }
-      router.push("/workspace");
-      router.refresh();
+      setSentTo(email.trim().toLowerCase());
     } catch {
       setErrorCode("generic");
       setSubmitting(false);
     }
   };
 
+  if (sentTo) {
+    return (
+      <div className="flex flex-col gap-4" data-testid="signup-check-email">
+        <h2 className="text-h3 font-semibold text-foreground">{t("signup.checkEmailTitle")}</h2>
+        <p className="text-small text-muted-foreground">{t("signup.checkEmailBody", { email: sentTo })}</p>
+        <ResendVerificationButton email={sentTo} label={t("signup.resend")} sentMessage={t("signup.resent")} />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Input
         label={t("signup.nameLabel")}
         autoComplete="name"
+        maxLength={100}
         value={name}
         onChange={(event) => setName(event.target.value)}
       />
@@ -60,6 +79,7 @@ export function SignupForm() {
         type="email"
         autoComplete="email"
         required
+        maxLength={254}
         value={email}
         onChange={(event) => setEmail(event.target.value)}
       />
@@ -68,7 +88,8 @@ export function SignupForm() {
         type="password"
         autoComplete="new-password"
         required
-        minLength={8}
+        minLength={MIN_PASSWORD_LENGTH}
+        maxLength={72}
         hint={t("signup.passwordHint")}
         value={password}
         onChange={(event) => setPassword(event.target.value)}

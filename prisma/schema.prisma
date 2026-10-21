@@ -17,6 +17,11 @@ enum Role {
   SUPER_ADMIN
 }
 
+enum AuthTokenPurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
 enum JobStatus {
   QUEUED
   UPLOADING
@@ -64,6 +69,7 @@ model User {
   updatedAt       DateTime  @updatedAt
 
   sessions      Session[]
+  authTokens    AuthToken[]
   subscriptions Subscription[]
   usageRecords  UsageRecord[]
   jobs          Job[]
@@ -71,6 +77,22 @@ model User {
   auditLogs     AuditLog[]
 
   @@index([email])
+}
+
+/// Single-use, expiring email-verification / password-reset tokens
+/// (lib/auth/tokens.ts). Only an HMAC of the token is stored; the raw
+/// token exists only in the emailed link.
+model AuthToken {
+  id        String           @id @default(cuid(2))
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   AuthTokenPurpose
+  tokenHash String           @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, purpose])
 }
 
 model Session {

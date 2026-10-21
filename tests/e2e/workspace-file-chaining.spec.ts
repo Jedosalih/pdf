@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { signUpAndVerify } from "./helpers/auth";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { extractFirstLinePerPage } from "./helpers/pdfText";
@@ -20,11 +21,7 @@ test("a signed-in user can chain a workspace file into a second tool without re-
   page,
 }) => {
   const email = `e2e-chain-${Date.now()}@example.com`;
-  await page.goto("/en/signup");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill("correcthorsebattery");
-  await page.getByRole("button", { name: "Sign up" }).click();
-  await page.waitForURL("**/workspace");
+  await signUpAndVerify(page, email, "correcthorsebattery");
 
   // A real completed job whose output becomes the file we'll chain.
   await page.goto("/en/compress-pdf");
