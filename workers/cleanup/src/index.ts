@@ -1,6 +1,7 @@
 import { Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
 import { runCleanupSweep } from "./sweep.js";
+import { createQueueLookup } from "./queueLookup.js";
 
 const connection = new Redis(
   process.env.REDIS_URL ?? "redis://localhost:6379",
@@ -11,11 +12,12 @@ const SWEEP_INTERVAL_MS = 60 * 60 * 1000; // hourly
 const SCHEDULER_ID = "cleanup-sweep";
 
 const queue = new Queue("cleanup", { connection });
+const processingQueues = createQueueLookup(connection);
 
 const worker = new Worker(
   "cleanup",
   async () => {
-    await runCleanupSweep();
+    await runCleanupSweep(processingQueues);
   },
   { connection, concurrency: 1 },
 );
@@ -27,6 +29,7 @@ worker.on("error", (error) => {
 process.on("SIGTERM", async () => {
   await worker.close();
   await queue.close();
+  await processingQueues.close();
   process.exit(0);
 });
 
@@ -48,7 +51,7 @@ async function main() {
   // interval for the first one -- a container that's been down for a
   // while (e.g. during a deploy) shouldn't leave expired files sitting
   // around for up to an hour before the first scheduled tick.
-  await runCleanupSweep();
+  await runCleanupSweep(processingQueues);
 }
 
 void main();

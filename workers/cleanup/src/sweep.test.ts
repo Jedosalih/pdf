@@ -13,8 +13,16 @@
  * ones docker-compose.yml already provides).
  */
 import { randomUUID } from "node:crypto";
+import { Queue } from "bullmq";
+import { Redis } from "ioredis";
 import { prisma } from "./db.js";
+import { createQueueLookup } from "./queueLookup.js";
 import { runCleanupSweep } from "./sweep.js";
+
+// A real BullMQ queue no worker consumes, so a job added to it stays
+// "waiting" for the whole test -- the lookup is the production one, only
+// pointed at this queue instead of the processing queues.
+const TEST_QUEUE = "cleanup-sweep-test";
 
 const TOOL_ID = "compress-pdf";
 const HOUR_MS = 60 * 60 * 1000;
@@ -51,13 +59,18 @@ async function makeFile(overrides: {
   });
 }
 
-async function makeJob(overrides: { status: "QUEUED" | "PROCESSING"; startedAt?: Date }) {
+async function makeJob(overrides: {
+  status: "QUEUED" | "PROCESSING";
+  startedAt?: Date;
+  createdAt?: Date;
+}) {
   return prisma.job.create({
     data: {
       guestId: `sweep-test-${randomUUID()}`,
       toolId: TOOL_ID,
       status: overrides.status,
       startedAt: overrides.startedAt,
+      createdAt: overrides.createdAt,
     },
   });
 }
@@ -92,11 +105,45 @@ async function main() {
   // survive untouched.
   const freshJob = await makeJob({ status: "PROCESSING", startedAt: new Date(now - 2 * 60_000) });
 
-  const result = await runCleanupSweep();
+  // Scenario 7: QUEUED for 2 hours with no BullMQ job behind it -- lost,
+  // should be failed.
+  const lostJob = await makeJob({ status: "QUEUED", createdAt: new Date(now - 2 * HOUR_MS) });
+
+  // Scenario 8: QUEUED for 2 hours but BullMQ still has it waiting -- a
+  // legitimate backlog, must survive.
+  const backloggedJob = await makeJob({ status: "QUEUED", createdAt: new Date(now - 2 * HOUR_MS) });
+
+  // Scenario 9: QUEUED 1 minute ago with no BullMQ job -- too young to
+  // judge, must survive.
+  const youngQueuedJob = await makeJob({ status: "QUEUED", createdAt: new Date(now - 60_000) });
+
+  const connection = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", {
+    maxRetriesPerRequest: null,
+  });
+  const testQueue = new Queue(TEST_QUEUE, { connection });
+  await testQueue.add("process", { jobId: backloggedJob.id }, { jobId: backloggedJob.id });
+  const lookup = createQueueLookup(connection, [TEST_QUEUE]);
+
+  const result = await runCleanupSweep(lookup);
 
   assert(result.expiredGuestFiles >= 1, "sweep reports at least one expired file processed");
   assert(result.purgedTrashedFiles >= 1, "sweep reports at least one old trashed file purged");
   assert(result.staleProcessingJobs >= 1, "sweep reports at least one stale job reaped");
+  assert(result.stuckQueuedJobs >= 1, "sweep reports at least one lost queued job failed");
+
+  const [lost, backlogged, youngQueued] = await Promise.all([
+    prisma.job.findUniqueOrThrow({ where: { id: lostJob.id } }),
+    prisma.job.findUniqueOrThrow({ where: { id: backloggedJob.id } }),
+    prisma.job.findUniqueOrThrow({ where: { id: youngQueuedJob.id } }),
+  ]);
+  assert(lost.status === "FAILED" && lost.errorCode === "QUEUE_LOST", "lost queued job was failed");
+  assert(backlogged.status === "QUEUED", "queued job still waiting in BullMQ was left alone");
+  assert(youngQueued.status === "QUEUED", "recently queued job was left alone");
+
+  await testQueue.obliterate({ force: true });
+  await testQueue.close();
+  await lookup.close();
+  await connection.quit();
 
   const [expired, protectedRow, oldTrashed, recentTrashed, stale, fresh] = await Promise.all([
     prisma.file.findUniqueOrThrow({ where: { id: expiredFile.id } }),
@@ -120,7 +167,13 @@ async function main() {
   await prisma.file.deleteMany({
     where: { id: { in: [expiredFile.id, protectedFile.id, recentTrashedFile.id] } },
   });
-  await prisma.job.deleteMany({ where: { id: { in: [activeJob.id, staleJob.id, freshJob.id] } } });
+  await prisma.job.deleteMany({
+    where: {
+      id: {
+        in: [activeJob.id, staleJob.id, freshJob.id, lostJob.id, backloggedJob.id, youngQueuedJob.id],
+      },
+    },
+  });
 
   await prisma.$disconnect();
 

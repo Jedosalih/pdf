@@ -1,5 +1,6 @@
 import { prisma } from "./db.js";
 import { deleteObject } from "./storage.js";
+import type { QueueLookup } from "./queueLookup.js";
 
 /** How long a trashed file (`deletedAt` set, via the workspace Trash
  * feature) is kept before its storage object and DB row are permanently
@@ -17,10 +18,16 @@ const TRASH_RETENTION_DAYS = 30;
  * sweep ever touches a job that could still be genuinely active. */
 const STALE_PROCESSING_THRESHOLD_MS = 30 * 60 * 1000;
 
+/** How long a job may sit in QUEUED before it's checked against BullMQ.
+ * Being old alone is never enough to fail it -- a long backlog is
+ * legitimate -- see `sweepStuckQueuedJobs`. */
+const STUCK_QUEUED_THRESHOLD_MS = 30 * 60 * 1000;
+
 export interface SweepResult {
   expiredGuestFiles: number;
   purgedTrashedFiles: number;
   staleProcessingJobs: number;
+  stuckQueuedJobs: number;
 }
 
 /**
@@ -91,8 +98,8 @@ async function sweepOldTrashedFiles(now: Date): Promise<number> {
 /**
  * A job stuck in PROCESSING well past any realistic completion time is
  * marked FAILED so it stops looking "in progress" forever in a user's
- * history -- this never touches a QUEUED job (still legitimately waiting
- * for a worker slot) or a PROCESSING job younger than the threshold.
+ * history -- this never touches a QUEUED job (`sweepStuckQueuedJobs`
+ * handles those) or a PROCESSING job younger than the threshold.
  */
 async function sweepStaleProcessingJobs(now: Date): Promise<number> {
   const cutoff = new Date(now.getTime() - STALE_PROCESSING_THRESHOLD_MS);
@@ -101,6 +108,37 @@ async function sweepStaleProcessingJobs(now: Date): Promise<number> {
     data: { status: "FAILED", completedAt: now, errorCode: "WORKER_CRASHED" },
   });
   return result.count;
+}
+
+/**
+ * A job still QUEUED in Postgres that BullMQ no longer holds (Redis lost
+ * it, the enqueue never landed, or BullMQ dropped it) will never be picked
+ * up by any worker, and its user would otherwise see "queued" forever.
+ * Such a job is failed only when it is BOTH older than the threshold AND
+ * absent from every processing queue -- a job BullMQ still has waiting
+ * or active is a legitimate backlog and is never touched. The update is
+ * conditional on the row still being QUEUED, so a worker that starts the
+ * job concurrently wins. Its input files are not deleted here; they
+ * follow their own expiry. The daily-usage reservation is not refunded
+ * (usage records aren't linked to a job id) -- see docs/DECISIONS.md.
+ */
+async function sweepStuckQueuedJobs(now: Date, queues: QueueLookup): Promise<number> {
+  const cutoff = new Date(now.getTime() - STUCK_QUEUED_THRESHOLD_MS);
+  const candidates = await prisma.job.findMany({
+    where: { status: "QUEUED", createdAt: { lte: cutoff } },
+    select: { id: true },
+  });
+
+  let count = 0;
+  for (const job of candidates) {
+    if (await queues.isPending(job.id)) continue;
+    const result = await prisma.job.updateMany({
+      where: { id: job.id, status: "QUEUED" },
+      data: { status: "FAILED", completedAt: now, errorCode: "QUEUE_LOST" },
+    });
+    count += result.count;
+  }
+  return count;
 }
 
 /**
@@ -116,12 +154,13 @@ async function sweepStaleProcessingJobs(now: Date): Promise<number> {
  * shared temp location in this architecture for a periodic sweep to
  * meaningfully act on.
  */
-export async function runCleanupSweep(): Promise<SweepResult> {
+export async function runCleanupSweep(queues: QueueLookup): Promise<SweepResult> {
   const now = new Date();
-  const [expiredGuestFiles, purgedTrashedFiles, staleProcessingJobs] = [
+  const [expiredGuestFiles, purgedTrashedFiles, staleProcessingJobs, stuckQueuedJobs] = [
     await sweepExpiredGuestFiles(now),
     await sweepOldTrashedFiles(now),
     await sweepStaleProcessingJobs(now),
+    await sweepStuckQueuedJobs(now, queues),
   ];
 
   // Counts only -- no file names, storage keys, or job ids, per this
@@ -129,8 +168,9 @@ export async function runCleanupSweep(): Promise<SweepResult> {
   // that could identify a specific user's content.
   console.log(
     `[cleanup] sweep complete: expiredGuestFiles=${expiredGuestFiles} ` +
-      `purgedTrashedFiles=${purgedTrashedFiles} staleProcessingJobs=${staleProcessingJobs}`,
+      `purgedTrashedFiles=${purgedTrashedFiles} staleProcessingJobs=${staleProcessingJobs} ` +
+      `stuckQueuedJobs=${stuckQueuedJobs}`,
   );
 
-  return { expiredGuestFiles, purgedTrashedFiles, staleProcessingJobs };
+  return { expiredGuestFiles, purgedTrashedFiles, staleProcessingJobs, stuckQueuedJobs };
 }
