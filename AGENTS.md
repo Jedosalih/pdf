@@ -126,6 +126,15 @@ must not contain PDF-processing logic (they enqueue jobs and query status).
 - Never force-push, never rewrite shared history, never skip hooks.
 - Never embed a credential in a git remote URL (one was found in
   `.git/config` in 2026-10 and had to be revoked).
+- **Lockfiles edited on Windows**: npm on Windows drops some optional
+  Linux-only entries (`@emnapi/*`) from `package-lock.json`, which then
+  breaks `npm ci` in CI and every Docker build. After any dependency
+  change made on Windows, re-resolve the lock on Linux before committing:
+  `docker run --rm -v "<repo>:/repo" -w /repo node:22-bookworm-slim npm install --package-lock-only --ignore-scripts`
+  (CI's first `npm ci` fails loudly if this is forgotten).
+- Auth changes: every new auth POST goes through `parseAuthRequest`
+  (`lib/auth/request.ts`); never add a response that differs by whether
+  an email has an account.
 - Do not commit `.env`, credentials, or generated artifacts (`node_modules`,
   `.next`, `prisma`'s generated client output, worker temp dirs).
 

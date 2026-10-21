@@ -201,8 +201,15 @@ against the freshly-loaded `PDFDocument` for that job's own input file.
   or `guestId`) before `getStorage().getSignedDownloadUrl()` issues a
   short-lived (300s) signed URL. No file is ever served from a public,
   guessable path.
-- Object storage buckets are private by default; the app is the only
-  credentialed writer/reader.
+- Object storage buckets are private; unsigned requests are refused.
+  Production (`docker-compose.prod.yml`) uses SeaweedFS with one scoped
+  key per service (app read/write; workers read + write under
+  `results/*`; cleanup write/delete without read), storage on the
+  internal network only, and the public storage hostname limited to
+  GET/HEAD by Caddy. Download URLs are signed for that public host
+  (`STORAGE_PUBLIC_ENDPOINT`) while all other storage calls stay internal.
+  Residual: SeaweedFS "Write" includes delete, so a worker key could
+  delete/overwrite objects under `results/` (docs/DEPLOYMENT.md).
 - Guest-owned files/jobs get `expiresAt` set 24h out
   (`lib/entitlements/retention.ts` / `workers/pdf/src/retention.ts`).
   Authenticated-user-owned files/jobs get `expiresAt: null` (never
@@ -272,9 +279,33 @@ actually configured.
   `secure`-in-production cookie (`jdpdf_session`); the server stores only
   `HMAC-SHA256(AUTH_SECRET, token)`, mirroring the guest-cookie signing
   primitive already in `lib/security/guestIdCore.ts`. 30-day expiry.
-  `SameSite=Strict` was not adopted — no inbound-link auth flow (email
-  verification, password reset) exists yet to require it; revisit if one
-  is built.
+  `SameSite=Lax` (not Strict) is deliberate: emailed verification/reset
+  links are top-level navigations and must work.
+- **Email verification and password reset (2026-10-21)**, over plain SMTP
+  (`lib/email/mailer.ts`, nodemailer; STARTTLS required or implicit TLS,
+  certificates verified, plaintext refused in production, 10-20s
+  timeouts). Tokens (`lib/auth/tokens.ts`): 256 random bits, only an
+  HMAC stored (`AuthToken`), single-use via an atomic conditional update,
+  24h (verification) / 30 min (reset), a new token deletes older unused
+  ones. Links are built only from `NEXT_PUBLIC_SITE_URL` (a forged Host
+  header can't redirect them); token pages are `noindex` with
+  `Referrer-Policy: no-referrer`. Verification is a button POST, not a
+  GET, so mail scanners that prefetch links can't consume it.
+- **No account enumeration**: registration always answers 202 (an
+  existing verified address gets an "account exists" email, an unverified
+  one a fresh link; same bcrypt work on both paths; mail sent after the
+  response); forgot-password and resend always answer 202; login runs
+  bcrypt against a dummy hash for unknown emails and returns
+  `EMAIL_NOT_VERIFIED` only after the correct password.
+- **Sessions**: a new token on every login (no fixation); a password reset
+  revokes every session; a password change revokes the others.
+- **Input hardening on every auth POST** (`lib/auth/request.ts`):
+  `Origin` must match the site or request host (login CSRF), JSON content
+  type required, 8KB body cap, strict schemas (unknown keys rejected).
+  Password policy: >= 10 characters, <= 72 bytes, not a common password,
+  not containing the email's local part.
+- Nothing auth-related is logged beyond error class names; tokens, links,
+  passwords and codes never are. `EmailEvent` records template + status.
 - Rate limiting (Redis-backed, `lib/security/rateLimit.ts`, reusing the
   existing BullMQ Redis connection; `INCR` + `EXPIRE NX` in one MULTI so a
   counter can never be left without an expiry) on `/api/auth/register`

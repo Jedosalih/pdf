@@ -2590,6 +2590,57 @@ items were never started.
   `.git/config` (Git Credential Manager is already configured). The token
   itself must still be revoked by the owner on GitHub.
 
+## 2026-10-21 — Productization pass: auth over SMTP, tool UX audit, CI/CD, production storage
+
+- **Auth completed, not replaced**: email verification + password reset
+  on the existing custom DB-session system (new `AuthToken` table, single
+  migration). Mandatory verification for sign-in; the migration marks
+  pre-existing (dev/test-only) accounts verified so they aren't locked
+  out. Plain SMTP via nodemailer (no email API provider, per the brief);
+  outside production with SMTP_HOST unset it sends to the Mailpit capture
+  server in docker-compose.yml, which is also how CI/E2E read real emails.
+  **Not tested against a real mailbox**: no SMTP credentials exist.
+- Registration returns 202 for every accepted request (no `EMAIL_TAKEN`):
+  enumeration resistance wins over the convenience of an inline
+  "already registered" error; the owner of an existing address gets an
+  email instead.
+- **Tool audit** (all 35, registry-driven page checks + mid-flow phone
+  screenshots). Real defects fixed: compress returned larger files as
+  "success"; no page navigation on phones in edit/redact/fill-sign;
+  un-cancelled pdf.js renders on zoom changes; compare's original file
+  couldn't be replaced; "How it works" copy named buttons that don't
+  exist. Not changed: tool button labels stay "Start" (renaming would
+  touch every tool spec for cosmetic gain; the copy now matches).
+- **Windows lockfile finding**: npm on Windows silently drops optional
+  `@emnapi/*` entries, breaking Linux `npm ci` (CI's very first install
+  and every Docker build). Already true at HEAD before this pass.
+  Re-resolving on Linux (`npm install --package-lock-only` in node:22)
+  adds only those entries. Rule added to AGENTS.md.
+- **Production object storage: SeaweedFS instead of MinIO.** MinIO
+  stopped publishing community images (last: 2025-09), so the pinned image
+  gets no fixes. SeaweedFS 4.48 (Apache-2.0, released 2026-09-28) was
+  verified against JPdf's exact contract before switching: signed GET with
+  RFC 6266 headers, unsigned/tampered requests refused, per-identity
+  scopes. Prefix scoping needs `Write:bucket/prefix/*` (the forms without
+  `/*` are silently denied). Trade-off: SeaweedFS `Write` = put + delete,
+  so worker keys can delete under `results/` (MinIO policy was put-only).
+  Dev/CI keep MinIO (disposable local stacks; no security exposure).
+- **Caddy** as the single public entry (auto HTTPS). The app now signs
+  download URLs for a separate public storage host
+  (`STORAGE_PUBLIC_ENDPOINT`) while talking to storage internally, so the
+  public storage host can be GET/HEAD-only.
+- **Backup bug caught by testing the failure path**: `pg_dump | gzip`
+  reported success with an empty dump when pg_dump failed (POSIX sh has no
+  pipefail). Dump to a file, verify completeness, then compress.
+- **CD stays off until a host exists**: deploy.yml is gated on
+  `DEPLOY_ENABLED` so it is skipped, never a fake green. No hosting
+  account, domain or SMTP credentials were available in this
+  environment; nothing was deployed or invented.
+- Dependency gate (`scripts/audit-gate.mjs`): npm audit has no
+  allowlist, and two reviewed advisories (image-size via pptxgenjs, only
+  fed our own PNGs) are unfixable without a major downgrade; the gate
+  allows exactly those, with reasons and an expiry date.
+
 ## Template for future entries
 
 ```

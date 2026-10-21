@@ -113,12 +113,16 @@ Requires Docker (Desktop or Engine) and Node.js 22+.
 
 ```bash
 cp .env.example .env          # edit if you changed any default credential
-docker compose up -d --build  # postgres, redis, minio, clamav, all 5 workers
+docker compose up -d --build  # postgres, redis, minio, clamav, mailpit, all 5 workers
 npm install
 npx prisma migrate deploy
 npm run db:seed               # required after any lib/tools/registry.ts change
 npm run dev                   # http://localhost:3000
 ```
+
+Accounts require email verification. Locally every email (verification,
+password reset) is captured by Mailpit instead of being delivered: open
+http://localhost:8025 to click the links.
 
 After changing anything under a `workers/*` package, that container needs
 an explicit rebuild — it does not hot-reload like the Next.js dev server:
@@ -146,7 +150,9 @@ short:
 | `STORAGE_*` | S3-compatible object storage endpoint/credentials/bucket |
 | `CLAMD_HOST` / `CLAMD_PORT` | ClamAV daemon — optional; uploads are still structurally validated if unset, see `docs/SECURITY.md` §9 |
 | `AUTH_SECRET` / `GUEST_ID_SECRET` | Session/guest-cookie HMAC signing keys — generate a real random value per environment, never reuse the example |
-| `NEXT_PUBLIC_SITE_URL` | Public base URL, used for metadata/canonical links |
+| `NEXT_PUBLIC_SITE_URL` | Public base URL, used for metadata/canonical links and email links |
+| `SMTP_*` / `EMAIL_FROM` | Plain SMTP for verification/reset email; unset locally = Mailpit (see `.env.example`) |
+| `TRUSTED_PROXY_HOPS` | Reverse proxies that append `X-Forwarded-For` (production: 1, Caddy) |
 
 ## Testing
 
@@ -180,10 +186,12 @@ volumes: `docker compose -p jpdf-test -f docker-compose.yml -f docker-compose.te
 
 ## Deployment
 
-JPdf is **not deployed** anywhere yet, and the CI workflow has not run on
-GitHub yet. `docs/DEPLOYMENT.md` describes the production Compose
-template (`docker-compose.prod.yml`) and what a real deployment still
-needs. `docker-compose.yml` is for local development and CI only.
+JPdf is **not deployed** anywhere yet. `docs/DEPLOYMENT.md` covers the
+production stack (`docker-compose.prod.yml`: Caddy HTTPS, SeaweedFS
+storage, least-privilege credentials), first deployment, the GitHub
+Actions CD workflow (disabled until a host is configured), backups,
+restore and rollback. `docker-compose.yml` is for local development and
+CI only.
 
 ## Security model
 

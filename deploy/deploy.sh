@@ -40,10 +40,11 @@ healthy() {
 }
 
 previous=$(git rev-parse HEAD)
-./deploy/backup.sh "pre-deploy-$(echo "$previous" | cut -c1-12)"
-
 git fetch --quiet origin
-git cat-file -e "$sha^{commit}"
+# Refuse an unknown commit before touching anything (backup included).
+git cat-file -e "$sha^{commit}" 2>/dev/null || { echo "deploy: commit $sha not found" >&2; exit 1; }
+
+./deploy/backup.sh "pre-deploy-$(echo "$previous" | cut -c1-12)"
 git checkout --quiet --detach "$sha"
 
 if compose up -d --build --remove-orphans --wait --wait-timeout 900 && healthy; then
