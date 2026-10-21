@@ -221,9 +221,8 @@ jobs:
         timeout-minutes: 10
         run: docker compose up -d
 
-      # Explicit readiness instead of `--wait`, which counts the finished
-      # one-shot storage-init and workers restarting before migrations as
-      # failures.
+      # Explicit readiness instead of `--wait`, which counts workers
+      # restarting before migrations exist as failures.
       - name: Wait for infrastructure
         run: sh scripts/wait-for-stack.sh 600
 

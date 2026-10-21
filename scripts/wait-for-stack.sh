@@ -1,9 +1,8 @@
 #!/bin/sh
 # Waits until the docker-compose.yml infrastructure is ready: postgres,
-# redis, storage and mailpit report healthy and the one-shot storage-init
-# has exited 0. Used by CI instead of `docker compose up --wait`, which
-# treats a finished one-shot container -- and workers restarting until
-# migrations exist -- as failures.
+# redis, storage (healthy = bucket exists) and mailpit report healthy.
+# Used by CI instead of `docker compose up --wait`, which treats workers
+# restarting until migrations exist as failures.
 #
 #   scripts/wait-for-stack.sh [timeout-seconds]
 set -eu
@@ -19,12 +18,6 @@ while :; do
   for service in postgres redis storage mailpit; do
     [ "$(status "pdf-$service-1")" = healthy ] || pending="$pending $service"
   done
-  init=$(status pdf-storage-init-1)
-  case "$init" in
-    exited:0) ;;
-    exited:*) echo "storage-init failed ($init)"; docker logs pdf-storage-init-1 2>&1 | tail -20; exit 1 ;;
-    *) pending="$pending storage-init" ;;
-  esac
   if [ -z "$pending" ]; then
     echo "stack ready after ${elapsed}s"
     exit 0

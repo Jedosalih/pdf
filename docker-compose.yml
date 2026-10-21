@@ -53,31 +53,26 @@ services:
   storage:
     image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
     restart: unless-stopped
-    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json"]
+    # Starts SeaweedFS and creates the bucket; healthy only once the bucket
+    # exists (deploy/storage/entrypoint.sh), so dependents just wait for
+    # service_healthy -- no one-shot init container.
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    environment:
+      STORAGE_BUCKET: jdpdf-dev
+      S3_CONFIG: /etc/seaweedfs/s3.json
     ports:
       - "127.0.0.1:9000:8333"
     volumes:
       - storage_data:/data
       - ./deploy/dev/s3-dev.json:/etc/seaweedfs/s3.json:ro
+      - ./deploy/storage/entrypoint.sh:/entrypoint.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 8333 && nc -z 127.0.0.1 9333"]
+      test: ["CMD-SHELL", "test -f /tmp/storage-ready && nc -z 127.0.0.1 8333"]
       interval: 5s
       timeout: 5s
-      retries: 20
-      start_period: 10s
+      retries: 40
+      start_period: 15s
     networks: [default, restricted]
-
-  storage-init:
-    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
-    depends_on:
-      storage:
-        condition: service_healthy
-    entrypoint: ["/bin/sh", "/create-bucket.sh"]
-    environment:
-      STORAGE_BUCKET: jdpdf-dev
-    volumes:
-      - ./deploy/storage/create-bucket.sh:/create-bucket.sh:ro
-    networks: [restricted]
 
   # Local SMTP capture server (dev/CI only): every email the app sends is
   # caught here instead of being delivered -- read it at
@@ -138,8 +133,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      storage-init:
-        condition: service_completed_successfully
+      storage:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
       REDIS_URL: redis://redis:6379
@@ -172,8 +167,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      storage-init:
-        condition: service_completed_successfully
+      storage:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
       REDIS_URL: redis://redis:6379
@@ -204,8 +199,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      storage-init:
-        condition: service_completed_successfully
+      storage:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
       REDIS_URL: redis://redis:6379
@@ -241,8 +236,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      storage-init:
-        condition: service_completed_successfully
+      storage:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
       REDIS_URL: redis://redis:6379
@@ -277,8 +272,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      storage-init:
-        condition: service_completed_successfully
+      storage:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
       REDIS_URL: redis://redis:6379

@@ -1,12 +1,27 @@
 #!/bin/sh
 # Publishes docker-compose state as GitHub Actions annotations after a
-# failed or cancelled CI job. Downloading job logs needs repo-admin rights;
-# annotations are visible to anyone who can see the run.
-docker compose ps -a --format '{{.Name}} {{.Status}}' | while read -r line; do
-  echo "::warning title=container::$line"
-done
-for c in $(docker compose ps -a --format '{{.Name}}|{{.Status}}' | grep -v -E '\(healthy\)|Exited \(0\)' | cut -d'|' -f1); do
-  tail=$(docker logs --tail 15 "$c" 2>&1 | tr '\n' ' ' | cut -c1-900)
-  echo "::error title=logs $c::$tail"
-done
+# failed or cancelled CI job (downloading job logs needs repo-admin rights;
+# annotations are visible to anyone who can see the run). GitHub keeps at
+# most 10 annotations of each level per step, so the container table is a
+# single annotation and only problem containers get their own.
+nl='
+'
+table=$(docker compose ps -a --format '{{.Name}}={{.Status}}' | tr "$nl" ';')
+echo "::warning title=containers::$table"
+
+# Containers that are neither healthy, nor running without a healthcheck,
+# nor finished successfully.
+docker compose ps -a --format '{{.Name}}|{{.Status}}' \
+  | grep -v -F '(healthy)' \
+  | grep -v -F 'Exited (0)' \
+  | grep -v -E '[|]Up [0-9a-zA-Z ]+$' \
+  | cut -d'|' -f1 | head -8 \
+  | while read -r c; do
+      tail=$(docker logs --tail 12 "$c" 2>&1 | tr "$nl" ' ' | cut -c1-900)
+      echo "::error title=logs $c::${tail:-<no output>}"
+    done
+
+storage=$(docker logs --tail 12 pdf-storage-1 2>&1 | tr "$nl" ' ' | cut -c1-900)
+echo "::warning title=logs pdf-storage-1::${storage:-<no output>}"
+
 docker compose logs --tail 200

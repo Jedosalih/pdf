@@ -1,7 +1,7 @@
 #!/bin/sh
-# One-shot (docker-compose.prod.yml `storage-config`): renders SeaweedFS's
-# S3 identity file from the environment into the shared config volume,
-# so no credential lives in the repository. One least-privilege key per
+# Called by deploy/storage/entrypoint.sh in production (RENDER_S3_CONFIG=1):
+# renders SeaweedFS's S3 identity file from the environment at startup, so
+# no credential lives in the repository or in a shared volume. One least-privilege key per
 # service, derived from what each service's code does (docs/DEPLOYMENT.md):
 #   app      read/write/list the bucket (uploads, downloads, trash purge)
 #   worker   read the bucket, write only under results/
@@ -19,7 +19,9 @@ for var in STORAGE_BUCKET STORAGE_APP_ACCESS_KEY STORAGE_APP_SECRET_KEY \
   esac
 done
 
-cat > /config/s3.json <<EOF
+out=${S3_CONFIG_OUT:-/config/s3.json}
+mkdir -p "$(dirname "$out")"
+cat > "$out" <<EOF
 {
   "identities": [
     {
@@ -40,8 +42,7 @@ cat > /config/s3.json <<EOF
   ]
 }
 EOF
-# The storage server runs as a different user, so the file must be
-# world-readable inside the volume; what protects it is that only the
-# storage-config and storage containers mount that volume.
-chmod 644 /config/s3.json
+# Only the storage container itself reads this file (it renders it into
+# its own filesystem at startup), so it can be owner-only.
+chmod 600 "$out"
 echo "render-s3-config: identities written"

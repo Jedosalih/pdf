@@ -44,7 +44,7 @@ x-worker: &worker
   depends_on:
     postgres: { condition: service_healthy }
     redis: { condition: service_healthy }
-    storage-init: { condition: service_completed_successfully }
+    storage: { condition: service_healthy }
     migrate: { condition: service_completed_successfully }
   environment: *worker-env
   logging: &logging
@@ -81,7 +81,7 @@ services:
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
-      storage-init: { condition: service_completed_successfully }
+      storage: { condition: service_healthy }
     environment:
       DATABASE_URL: postgresql://jpdf_app:${POSTGRES_APP_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD:?}@redis:6379
@@ -174,15 +174,21 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?}
     logging: *logging
 
-  # Renders the S3 identity file (one scoped key per service) from the
-  # environment into a volume only `storage` also mounts.
-  storage-config:
+  # S3-compatible object storage: single-node SeaweedFS (master + volume +
+  # filer + S3 gateway). Its entrypoint renders the per-service S3
+  # identities from the environment, starts the server and creates the
+  # bucket; the container is healthy only once the bucket exists, so
+  # dependents wait for service_healthy (no one-shot init containers).
+  # Unauthenticated requests are refused.
+  storage:
     image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
-    restart: "no"
-    network_mode: none
-    entrypoint: ["/bin/sh", "/render-s3-config.sh"]
+    restart: unless-stopped
+    networks: [backend]
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     environment:
       STORAGE_BUCKET: ${STORAGE_BUCKET:?}
+      S3_CONFIG: /etc/seaweedfs/s3.json
+      RENDER_S3_CONFIG: "1"
       STORAGE_APP_ACCESS_KEY: ${STORAGE_APP_ACCESS_KEY:?}
       STORAGE_APP_SECRET_KEY: ${STORAGE_APP_SECRET_KEY:?}
       STORAGE_WORKER_ACCESS_KEY: ${STORAGE_WORKER_ACCESS_KEY:?}
@@ -190,42 +196,15 @@ services:
       STORAGE_CLEANUP_ACCESS_KEY: ${STORAGE_CLEANUP_ACCESS_KEY:?}
       STORAGE_CLEANUP_SECRET_KEY: ${STORAGE_CLEANUP_SECRET_KEY:?}
     volumes:
-      - ./deploy/storage/render-s3-config.sh:/render-s3-config.sh:ro
-      - storage_config:/config
-    logging: *logging
-
-  # S3-compatible object storage. Single-node SeaweedFS (master + volume +
-  # filer + S3 gateway in one process); data on the storage_data volume.
-  # Unauthenticated requests are refused.
-  storage:
-    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
-    restart: unless-stopped
-    networks: [backend]
-    depends_on:
-      storage-config: { condition: service_completed_successfully }
-    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/config/s3.json"]
-    volumes:
       - storage_data:/data
-      - storage_config:/config:ro
+      - ./deploy/storage/entrypoint.sh:/entrypoint.sh:ro
+      - ./deploy/storage/render-s3-config.sh:/render-s3-config.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 8333 && nc -z 127.0.0.1 9333"]
+      test: ["CMD-SHELL", "test -f /tmp/storage-ready && nc -z 127.0.0.1 8333"]
       interval: 5s
       timeout: 5s
-      retries: 20
-      start_period: 10s
-    logging: *logging
-
-  storage-init:
-    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
-    restart: "no"
-    networks: [backend]
-    depends_on:
-      storage: { condition: service_healthy }
-    entrypoint: ["/bin/sh", "/create-bucket.sh"]
-    environment:
-      STORAGE_BUCKET: ${STORAGE_BUCKET:?}
-    volumes:
-      - ./deploy/storage/create-bucket.sh:/create-bucket.sh:ro
+      retries: 40
+      start_period: 15s
     logging: *logging
 
   clamav:
@@ -277,7 +256,6 @@ volumes:
   postgres_data:
   redis_data:
   storage_data:
-  storage_config:
   clamav_data:
   caddy_data:
   caddy_config:
