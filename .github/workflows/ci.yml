@@ -261,13 +261,21 @@ jobs:
       # Security regression tests that inspect PDF bytes with the real
       # qpdf/poppler binaries, so they run inside the worker images.
       - name: Redaction security regression test
-        run: docker compose run --rm --no-deps pdf-worker node dist/redaction.test.js
+        run: sh scripts/ci-worker-test.sh pdf-worker redaction.test.js
 
       - name: qpdf password-handling test
-        run: docker compose run --rm --no-deps pdf-worker node dist/qpdfJob.test.js
+        run: sh scripts/ci-worker-test.sh pdf-worker qpdfJob.test.js
 
       - name: Cleanup sweep test
-        run: docker compose run --rm --no-deps cleanup-worker node dist/sweep.test.js
+        # The running cleanup worker sweeps on every (re)start -- it was
+        # restarting until migrations existed -- and would race this test
+        # over the same rows, so it is paused for the duration.
+        run: |
+          docker compose stop cleanup-worker
+          status=0
+          sh scripts/ci-worker-test.sh cleanup-worker sweep.test.js || status=$?
+          docker compose start cleanup-worker
+          exit $status
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
