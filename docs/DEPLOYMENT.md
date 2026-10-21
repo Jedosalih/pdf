@@ -135,7 +135,15 @@ compose up -d --wait
 ## Local development and CI
 
 `docker-compose.yml` is for development and CI only: fixed public dev
-credentials, every port bound to 127.0.0.1, MinIO for storage (fine for a
-local disposable stack), and Mailpit capturing all email
-(http://localhost:8025). `docker-compose.test.yml` runs an isolated copy
+credentials, every port bound to 127.0.0.1, SeaweedFS for storage (host
+port 9000, so existing `.env` files work unchanged), and Mailpit capturing
+all email (http://localhost:8025).
+
+**MinIO -> SeaweedFS in local dev (2026-10-21):** MinIO's images can no
+longer be pulled from Docker Hub (fresh machines and CI failed), so the
+dev stack switched engines. Files uploaded to the old local MinIO stay in
+the untouched `pdf_minio_data` volume; dev database rows that point at
+them will 404 on download. To carry them over while the old image is
+still cached locally: start a temporary MinIO container on that volume and
+`mc mirror` its bucket into the new storage (both speak S3). `docker-compose.test.yml` runs an isolated copy
 next to it (see README).

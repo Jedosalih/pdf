@@ -2624,7 +2624,16 @@ items were never started.
   scopes. Prefix scoping needs `Write:bucket/prefix/*` (the forms without
   `/*` are silently denied). Trade-off: SeaweedFS `Write` = put + delete,
   so worker keys can delete under `results/` (MinIO policy was put-only).
-  Dev/CI keep MinIO (disposable local stacks; no security exposure).
+  **Correction (same day):** dev/CI could NOT keep MinIO. The first real
+  GitHub Actions run failed at `docker compose up` because `minio/minio`
+  and `minio/mc` are no longer pullable from Docker Hub (anonymous pulls
+  return 401; local runs only worked from a cached image). Dev/CI now use
+  SeaweedFS too (`deploy/dev/s3-dev.json`, host port 9000 -> 8333 so
+  existing `.env` files work; region "auto" verified against a native
+  SeaweedFS binary). The old `pdf_minio_data` volume is left untouched.
+  CI also stops using `compose up --wait` (a finished one-shot init
+  container and workers restarting before migrations count as failures)
+  in favour of `scripts/wait-for-stack.sh`.
 - **Caddy** as the single public entry (auto HTTPS). The app now signs
   download URLs for a separate public storage host
   (`STORAGE_PUBLIC_ENDPOINT`) while talking to storage internally, so the

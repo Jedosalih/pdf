@@ -100,7 +100,7 @@ Browser → Next.js (upload, auth, API) → Job row in Postgres
 - **Postgres** (via Prisma) for all metadata — file/job/user rows, never
   file bytes.
 - **Redis** (via BullMQ) for the job queue.
-- **S3-compatible object storage** (MinIO locally; R2/S3 in production)
+- **S3-compatible object storage** (SeaweedFS locally and in production; any S3 API works via `STORAGE_*`)
   for the actual file bytes.
 - **ClamAV** for malware scanning on upload (fails open if unreachable —
   one defense-in-depth layer, not the only upload check).
@@ -113,7 +113,7 @@ Requires Docker (Desktop or Engine) and Node.js 22+.
 
 ```bash
 cp .env.example .env          # edit if you changed any default credential
-docker compose up -d --build  # postgres, redis, minio, clamav, mailpit, all 5 workers
+docker compose up -d --build  # postgres, redis, seaweedfs, clamav, mailpit, all 5 workers
 npm install
 npx prisma migrate deploy
 npm run db:seed               # required after any lib/tools/registry.ts change

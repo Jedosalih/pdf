@@ -176,11 +176,17 @@ jobs:
           NODE_ENV="development"
           EOF
 
-      # Postgres/Redis/MinIO/ClamAV/Mailpit plus all five workers, built
+      # Postgres/Redis/SeaweedFS/ClamAV/Mailpit plus all five workers, built
       # from this repo's Dockerfiles: the same docker-compose.yml used in
       # local development, on fresh volumes.
       - name: Start the full stack (docker compose)
-        run: docker compose up -d --build --wait --wait-timeout 600
+        run: docker compose up -d --build
+
+      # Explicit readiness instead of `--wait`, which counts the finished
+      # one-shot storage-init and workers restarting before migrations as
+      # failures.
+      - name: Wait for infrastructure
+        run: sh scripts/wait-for-stack.sh 600
 
       # `--wait` returns while clamav can still be "starting" (it has no
       # dependents); poll so the malware-scan test can't flake on it.

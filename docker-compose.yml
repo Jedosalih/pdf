@@ -43,35 +43,40 @@ services:
 
   # S3-compatible object storage for local dev — same API surface as R2/S3
   # in production (see lib/storage).
-  minio:
-    image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+  # S3-compatible object storage for local dev/CI: SeaweedFS, the same
+  # engine production uses (docker-compose.prod.yml). MinIO was used before
+  # 2026-10-21, but its images can no longer be pulled from Docker Hub; the
+  # old `minio_data` volume is left untouched (docs/DEPLOYMENT.md).
+  # Host port 9000 maps to SeaweedFS's S3 port so existing .env files
+  # (STORAGE_ENDPOINT=http://localhost:9000) keep working. One dev identity
+  # with the public dev credentials (deploy/dev/s3-dev.json).
+  storage:
+    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
     restart: unless-stopped
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: jdpdf
-      MINIO_ROOT_PASSWORD: jdpdf12345
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json"]
     ports:
-      - "127.0.0.1:9000:9000"
-      - "127.0.0.1:9001:9001"
+      - "127.0.0.1:9000:8333"
     volumes:
-      - minio_data:/data
+      - storage_data:/data
+      - ./deploy/dev/s3-dev.json:/etc/seaweedfs/s3.json:ro
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8333 && nc -z 127.0.0.1 9333"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 10s
     networks: [default, restricted]
 
-  minio-init:
-    image: minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+  storage-init:
+    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
     depends_on:
-      minio:
+      storage:
         condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      mc alias set local http://minio:9000 jdpdf jdpdf12345 &&
-      mc mb --ignore-existing local/jdpdf-dev
-      "
+    entrypoint: ["/bin/sh", "/create-bucket.sh"]
+    environment:
+      STORAGE_BUCKET: jdpdf-dev
+    volumes:
+      - ./deploy/storage/create-bucket.sh:/create-bucket.sh:ro
     networks: [restricted]
 
   # Local SMTP capture server (dev/CI only): every email the app sends is
@@ -99,7 +104,7 @@ services:
   # essential to the scanner's own effectiveness, not just "nice to have."
   # It never processes a URL or executes anything based on a scanned
   # file's content, so its trust/risk profile is closer to
-  # postgres/redis/minio (trusted, vendored infrastructure) than to a
+  # postgres/redis/storage (trusted, vendored infrastructure) than to a
   # worker parsing hostile input with an engine that could be exploited.
   clamav:
     image: clamav/clamav-debian:stable@sha256:cc16781fe005e49de6a8fc1231b63b265f74b18fc2a6347c670c35716914c3b6
@@ -133,12 +138,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
       REDIS_URL: redis://redis:6379
-      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_ENDPOINT: http://storage:8333
       STORAGE_REGION: auto
       STORAGE_BUCKET: jdpdf-dev
       STORAGE_ACCESS_KEY: jdpdf
@@ -167,12 +172,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
       REDIS_URL: redis://redis:6379
-      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_ENDPOINT: http://storage:8333
       STORAGE_REGION: auto
       STORAGE_BUCKET: jdpdf-dev
       STORAGE_ACCESS_KEY: jdpdf
@@ -199,12 +204,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
       REDIS_URL: redis://redis:6379
-      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_ENDPOINT: http://storage:8333
       STORAGE_REGION: auto
       STORAGE_BUCKET: jdpdf-dev
       STORAGE_ACCESS_KEY: jdpdf
@@ -236,12 +241,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
       REDIS_URL: redis://redis:6379
-      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_ENDPOINT: http://storage:8333
       STORAGE_REGION: auto
       STORAGE_BUCKET: jdpdf-dev
       STORAGE_ACCESS_KEY: jdpdf
@@ -272,12 +277,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://jdpdf:jdpdf@postgres:5432/jdpdf?schema=public
       REDIS_URL: redis://redis:6379
-      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_ENDPOINT: http://storage:8333
       STORAGE_REGION: auto
       STORAGE_BUCKET: jdpdf-dev
       STORAGE_ACCESS_KEY: jdpdf
@@ -289,7 +294,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  minio_data:
+  storage_data:
   clamav_data:
 
 networks:
@@ -298,16 +303,16 @@ networks:
   # mechanism relies on the same NAT/bridge machinery that `internal:
   # true` deliberately disables, so an internal network's containers
   # cannot be reached from the host via `ports:` at all (found the hard
-  # way -- MinIO/Postgres/Redis's host port mappings silently stopped
+  # way -- Storage/Postgres/Redis's host port mappings silently stopped
   # working, breaking the app's own connections to them, when they were
   # first put on a single internal network alongside the workers).
   #
-  # `default` (unrestricted): postgres/redis/minio only, purely so their
+  # `default` (unrestricted): postgres/redis/storage only, purely so their
   # `ports:` mappings keep working for the app running on the host.
   #
   # `restricted` (`internal: true`): every service actually needs to be
   # reachable from the four workers by container name -- postgres/redis/
-  # minio join this too, in *addition* to `default` -- but the workers
+  # storage join this too, in *addition* to `default` -- but the workers
   # themselves are ONLY on this network, never on `default`, so they have
   # no route to the outside world at all. This is the network-level
   # egress backstop `workers/html`'s own SSRF mitigation
