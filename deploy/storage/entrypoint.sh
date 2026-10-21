@@ -21,8 +21,13 @@ fi
 
 # -volume.max / -master.volumeSizeLimitMB: the image's own entrypoint
 # defaults for `server`, which this script replaces.
-weed -logtostderr=true server -dir=/data -volume.max=0 -master.volumeSizeLimitMB=1024 \
-  -s3 -s3.port=8333 -s3.config="$S3_CONFIG" &
+# -ip.bind=0.0.0.0: otherwise SeaweedFS listens only on localhost and the
+# one address it auto-detects; in dev the container is on two networks,
+# and Docker's host port forward landed on the other one (CI: the host
+# got ECONNRESET while the in-container healthcheck passed). Exposure is
+# still decided by compose: dev publishes 127.0.0.1 only, prod nothing.
+weed -logtostderr=true server -ip.bind=0.0.0.0 -dir=/data -volume.max=0 \
+  -master.volumeSizeLimitMB=1024 -s3 -s3.port=8333 -s3.config="$S3_CONFIG" &
 server=$!
 trap 'kill "$server" 2>/dev/null; wait "$server"' TERM INT
 
