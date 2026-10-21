@@ -19,7 +19,10 @@ if [ "${RENDER_S3_CONFIG:-0}" = 1 ]; then
   S3_CONFIG_OUT="$S3_CONFIG" sh /render-s3-config.sh
 fi
 
-weed server -dir=/data -s3 -s3.port=8333 -s3.config="$S3_CONFIG" &
+# -volume.max / -master.volumeSizeLimitMB: the image's own entrypoint
+# defaults for `server`, which this script replaces.
+weed -logtostderr=true server -dir=/data -volume.max=0 -master.volumeSizeLimitMB=1024 \
+  -s3 -s3.port=8333 -s3.config="$S3_CONFIG" &
 server=$!
 trap 'kill "$server" 2>/dev/null; wait "$server"' TERM INT
 

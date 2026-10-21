@@ -277,8 +277,25 @@ jobs:
           docker compose start cleanup-worker
           exit $status
 
+      - name: App-to-storage probe (from the host, as the app does it)
+        run: node --env-file=.env scripts/ci-storage-probe.mjs
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+
+      # Started here rather than by Playwright's webServer (which reuses a
+      # running server) so its log can be annotated on failure and the
+      # health endpoint checked before the suite spends its time.
+      - name: Start the app and check its health
+        run: |
+          nohup npm run dev > app.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:3000/api/health && break
+            sleep 2
+          done
+          body=$(curl -s http://localhost:3000/api/health)
+          echo "::notice title=health::$body"
+          case "$body" in *'"status":"ok"'*) ;; *) exit 1 ;; esac
 
       # `github` reporter: each failing test becomes a workflow annotation
       # (file, line, message), readable without downloading logs.

@@ -21,7 +21,15 @@ docker compose ps -a --format '{{.Name}}|{{.Status}}' \
       echo "::error title=logs $c::${tail:-<no output>}"
     done
 
-storage=$(docker logs --tail 12 pdf-storage-1 2>&1 | tr "$nl" ' ' | cut -c1-900)
-echo "::warning title=logs pdf-storage-1::${storage:-<no output>}"
+# Storage's routine output is noise (lock-ring updates); errors/warnings
+# are glog lines starting E or W.
+storage=$(docker logs pdf-storage-1 2>&1 | grep -E '^[EW][0-9]{4}' | tail -6 | tr "$nl" ' ' | cut -c1-900)
+echo "::warning title=logs pdf-storage-1::${storage:-<no errors or warnings>}"
+
+# The app runs on the host (started by CI into app.log).
+if [ -f app.log ]; then
+  app=$(grep -iE 'error|fail|refused|timeout' app.log | tail -6 | tr "$nl" ' ' | cut -c1-900)
+  echo "::warning title=app log::${app:-<no errors>}"
+fi
 
 docker compose logs --tail 200
