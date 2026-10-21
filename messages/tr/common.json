@@ -60,6 +60,9 @@
     "invalidPassword": "Bu şifre yanlış.",
     "unrecoverableFile": "Bu dosya onarılamayacak kadar hasarlı.",
     "guestNotAllowed": "Bu aracı kullanmak için lütfen giriş yapın.",
-    "noExtractableText": "Bu dosyada çıkarılabilir metin yok (taranmış veya yalnızca görüntü içeren bir PDF gibi görünüyor). Önce OCR PDF aracını, ardından sonucu dönüştürmeyi deneyin."
+    "noExtractableText": "Bu dosyada çıkarılabilir metin yok (taranmış veya yalnızca görüntü içeren bir PDF gibi görünüyor). Önce OCR PDF aracını, ardından sonucu dönüştürmeyi deneyin.",
+    "encryptedPdf": "Bu PDF parola korumalı. Önce PDF Kilidi Aç aracıyla kilidini açın, ardından tekrar deneyin.",
+    "rateLimited": "Kısa sürede çok fazla istek gönderildi. Lütfen birkaç dakika bekleyip tekrar deneyin.",
+    "processingTimeout": "Bu işlem beklenenden uzun sürüyor. Lütfen daha sonra tekrar deneyin."
   }
 }

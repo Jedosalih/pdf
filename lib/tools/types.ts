@@ -47,6 +47,13 @@ export interface ToolDefinition {
   /** Key into messages/<locale>/index.ts, e.g. "tool.merge-pdf". */
   translationNamespace: string;
   relatedTools: string[];
+  /** For tools whose whole purpose is input the app server can't read
+   * (repair-pdf: damaged files; unlock-pdf: password-protected files).
+   * When job creation can't count such a file's pages, it defers the
+   * `maxPages` check to the worker (which enforces it once the file is
+   * readable) instead of refusing the job. Every other tool refuses
+   * input whose pages can't be counted. */
+  deferPageLimitToWorker?: boolean;
   limits: {
     guest: ToolLimits;
     free: ToolLimits;

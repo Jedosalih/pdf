@@ -95,8 +95,9 @@ export async function canUseTool(
 
 /**
  * Atomically checks the actor's rolling-24h usage against their limit and
- * records this operation, in one Postgres transaction — returns `false`
- * without recording anything if the limit is already reached.
+ * records this operation, in one Postgres transaction — returns the new
+ * usage record's id, or `null` without recording anything if the limit is
+ * already reached.
  *
  * This exists because the previous check-then-write (`canUseTool`'s old
  * daily-limit check, followed by a separate `recordToolUsage` insert
@@ -124,7 +125,7 @@ export async function canUseTool(
 export async function tryReserveToolUsage(
   actor: Actor,
   toolId: string,
-): Promise<boolean> {
+): Promise<string | null> {
   const limits = await resolveLimits(toolId, actor);
   const actorKey = actor.type === "guest" ? `guest:${actor.guestId}` : `user:${actor.userId}`;
   const lockKey = `${actorKey}:${toolId}`;
@@ -137,10 +138,17 @@ export async function tryReserveToolUsage(
       where: { toolId, createdAt: { gte: since }, ...actorWhere(actor) },
     });
     if (used >= limits.dailyOperations) {
-      return false;
+      return null;
     }
 
-    await tx.usageRecord.create({ data: { toolId, ...actorWhere(actor) } });
-    return true;
+    const record = await tx.usageRecord.create({ data: { toolId, ...actorWhere(actor) } });
+    return record.id;
   });
+}
+
+/** Gives back a reservation from `tryReserveToolUsage` when the job it was
+ * reserved for never actually reached the queue, so an infrastructure
+ * failure doesn't cost the user one of their daily operations. */
+export async function releaseToolUsage(usageRecordId: string): Promise<void> {
+  await prisma.usageRecord.deleteMany({ where: { id: usageRecordId } });
 }

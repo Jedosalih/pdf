@@ -18,6 +18,11 @@ function createWorkspacePlaceholderFile(workspaceFile: PendingWorkspaceFile): Fi
 }
 
 const POLL_INTERVAL_MS = 1500;
+/** Client-side give-up point only -- the job itself keeps running and a
+ * signed-in user still finds the result in My Documents. Well past the
+ * longest engine timeout (OCR, 300s) plus realistic queue wait. */
+export const POLL_DEADLINE_MS = 15 * 60 * 1000;
+export const MAX_CONSECUTIVE_POLL_ERRORS = 5;
 
 export interface TrackedFile {
   localId: string;
@@ -62,6 +67,12 @@ export function errorMessageKey(code: string | undefined): string {
       return "guestNotAllowed";
     case "NO_EXTRACTABLE_TEXT":
       return "noExtractableText";
+    case "ENCRYPTED_PDF":
+      return "encryptedPdf";
+    case "RATE_LIMITED":
+      return "rateLimited";
+    case "PROCESSING_TIMEOUT":
+      return "processingTimeout";
     default:
       return "generic";
   }
@@ -113,10 +124,12 @@ export function useToolWorkflow({ toolId, maxFiles }: UseToolWorkflowOptions) {
     async (localId: string, file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("toolId", toolId);
 
       try {
-        const response = await fetch("/api/upload", { method: "POST", body: formData });
+        const response = await fetch(`/api/upload?toolId=${encodeURIComponent(toolId)}`, {
+          method: "POST",
+          body: formData,
+        });
         if (!response.ok) {
           const body = await response.json().catch(() => null);
           setFiles((prev) =>
@@ -177,15 +190,61 @@ export function useToolWorkflow({ toolId, maxFiles }: UseToolWorkflowOptions) {
     setFiles((prev) => prev.filter((f) => f.localId !== id));
   }, []);
 
+  // Bumped whenever polling must stop (new poll, reset, unmount): an
+  // in-flight tick from an older generation never touches state.
+  const pollGeneration = useRef(0);
+  useEffect(
+    () => () => {
+      pollGeneration.current += 1;
+      if (pollTimeout.current) clearTimeout(pollTimeout.current);
+    },
+    [],
+  );
+
   const pollJob = useCallback((jobId: string) => {
+    const generation = ++pollGeneration.current;
+    const deadline = Date.now() + POLL_DEADLINE_MS;
+    let consecutiveErrors = 0;
+    const isCurrent = () => generation === pollGeneration.current;
+    const fail = (code: string) => {
+      setFlow("failed");
+      setErrorCode(code);
+    };
+    const scheduleNext = () => {
+      pollTimeout.current = setTimeout(() => void tick(), POLL_INTERVAL_MS);
+    };
+
     const tick = async () => {
-      const response = await fetch(`/api/jobs/${jobId}`);
-      if (!response.ok) {
-        setFlow("failed");
-        setErrorCode("generic");
+      if (!isCurrent()) return;
+      if (Date.now() > deadline) {
+        fail("PROCESSING_TIMEOUT");
         return;
       }
-      const data = (await response.json()) as JobStatusResponse;
+
+      let data: JobStatusResponse;
+      try {
+        const response = await fetch(`/api/jobs/${jobId}`);
+        if (!isCurrent()) return;
+        // A 4xx means this job isn't (or is no longer) ours to see --
+        // retrying can't change that. 5xx and network errors are transient.
+        if (response.status >= 400 && response.status < 500) {
+          fail("generic");
+          return;
+        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        data = (await response.json()) as JobStatusResponse;
+      } catch {
+        if (!isCurrent()) return;
+        consecutiveErrors += 1;
+        if (consecutiveErrors >= MAX_CONSECUTIVE_POLL_ERRORS) {
+          fail("generic");
+        } else {
+          scheduleNext();
+        }
+        return;
+      }
+      if (!isCurrent()) return;
+      consecutiveErrors = 0;
 
       if (data.status === "COMPLETED") {
         setOutputFiles(data.outputFiles);
@@ -195,10 +254,9 @@ export function useToolWorkflow({ toolId, maxFiles }: UseToolWorkflowOptions) {
         data.status === "CANCELLED" ||
         data.status === "EXPIRED"
       ) {
-        setFlow("failed");
-        setErrorCode(data.errorCode ?? "generic");
+        fail(data.errorCode ?? "generic");
       } else {
-        pollTimeout.current = setTimeout(tick, POLL_INTERVAL_MS);
+        scheduleNext();
       }
     };
     void tick();
@@ -238,6 +296,7 @@ export function useToolWorkflow({ toolId, maxFiles }: UseToolWorkflowOptions) {
   );
 
   const reset = useCallback(() => {
+    pollGeneration.current += 1;
     if (pollTimeout.current) clearTimeout(pollTimeout.current);
     setFiles([]);
     setFlow("selecting");

@@ -60,6 +60,9 @@
     "invalidPassword": "That password is incorrect.",
     "unrecoverableFile": "This file is too damaged to repair.",
     "guestNotAllowed": "Please sign in to use this tool.",
-    "noExtractableText": "This file has no extractable text (it looks like a scanned or image-only PDF). Try the OCR PDF tool first, then convert the result."
+    "noExtractableText": "This file has no extractable text (it looks like a scanned or image-only PDF). Try the OCR PDF tool first, then convert the result.",
+    "encryptedPdf": "This PDF is password-protected. Unlock it with the Unlock PDF tool first, then try again.",
+    "rateLimited": "Too many requests in a short time. Please wait a few minutes and try again.",
+    "processingTimeout": "This is taking longer than expected. Please try again later."
   }
 }

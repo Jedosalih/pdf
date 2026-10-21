@@ -8,21 +8,27 @@ import { validateUploadedFile } from "@/lib/security/validateUpload";
 import { scanFile } from "@/lib/security/scan";
 import { generateStorageKey, getStorage } from "@/lib/storage";
 import { apiError } from "@/lib/api/errors";
+import { allowUploadRequest } from "@/lib/security/abuseLimits";
+import { readBodyWithLimit } from "@/lib/security/requestBody";
 
 export const runtime = "nodejs";
 
+/** Room for the multipart boundaries/part headers around the file itself. */
+const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
+
 /**
- * Accepts one file per request (multipart/form-data: `file`, `toolId`).
- * Heavy processing never happens here — this route only validates,
- * persists, and returns a fileId for a later job-creation call
- * (see docs/ARCHITECTURE.md).
+ * Accepts one file per request (`POST /api/upload?toolId=<id>`,
+ * multipart/form-data with a `file` part). `toolId` is in the query
+ * string, not the form, so the actor's real per-tool size limit is known
+ * before a single body byte is read -- the body is then read with a hard
+ * cap (lib/security/requestBody.ts) instead of `request.formData()`
+ * buffering whatever the client sends. Heavy processing never happens
+ * here — this route only validates, persists, and returns a fileId for a
+ * later job-creation call (see docs/ARCHITECTURE.md).
  */
 export async function POST(request: NextRequest) {
-  const formData = await request.formData();
-  const file = formData.get("file");
-  const toolId = formData.get("toolId");
-
-  if (!(file instanceof File) || typeof toolId !== "string") {
+  const toolId = request.nextUrl.searchParams.get("toolId");
+  if (!toolId) {
     return apiError("VALIDATION_ERROR");
   }
 
@@ -36,7 +42,31 @@ export async function POST(request: NextRequest) {
     return apiError("GUEST_NOT_ALLOWED");
   }
 
+  if (!(await allowUploadRequest(request, actor))) {
+    return apiError("RATE_LIMITED");
+  }
+
   const limits = await getToolLimits(actor, toolId);
+  const body = await readBodyWithLimit(request, limits.maxFileSizeBytes + MULTIPART_OVERHEAD_BYTES);
+  if (!body) {
+    return apiError("FILE_TOO_LARGE");
+  }
+
+  let formData: FormData;
+  try {
+    formData = await new Request(request.url, {
+      method: "POST",
+      headers: { "content-type": request.headers.get("content-type") ?? "" },
+      body: new Uint8Array(body),
+    }).formData();
+  } catch {
+    return apiError("VALIDATION_ERROR");
+  }
+  const file = formData.get("file");
+  if (!(file instanceof File)) {
+    return apiError("VALIDATION_ERROR");
+  }
+
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const validation = await validateUploadedFile({

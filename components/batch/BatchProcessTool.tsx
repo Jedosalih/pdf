@@ -10,7 +10,12 @@ import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { Select } from "@/components/ui/Select";
 import { ToolDropzone } from "@/components/tools/ToolDropzone";
-import { errorMessageKey, type JobOutputFile } from "@/components/tools/useToolWorkflow";
+import {
+  errorMessageKey,
+  MAX_CONSECUTIVE_POLL_ERRORS,
+  POLL_DEADLINE_MS,
+  type JobOutputFile,
+} from "@/components/tools/useToolWorkflow";
 import {
   BATCHABLE_TOOL_IDS,
   BATCH_DEFAULT_OPTIONS,
@@ -63,10 +68,15 @@ export function BatchProcessTool({ limitsByTool }: BatchProcessToolProps) {
   const [selectedTool, setSelectedTool] = useState<BatchableToolId>("compress-pdf");
   const [entries, setEntries] = useState<BatchEntry[]>([]);
   const pollTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // Entries still allowed to poll; removing an entry or unmounting drops
+  // it, so an in-flight tick never updates state it no longer owns.
+  const activePolls = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const timers = pollTimers.current;
+    const active = activePolls.current;
     return () => {
+      active.clear();
       for (const timer of timers.values()) clearTimeout(timer);
     };
   }, []);
@@ -81,9 +91,11 @@ export function BatchProcessTool({ limitsByTool }: BatchProcessToolProps) {
     async (localId: string, file: File, toolId: BatchableToolId) => {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("toolId", toolId);
       try {
-        const response = await fetch("/api/upload", { method: "POST", body: formData });
+        const response = await fetch(`/api/upload?toolId=${encodeURIComponent(toolId)}`, {
+          method: "POST",
+          body: formData,
+        });
         if (!response.ok) {
           const body = await response.json().catch(() => null);
           updateEntry(localId, { status: "upload-error", errorCode: body?.error?.code });
@@ -121,30 +133,64 @@ export function BatchProcessTool({ limitsByTool }: BatchProcessToolProps) {
 
   const pollJob = useCallback(
     (localId: string, jobId: string) => {
+      activePolls.current.add(localId);
+      const deadline = Date.now() + POLL_DEADLINE_MS;
+      let consecutiveErrors = 0;
+      const isActive = () => activePolls.current.has(localId);
+      const finish = (patch: Partial<BatchEntry>) => {
+        activePolls.current.delete(localId);
+        updateEntry(localId, patch);
+      };
+      const scheduleNext = () => {
+        pollTimers.current.set(localId, setTimeout(() => void tick(), POLL_INTERVAL_MS));
+      };
+
       const tick = async () => {
-        const response = await fetch(`/api/jobs/${jobId}`);
-        if (!response.ok) {
-          updateEntry(localId, { status: "failed", errorCode: "generic" });
+        if (!isActive()) return;
+        if (Date.now() > deadline) {
+          finish({ status: "failed", errorCode: "PROCESSING_TIMEOUT" });
           return;
         }
-        const data = (await response.json()) as {
+        let data: {
           status: "QUEUED" | "PROCESSING" | "COMPLETED" | "FAILED" | "CANCELLED" | "EXPIRED";
           errorCode: string | null;
           outputFiles: JobOutputFile[];
         };
+        try {
+          const response = await fetch(`/api/jobs/${jobId}`);
+          if (!isActive()) return;
+          if (response.status >= 400 && response.status < 500) {
+            finish({ status: "failed", errorCode: "generic" });
+            return;
+          }
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          data = await response.json();
+        } catch {
+          if (!isActive()) return;
+          consecutiveErrors += 1;
+          if (consecutiveErrors >= MAX_CONSECUTIVE_POLL_ERRORS) {
+            finish({ status: "failed", errorCode: "generic" });
+          } else {
+            scheduleNext();
+          }
+          return;
+        }
+        if (!isActive()) return;
+        consecutiveErrors = 0;
+
         if (data.status === "COMPLETED") {
-          updateEntry(localId, { status: "completed", outputFiles: data.outputFiles });
+          finish({ status: "completed", outputFiles: data.outputFiles });
         } else if (
           data.status === "FAILED" ||
           data.status === "CANCELLED" ||
           data.status === "EXPIRED"
         ) {
-          updateEntry(localId, { status: "failed", errorCode: data.errorCode ?? "generic" });
+          finish({ status: "failed", errorCode: data.errorCode ?? "generic" });
         } else {
           updateEntry(localId, {
             status: data.status === "PROCESSING" ? "processing" : "queued",
           });
-          pollTimers.current.set(localId, setTimeout(tick, POLL_INTERVAL_MS));
+          scheduleNext();
         }
       };
       void tick();
@@ -155,17 +201,12 @@ export function BatchProcessTool({ limitsByTool }: BatchProcessToolProps) {
   const handleStartBatch = useCallback(() => {
     const readyEntries = entries.filter((e) => e.status === "ready" && e.serverId);
     void (async () => {
-      // Job *creation* requests are deliberately sent one at a time, not
-      // fanned out in parallel: `canUseTool`'s daily-limit check reads the
-      // actor's current usage count before `recordToolUsage` writes it, so
-      // firing every entry's request at once let a batch race past
-      // `dailyOperations` entirely (every request reads the same
-      // pre-increment count). Awaiting each creation call in turn closes
-      // the one deterministic, no-effort way to trigger that race that
-      // this feature itself introduced -- see docs/SECURITY.md for the
-      // remaining, harder-to-trigger general case (concurrent requests
-      // from multiple tabs) that this does not fix. Polling each created
-      // job still happens concurrently in the background.
+      // Job *creation* requests are sent one at a time, not fanned out in
+      // parallel. The daily-limit check itself is atomic server-side now
+      // (`tryReserveToolUsage`), so this is no longer what keeps a batch
+      // within `dailyOperations`; it keeps the batch's request rate gentle
+      // and its failures in file order. Polling each created job still
+      // happens concurrently in the background.
       for (const entry of readyEntries) {
         updateEntry(entry.localId, { status: "queued" });
         try {
@@ -197,6 +238,7 @@ export function BatchProcessTool({ limitsByTool }: BatchProcessToolProps) {
   }, [entries, selectedTool, updateEntry, pollJob]);
 
   const handleRemoveEntry = useCallback((localId: string) => {
+    activePolls.current.delete(localId);
     const timer = pollTimers.current.get(localId);
     if (timer) {
       clearTimeout(timer);
@@ -206,6 +248,9 @@ export function BatchProcessTool({ limitsByTool }: BatchProcessToolProps) {
   }, []);
 
   const handleToolChange = useCallback((value: string) => {
+    activePolls.current.clear();
+    for (const timer of pollTimers.current.values()) clearTimeout(timer);
+    pollTimers.current.clear();
     setSelectedTool(value as BatchableToolId);
     setEntries([]);
   }, []);

@@ -464,6 +464,7 @@ export const tools: ToolDefinition[] = [
     multipleFiles: false,
     translationNamespace: "tool.unlock-pdf",
     relatedTools: ["protect-pdf", "merge-pdf"],
+    deferPageLimitToWorker: true,
     limits: {
       guest: {
         maxFileSizeBytes: 20 * MB,
@@ -609,6 +610,7 @@ export const tools: ToolDefinition[] = [
     multipleFiles: false,
     translationNamespace: "tool.repair-pdf",
     relatedTools: ["compress-pdf", "pdf-to-pdfa"],
+    deferPageLimitToWorker: true,
     limits: {
       guest: {
         maxFileSizeBytes: 20 * MB,

@@ -2,11 +2,19 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/client";
 import { getToolById } from "@/lib/tools/registry";
-import { canUseTool, getToolLimits, tryReserveToolUsage } from "@/lib/entitlements";
+import {
+  canUseTool,
+  getToolLimits,
+  releaseToolUsage,
+  tryReserveToolUsage,
+} from "@/lib/entitlements";
 import { computeExpiry } from "@/lib/entitlements/retention";
 import { resolveActor } from "@/lib/security/actor";
+import { allowGuestJobForIp, allowJobRequest } from "@/lib/security/abuseLimits";
+import { countPdfPages } from "@/lib/security/pageCount";
+import { readBodyWithLimit } from "@/lib/security/requestBody";
 import { enqueueProcessingJob } from "@/lib/queue/queues";
-import { apiError } from "@/lib/api/errors";
+import { apiError, type ApiErrorCode } from "@/lib/api/errors";
 import { listRecentJobs } from "@/lib/workspace/jobs";
 import { getStorage } from "@/lib/storage";
 
@@ -23,17 +31,9 @@ const createJobSchema = z.object({
  * `options` JSON rather than a multipart upload (see docs/SECURITY.md §1).
  * Each individual image is capped (8MB, `pdfEditElements.ts`'s
  * `MAX_IMAGE_BYTES`) and the edit *count* is capped (300,
- * `MAX_EDITS`), but nothing previously capped the request body as a
- * whole -- 300 elements at 8MB each is a multi-gigabyte JSON payload that
- * `request.json()` would fully buffer into memory before any per-element
- * check runs. A generous but finite cap here (comfortably above any real
- * editing session) bounds worst-case memory use for this route. This
- * checks the browser-supplied `Content-Length` header, so it fully
- * defends the actual product UI (which always sends an accurate header
- * for a JSON string body) but would not stop a deliberately malicious API
- * caller who lies about `Content-Length` while streaming more bytes than
- * declared -- closing that fully would need a streaming byte-counter
- * instead of `request.json()`, not done here (see docs/SECURITY.md).
+ * `MAX_EDITS`); this caps the request body as a whole, generously above
+ * any real editing session. Enforced on the bytes actually received
+ * (`readBodyWithLimit`), not just the declared `Content-Length`.
  */
 const MAX_JOB_BODY_BYTES = 50 * 1024 * 1024;
 
@@ -42,29 +42,35 @@ const listJobsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
+type PageLimitCheck = "ok" | "deferred" | ApiErrorCode;
+
 /**
- * `ToolLimits.maxPages` ("max total pages across all input files") had a
- * real, per-tool/per-plan value in the registry and DB but was never
- * actually compared against anything anywhere in the codebase -- found
- * while adding compare-pdf's own page limits and confirmed with a
- * repo-wide search. This is the fix: a real, generic gate at job
- * creation, the one place every tool's input files are already gathered
- * regardless of which tool it is. Only PDF inputs are counted (the
- * overwhelming majority of tools and the ones with an unbounded-pages
- * risk) -- non-PDF inputs are already bounded by file size and are
- * skipped rather than guessed at. See docs/DECISIONS.md.
+ * The generic `ToolLimits.maxPages` ("max total pages across all input
+ * files") gate at job creation, the one place every tool's input files
+ * are already gathered. Only PDF inputs are counted -- non-PDF inputs are
+ * already bounded by file size. Fails closed (see lib/security/pageCount.ts):
+ * a PDF whose pages can't be counted is refused, except for tools flagged
+ * `deferPageLimitToWorker`, whose worker enforces the same limit once it
+ * can read the file (the limit travels in the job's server-set options).
+ * See docs/DECISIONS.md.
  */
-async function countTotalPdfPages(files: { storageKey: string; mimeType: string }[]): Promise<number> {
-  const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+async function checkPageLimit(
+  files: { storageKey: string; mimeType: string }[],
+  maxPages: number,
+  deferToWorker: boolean,
+): Promise<PageLimitCheck> {
   const storage = getStorage();
   let total = 0;
   for (const file of files) {
     if (file.mimeType !== "application/pdf") continue;
-    const buffer = await storage.getObject(file.storageKey);
-    const doc = await getDocument({ data: new Uint8Array(buffer), useWorkerFetch: false }).promise;
-    total += doc.numPages;
+    const result = await countPdfPages(await storage.getObject(file.storageKey));
+    if (!result.ok) {
+      if (deferToWorker) return "deferred";
+      return result.reason === "ENCRYPTED" ? "ENCRYPTED_PDF" : "UNSUPPORTED_FILE";
+    }
+    total += result.pages;
   }
-  return total;
+  return total > maxPages ? "TOO_MANY_PAGES" : "ok";
 }
 
 /** History listing — requires a real signed-in user (guests have no
@@ -92,12 +98,23 @@ export async function GET(request: NextRequest) {
  * processing (blueprint §4).
  */
 export async function POST(request: NextRequest) {
-  const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (contentLength > MAX_JOB_BODY_BYTES) {
+  const actor = await resolveActor();
+  if (!(await allowJobRequest(request, actor))) {
+    return apiError("RATE_LIMITED");
+  }
+
+  const body = await readBodyWithLimit(request, MAX_JOB_BODY_BYTES);
+  if (!body) {
     return apiError("FILE_TOO_LARGE");
   }
 
-  const parsed = createJobSchema.safeParse(await request.json().catch(() => null));
+  let json: unknown = null;
+  try {
+    json = JSON.parse(body.toString("utf-8"));
+  } catch {
+    // fall through to the schema check below
+  }
+  const parsed = createJobSchema.safeParse(json);
   if (!parsed.success) {
     return apiError("VALIDATION_ERROR");
   }
@@ -107,8 +124,6 @@ export async function POST(request: NextRequest) {
   if (!tool || !tool.enabled) {
     return apiError("TOOL_DISABLED");
   }
-
-  const actor = await resolveActor();
 
   const entitlement = await canUseTool(actor, toolId);
   if (!entitlement.allowed) {
@@ -161,23 +176,21 @@ export async function POST(request: NextRequest) {
     return apiError("FILE_TOO_LARGE");
   }
 
-  let totalPdfPages: number;
-  try {
-    totalPdfPages = await countTotalPdfPages(ownedFiles);
-  } catch {
-    // An unparseable "PDF" here means the real engine will reject it with
-    // its own clearer error shortly -- don't block job creation on this
-    // best-effort structural check failing to even open the file.
-    totalPdfPages = 0;
+  const pageCheck = await checkPageLimit(ownedFiles, limits.maxPages, tool.deferPageLimitToWorker === true);
+  if (pageCheck !== "ok" && pageCheck !== "deferred") {
+    return apiError(pageCheck);
   }
-  if (totalPdfPages > limits.maxPages) {
-    return apiError("TOO_MANY_PAGES");
+
+  // Cookie-only guest identities are free to discard, so guests are also
+  // capped per IP across every guest id (lib/security/abuseLimits.ts).
+  if (actor.type === "guest" && !(await allowGuestJobForIp(request))) {
+    return apiError("RATE_LIMITED");
   }
 
   // Atomic check-and-record — see tryReserveToolUsage's own docs for why
   // this can't be a separate check-then-insert like every check above it.
-  const reserved = await tryReserveToolUsage(actor, toolId);
-  if (!reserved) {
+  const usageRecordId = await tryReserveToolUsage(actor, toolId);
+  if (!usageRecordId) {
     return apiError("DAILY_LIMIT_REACHED");
   }
 
@@ -189,7 +202,13 @@ export async function POST(request: NextRequest) {
       status: "QUEUED",
       // `fileOrder` is the source of truth for input ordering (relevant for
       // merge order) — relational `connect` order is not guaranteed on read.
-      options: { ...options, fileOrder: fileIds },
+      // `maxPages` is server-set after the client's options, so a client
+      // can't override it; deferPageLimitToWorker tools' workers enforce it.
+      options: {
+        ...options,
+        fileOrder: fileIds,
+        ...(tool.deferPageLimitToWorker ? { maxPages: limits.maxPages } : {}),
+      },
       expiresAt: computeExpiry(actor),
       inputFiles: {
         connect: fileIds.map((id) => ({ id })),
@@ -197,7 +216,19 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  await enqueueProcessingJob(tool.queue, job.id);
+  try {
+    await enqueueProcessingJob(tool.queue, job.id);
+  } catch (error) {
+    // The job never reached a worker: fail it now (rather than leaving a
+    // QUEUED row nothing will ever pick up) and give the usage back.
+    console.error(`[jobs] enqueue failed job=${job.id} tool=${toolId}`, error);
+    await prisma.job.update({
+      where: { id: job.id },
+      data: { status: "FAILED", completedAt: new Date(), errorCode: "QUEUE_UNAVAILABLE" },
+    });
+    await releaseToolUsage(usageRecordId);
+    return apiError("INTERNAL_ERROR");
+  }
 
   return NextResponse.json({ jobId: job.id, status: job.status });
 }
