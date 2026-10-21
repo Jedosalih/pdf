@@ -19,15 +19,25 @@ function requireEnv(name: string): string {
 
 export function createS3StorageProvider(): StorageProvider {
   const bucket = requireEnv("STORAGE_BUCKET");
-  const client = new S3Client({
-    endpoint: process.env.STORAGE_ENDPOINT,
-    region: process.env.STORAGE_REGION ?? "auto",
-    forcePathStyle: process.env.STORAGE_FORCE_PATH_STYLE === "true",
-    credentials: {
-      accessKeyId: requireEnv("STORAGE_ACCESS_KEY"),
-      secretAccessKey: requireEnv("STORAGE_SECRET_KEY"),
-    },
-  });
+  const clientFor = (endpoint: string | undefined) =>
+    new S3Client({
+      endpoint,
+      region: process.env.STORAGE_REGION ?? "auto",
+      forcePathStyle: process.env.STORAGE_FORCE_PATH_STYLE === "true",
+      credentials: {
+        accessKeyId: requireEnv("STORAGE_ACCESS_KEY"),
+        secretAccessKey: requireEnv("STORAGE_SECRET_KEY"),
+      },
+    });
+  // All storage operations go to STORAGE_ENDPOINT (internal network in
+  // production). Download URLs are signed for STORAGE_PUBLIC_ENDPOINT when
+  // set -- the public HTTPS origin browsers fetch them from, which the
+  // reverse proxy limits to GET/HEAD. A SigV4 signature covers the Host,
+  // so the URL must be signed for the host the browser will actually use.
+  const client = clientFor(process.env.STORAGE_ENDPOINT);
+  const signingClient = process.env.STORAGE_PUBLIC_ENDPOINT
+    ? clientFor(process.env.STORAGE_PUBLIC_ENDPOINT)
+    : client;
 
   return {
     async headBucket() {
@@ -72,7 +82,7 @@ export function createS3StorageProvider(): StorageProvider {
           ? attachmentDisposition(options.downloadFilename)
           : undefined,
       });
-      return getSignedUrl(client, command, {
+      return getSignedUrl(signingClient, command, {
         expiresIn: options?.expiresInSeconds ?? 300,
       });
     },

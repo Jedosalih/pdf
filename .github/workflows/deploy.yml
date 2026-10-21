@@ -1,0 +1,96 @@
+name: Deploy
+
+# Continuous deployment to the production Docker host over SSH.
+#
+# Policy:
+# - Only commits on `main` that passed the full CI workflow (a push, not a
+#   PR) are deployed -- the exact SHA CI tested, never a later one.
+# - Runs in the `production` GitHub environment: configure required
+#   reviewers and the secrets below there (Settings -> Environments).
+# - Disabled until the owner sets the repository variable
+#   DEPLOY_ENABLED=true; until then the job is *skipped* (shown grey, not
+#   green), so nothing ever looks deployed when it isn't.
+#
+# Environment secrets: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY (private
+# key of a deploy-only user), DEPLOY_KNOWN_HOSTS (`ssh-keyscan -H host`,
+# verified out of band), DEPLOY_PATH (repo checkout on the host).
+# Environment variable: APP_DOMAIN.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full commit SHA on main that passed CI (rollback or redeploy)
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      vars.DEPLOY_ENABLED == 'true' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production
+      url: https://${{ vars.APP_DOMAIN }}
+    steps:
+      - name: Resolve and validate the commit to deploy
+        id: target
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha || inputs.sha }}
+        run: |
+          if ! printf '%s' "$SHA" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::not a full commit SHA"; exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      # A manual dispatch must name a commit that is on main and green.
+      - name: Verify the commit is on main and passed CI
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          ok=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?head_sha=$SHA&branch=main&status=success" --jq '.total_count')
+          if [ "$ok" = "0" ]; then echo "::error::$SHA has no successful CI run on main"; exit 1; fi
+
+      - name: Configure SSH (pinned host key)
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Deploy (backup, health-checked rollout, automatic rollback)
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER_NAME: ${{ secrets.DEPLOY_USER }}
+          DIR: ${{ secrets.DEPLOY_PATH }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            "$USER_NAME@$HOST" "cd '$DIR' && ./deploy/deploy.sh '$SHA'"
+
+      - name: Verify from outside the host
+        run: |
+          curl --fail --silent --show-error --retry 10 --retry-delay 6 --retry-all-errors \
+            "https://${{ vars.APP_DOMAIN }}/api/health"
+
+      - name: Remove the SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key

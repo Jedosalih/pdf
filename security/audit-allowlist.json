@@ -1,0 +1,14 @@
+[
+  {
+    "package": "workers/office",
+    "advisory": "https://github.com/advisories/GHSA-5p2g-fcmc-qvqq",
+    "reason": "image-size (via pptxgenjs) JXL/HEIF parser DoS. pdf-to-powerpoint only ever hands pptxgenjs PNGs we render ourselves with pdftoppm; no user-supplied image reaches image-size. Only 'fix' is a major downgrade of pptxgenjs.",
+    "expires": "2027-01-31"
+  },
+  {
+    "package": "workers/office",
+    "advisory": "https://github.com/advisories/GHSA-w3rx-r6r6-pgpr",
+    "reason": "image-size (via pptxgenjs) ICNS parser DoS. Same reasoning: inputs are our own pdftoppm PNGs.",
+    "expires": "2027-01-31"
+  }
+]

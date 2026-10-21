@@ -1,20 +1,29 @@
 name: CI
 
-# Runs on every push to main and every PR — never requires production
-# secrets (see docs/DEPLOYMENT.md): the .env this workflow writes is
-# generated fresh each run with CI-only dummy values, matching
-# .env.example's shape, never a real credential.
+# Runs on every push to main and every PR. Never uses production secrets
+# or data: every database/Redis/storage service is created fresh on the
+# runner from docker-compose.yml and destroyed afterwards, and the .env
+# files written below hold CI-only dummy values.
 on:
   push:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   NODE_VERSION: "22"
 
 jobs:
-  lint-and-typecheck:
+  static:
+    name: Lint, typecheck, schema
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -26,31 +35,27 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
-      # Prisma 7 does not generate the client on install; typecheck, build
-      # and seed all import it.
+      # prisma.config.ts requires DATABASE_URL even for validate/generate,
+      # which never connect; a placeholder scoped to these steps.
+      - name: Validate Prisma schema
+        run: npx prisma validate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+
+      # Prisma 7 does not generate the client on install.
       - name: Generate Prisma client
         run: npm run db:generate
-        # prisma.config.ts requires DATABASE_URL even for generate (no
-        # connection is made); no .env exists yet in this job.
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
 
       - name: Lint
         run: npm run lint
 
-      # Static check of the production stack template (no secrets: the
-      # example file only holds placeholders).
-      - name: Validate production compose file
-        run: docker compose -f docker-compose.prod.yml --env-file .env.production.example config --quiet
-
       - name: Typecheck (app)
         run: npm run typecheck
 
       # Each worker is an independently deployable package with its own
-      # node_modules/tsconfig (see AGENTS.md) — typechecking the app alone
-      # does not cover them. `prisma generate` only needs the schema file
-      # on disk, not a live database connection, so this runs with no
-      # service containers.
+      # node_modules/tsconfig; the app typecheck excludes workers/.
       - name: Typecheck workers
         run: |
           for worker in pdf office ocr html cleanup; do
@@ -59,9 +64,33 @@ jobs:
             echo "::endgroup::"
           done
 
-  build:
+      # Static check of the production stack template (the example env
+      # file holds placeholders only).
+      - name: Validate production compose file
+        run: docker compose -f docker-compose.prod.yml --env-file .env.production.example config --quiet
+
+  security:
+    name: Dependency audit
     runs-on: ubuntu-latest
-    needs: lint-and-typecheck
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # Fails on any high/critical advisory in production dependencies
+      # unless it is listed, with a reason and expiry, in
+      # security/audit-allowlist.json. Reads lockfiles only.
+      - name: Audit production dependencies
+        run: node scripts/audit-gate.mjs . workers/pdf workers/office workers/ocr workers/html workers/cleanup
+
+  build:
+    name: Production build and images
+    runs-on: ubuntu-latest
+    needs: static
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -73,17 +102,6 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
-      # Prisma 7 does not generate the client on install; typecheck, build
-      # and seed all import it.
-      - name: Generate Prisma client
-        run: npm run db:generate
-        # prisma.config.ts requires DATABASE_URL even for generate (no
-        # connection is made); no .env exists yet in this job.
-        env:
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
-
-      # `next build` prerenders some routes at build time, which touches
-      # env vars even though nothing here is a real credential.
       - name: Write CI env file
         run: |
           cat > .env <<'EOF'
@@ -98,8 +116,12 @@ jobs:
           AUTH_SECRET="ci-only-not-a-real-secret-0000000000000000000000"
           GUEST_ID_SECRET="ci-only-not-a-real-secret-1111111111111111111111"
           NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+          EMAIL_FROM="JPdf CI <ci@localhost>"
           NODE_ENV="production"
           EOF
+
+      - name: Generate Prisma client
+        run: npm run db:generate
 
       - name: Build app
         run: npm run build
@@ -112,14 +134,19 @@ jobs:
             echo "::endgroup::"
           done
 
+      # The production app image (Dockerfile). Worker images are built in
+      # the e2e job, from the same Dockerfiles production uses.
+      - name: Build app image
+        run: docker build --build-arg NEXT_PUBLIC_SITE_URL=https://ci.invalid -t jpdf-app:ci .
+
   e2e:
+    name: Full stack E2E
     runs-on: ubuntu-latest
     needs: build
     # A full `docker compose up --build` from a cold cache (LibreOffice,
-    # Tesseract, and Chromium images are all large) is genuinely slow on
-    # a fresh runner — generous but not unbounded, so a real hang still
-    # fails loudly instead of silently consuming Actions minutes forever.
-    timeout-minutes: 45
+    # Tesseract and Chromium images are large) is slow on a fresh runner;
+    # generous but bounded, so a real hang still fails loudly.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -132,6 +159,7 @@ jobs:
         run: |
           cat > .env <<'EOF'
           DATABASE_URL="postgresql://jdpdf:jdpdf@localhost:5432/jdpdf?schema=public"
+          SHADOW_DATABASE_URL="postgresql://jdpdf:jdpdf@localhost:5432/jdpdf_shadow?schema=public"
           REDIS_URL="redis://localhost:6379"
           STORAGE_ENDPOINT="http://localhost:9000"
           STORAGE_REGION="auto"
@@ -144,26 +172,18 @@ jobs:
           AUTH_SECRET="ci-only-not-a-real-secret-0000000000000000000000"
           GUEST_ID_SECRET="ci-only-not-a-real-secret-1111111111111111111111"
           NEXT_PUBLIC_SITE_URL="http://localhost:3000"
+          EMAIL_FROM="JPdf CI <ci@localhost>"
           NODE_ENV="development"
           EOF
 
-      # Brings up postgres/redis/minio/clamav plus all five worker
-      # containers from this repo's own Dockerfiles — the same command
-      # (and the same docker-compose.yml) used in local dev, not a
-      # separate CI-only setup. `--wait` blocks until every service with
-      # a healthcheck actually reports healthy (clamav's freshclam
-      # database download is the slowest of these) rather than racing
-      # ahead before the stack is really ready.
+      # Postgres/Redis/MinIO/ClamAV/Mailpit plus all five workers, built
+      # from this repo's Dockerfiles: the same docker-compose.yml used in
+      # local development, on fresh volumes.
       - name: Start the full stack (docker compose)
-        run: docker compose up -d --build --wait --wait-timeout 300
+        run: docker compose up -d --build --wait --wait-timeout 600
 
-      # `--wait` above was verified (by actually running it, not assumed)
-      # to return successfully while clamav still reports "starting" --
-      # it has no dependents in docker-compose.yml (`depends_on:`), which
-      # Compose's `--wait` seems to treat differently from a service
-      # something else is actually waiting on. Poll explicitly so the
-      # malware-scan E2E test can't flake based on whether clamd happened
-      # to finish its first healthcheck cycle in time.
+      # `--wait` returns while clamav can still be "starting" (it has no
+      # dependents); poll so the malware-scan test can't flake on it.
       - name: Wait for ClamAV to report healthy
         run: |
           for i in $(seq 1 60); do
@@ -179,13 +199,17 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
-      # Prisma 7 does not generate the client on install; typecheck, build
-      # and seed all import it.
       - name: Generate Prisma client
         run: npm run db:generate
 
       - name: Run database migrations
         run: npx prisma migrate deploy
+
+      # Fails if schema.prisma and the committed migrations disagree.
+      - name: Check migrations match the schema
+        run: |
+          docker exec pdf-postgres-1 psql -U jdpdf -d jdpdf -c "CREATE DATABASE jdpdf_shadow"
+          npx prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma --exit-code
 
       - name: Seed the database
         run: npm run db:seed
@@ -216,9 +240,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-test-results
-          # playwright.config.ts uses the "list" console reporter only
-          # (no html report is generated) -- test-results/ is where
-          # Playwright actually writes per-failure traces/screenshots.
+          # playwright.config.ts uses the "list" reporter only; per-failure
+          # traces/screenshots land in test-results/.
           path: test-results/
           retention-days: 7
 

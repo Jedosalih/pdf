@@ -1,32 +1,37 @@
-# Production stack TEMPLATE -- not deployed anywhere yet (docs/DEPLOYMENT.md).
+# Production stack for a single Docker host (docs/DEPLOYMENT.md).
 #
 #   cp .env.production.example .env.production   # fill in real secrets
 #   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 #
 # Differences from the local-dev docker-compose.yml, all deliberate:
+# - Only the Caddy reverse proxy is reachable from outside (80/443, HTTPS
+#   with automatic certificates). Nothing else publishes a port: Postgres,
+#   Redis, storage, ClamAV, the workers and the app itself are only on the
+#   compose networks.
 # - Every secret comes from .env.production (never committed); compose
 #   refuses to start if a required one is missing (`${VAR:?}`).
-# - Only the app (3000) and MinIO's S3 API (9000) are published, and only
-#   on 127.0.0.1, for a reverse proxy on the same host that terminates
-#   HTTPS and appends X-Forwarded-For (TRUSTED_PROXY_HOPS=1). Postgres,
-#   Redis and ClamAV are not reachable from outside the compose networks.
 # - Redis requires a password.
 # - Each service has its own least-privilege Postgres role
-#   (deploy/postgres) and MinIO access key (deploy/minio); the admin/root
+#   (deploy/postgres) and object-storage key (deploy/storage); admin
 #   credentials are used only by the one-shot init/migrate services.
+# - Object storage is SeaweedFS (Apache-2.0, actively maintained) instead
+#   of MinIO, whose community images are no longer published.
 # - Images are pinned by digest.
 #
-# Networks: `backend` is internal (no route out) and holds everything
-# that talks to Postgres/Redis/MinIO. Workers are ONLY on `backend`, so a
-# compromised engine has no outbound network. `edge` is a normal bridge
-# used for the published ports and outbound traffic of the app and
-# ClamAV (freshclam needs to download definitions).
+# Networks: `backend` is internal (no route out) and holds everything that
+# talks to Postgres/Redis/storage; the workers are ONLY on it, so a
+# compromised engine has no outbound network. `edge` is a normal bridge for
+# the proxy, the app (outbound SMTP) and ClamAV (definition updates).
+
+# Fixed project name: volume names (jpdf_postgres_data, jpdf_storage_data,
+# ...) are what deploy/backup.sh and the restore steps refer to.
+name: jpdf
 
 x-worker-env: &worker-env
   DATABASE_URL: postgresql://jpdf_worker:${POSTGRES_WORKER_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}?schema=public
   REDIS_URL: redis://:${REDIS_PASSWORD:?}@redis:6379
-  STORAGE_ENDPOINT: http://minio:9000
-  STORAGE_REGION: auto
+  STORAGE_ENDPOINT: http://storage:8333
+  STORAGE_REGION: us-east-1
   STORAGE_BUCKET: ${STORAGE_BUCKET:?}
   STORAGE_ACCESS_KEY: ${STORAGE_WORKER_ACCESS_KEY:?}
   STORAGE_SECRET_KEY: ${STORAGE_WORKER_SECRET_KEY:?}
@@ -39,31 +44,52 @@ x-worker: &worker
   depends_on:
     postgres: { condition: service_healthy }
     redis: { condition: service_healthy }
-    minio-init: { condition: service_completed_successfully }
+    storage-init: { condition: service_completed_successfully }
     migrate: { condition: service_completed_successfully }
   environment: *worker-env
+  logging: &logging
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
 
 services:
+  proxy:
+    image: caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    # edge for the public ports; backend to reach app and storage.
+    networks: [edge, backend]
+    depends_on:
+      app: { condition: service_healthy }
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?}
+      FILES_DOMAIN: ${FILES_DOMAIN:?}
+      ACME_EMAIL: ${ACME_EMAIL:?}
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging: *logging
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?}
+        NEXT_PUBLIC_SITE_URL: https://${APP_DOMAIN:?}
     restart: unless-stopped
-    ports: ["127.0.0.1:3000:3000"]
     networks: [backend, edge]
     depends_on:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
+      storage-init: { condition: service_completed_successfully }
     environment:
       DATABASE_URL: postgresql://jpdf_app:${POSTGRES_APP_PASSWORD:?}@postgres:5432/${POSTGRES_DB:?}?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD:?}@redis:6379
-      # The app both talks to storage and signs download URLs, so this must
-      # be the PUBLIC storage origin the reverse proxy serves (browsers
-      # fetch the signed URL directly).
-      STORAGE_ENDPOINT: ${STORAGE_PUBLIC_ENDPOINT:?}
-      STORAGE_REGION: auto
+      STORAGE_ENDPOINT: http://storage:8333
+      # Download URLs are signed for the public storage hostname (served by
+      # the proxy, GET/HEAD only); every other storage call stays internal.
+      STORAGE_PUBLIC_ENDPOINT: https://${FILES_DOMAIN:?}
+      STORAGE_REGION: us-east-1
       STORAGE_BUCKET: ${STORAGE_BUCKET:?}
       STORAGE_ACCESS_KEY: ${STORAGE_APP_ACCESS_KEY:?}
       STORAGE_SECRET_KEY: ${STORAGE_APP_SECRET_KEY:?}
@@ -79,8 +105,9 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       EMAIL_FROM: ${EMAIL_FROM:?}
-      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?}
-      TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-1}
+      NEXT_PUBLIC_SITE_URL: https://${APP_DOMAIN:?}
+      # Exactly one proxy (Caddy) appends X-Forwarded-For.
+      TRUSTED_PROXY_HOPS: "1"
       NODE_ENV: production
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -88,15 +115,16 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    logging: *logging
 
-  # One-shot: schema migrations, tool/limit seed, and per-role grants, as
-  # the admin role. Everything else depends on it completing.
+  # One-shot: schema migrations, tool/limit seed and per-role grants, as
+  # the admin role. Everything that uses the database waits for it.
   migrate:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?}
+        NEXT_PUBLIC_SITE_URL: https://${APP_DOMAIN:?}
     restart: "no"
     networks: [backend]
     depends_on:
@@ -107,6 +135,7 @@ services:
       sh -c "npx prisma migrate deploy &&
              npm run db:seed &&
              npx prisma db execute --file deploy/postgres/grants.sql"
+    logging: *logging
 
   postgres:
     image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
@@ -127,6 +156,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    logging: *logging
 
   redis:
     image: redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
@@ -142,37 +172,16 @@ services:
       retries: 10
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?}
+    logging: *logging
 
-  # See docs/DEPLOYMENT.md: MinIO no longer publishes maintained community
-  # images; this digest is the last one available and will not receive
-  # security fixes. Prefer a managed S3-compatible store (R2/S3) -- only
-  # the STORAGE_* variables change -- or a maintained MinIO distribution.
-  minio:
-    image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
-    restart: unless-stopped
-    command: server /data
-    networks: [backend, edge]
-    ports: ["127.0.0.1:9000:9000"]
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?}
-    volumes:
-      - minio_data:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  minio-init:
-    image: minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+  # Renders the S3 identity file (one scoped key per service) from the
+  # environment into a volume only `storage` also mounts.
+  storage-config:
+    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
     restart: "no"
-    networks: [backend]
-    depends_on:
-      minio: { condition: service_healthy }
+    network_mode: none
+    entrypoint: ["/bin/sh", "/render-s3-config.sh"]
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?}
       STORAGE_BUCKET: ${STORAGE_BUCKET:?}
       STORAGE_APP_ACCESS_KEY: ${STORAGE_APP_ACCESS_KEY:?}
       STORAGE_APP_SECRET_KEY: ${STORAGE_APP_SECRET_KEY:?}
@@ -181,8 +190,43 @@ services:
       STORAGE_CLEANUP_ACCESS_KEY: ${STORAGE_CLEANUP_ACCESS_KEY:?}
       STORAGE_CLEANUP_SECRET_KEY: ${STORAGE_CLEANUP_SECRET_KEY:?}
     volumes:
-      - ./deploy/minio/init.sh:/init.sh:ro
-    entrypoint: ["/bin/sh", "/init.sh"]
+      - ./deploy/storage/render-s3-config.sh:/render-s3-config.sh:ro
+      - storage_config:/config
+    logging: *logging
+
+  # S3-compatible object storage. Single-node SeaweedFS (master + volume +
+  # filer + S3 gateway in one process); data on the storage_data volume.
+  # Unauthenticated requests are refused.
+  storage:
+    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+    restart: unless-stopped
+    networks: [backend]
+    depends_on:
+      storage-config: { condition: service_completed_successfully }
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/config/s3.json"]
+    volumes:
+      - storage_data:/data
+      - storage_config:/config:ro
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8333 && nc -z 127.0.0.1 9333"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    logging: *logging
+
+  storage-init:
+    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+    restart: "no"
+    networks: [backend]
+    depends_on:
+      storage: { condition: service_healthy }
+    entrypoint: ["/bin/sh", "/create-bucket.sh"]
+    environment:
+      STORAGE_BUCKET: ${STORAGE_BUCKET:?}
+    volumes:
+      - ./deploy/storage/create-bucket.sh:/create-bucket.sh:ro
+    logging: *logging
 
   clamav:
     image: clamav/clamav-debian:stable@sha256:cc16781fe005e49de6a8fc1231b63b265f74b18fc2a6347c670c35716914c3b6
@@ -196,6 +240,7 @@ services:
       timeout: 10s
       retries: 10
       start_period: 180s
+    logging: *logging
 
   pdf-worker:
     <<: *worker
@@ -231,8 +276,11 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  minio_data:
+  storage_data:
+  storage_config:
   clamav_data:
+  caddy_data:
+  caddy_config:
 
 networks:
   backend:

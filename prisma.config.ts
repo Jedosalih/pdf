@@ -12,5 +12,8 @@ export default defineConfig({
   },
   datasource: {
     url: env("DATABASE_URL"),
+    // Only needed for `prisma migrate diff --from-migrations` (the CI
+    // drift check); a scratch database Prisma may wipe freely.
+    ...(process.env.SHADOW_DATABASE_URL ? { shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL } : {}),
   },
 });

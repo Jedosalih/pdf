@@ -1,0 +1,47 @@
+# Public entry point for docker-compose.prod.yml. Caddy obtains and renews
+# HTTPS certificates automatically (Let's Encrypt) for both hostnames once
+# their DNS points at this host and ports 80/443 are reachable.
+#
+# X-Forwarded-For: with no trusted_proxies configured, Caddy ignores any
+# client-supplied value and sets it to the real connecting address -- the
+# entry the app trusts (TRUSTED_PROXY_HOPS=1, lib/security/clientIp.ts).
+{
+	email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	# Largest legitimate request: a PRO upload (150MB) plus multipart
+	# overhead. The app enforces the real per-tool limit itself.
+	request_body {
+		max_size 160MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	reverse_proxy app:3000
+}
+
+# Signed download URLs only. Browsers never upload here (uploads go
+# through the app, which talks to storage on the internal network), so
+# everything except GET/HEAD is refused before it reaches storage.
+{$FILES_DOMAIN} {
+	@notRead not method GET HEAD
+	respond @notRead 405
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+
+	reverse_proxy storage:8333
+}

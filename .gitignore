@@ -49,3 +49,6 @@ workers/**/tmp/
 # claude / agent-skills local state (restore via `npx skills experimental_install`)
 .claude/skills/
 .agents/
+
+# production backups (deploy/backup.sh) -- never commit
+backups/
