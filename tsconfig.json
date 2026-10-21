@@ -39,7 +39,7 @@
   ],
   "exclude": [
     "node_modules",
-    "workers/**/node_modules",
+    "workers",
     ".next"
   ]
 }

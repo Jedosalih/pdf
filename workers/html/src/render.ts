@@ -62,10 +62,12 @@ function sanitize(rawHtml: string): string {
  *    outright — rejecting would break a large share of benign real-world
  *    HTML (Google Fonts links, hotlinked images) for no additional
  *    security benefit, since the request is aborted either way.
- * 2. Container network egress is restricted at the infra level to the
- *    object storage endpoint only (backstop if this in-process block has
- *    a gap Chromium doesn't route through `page.route`, e.g. DNS
- *    prefetch).
+ * 2. At the infra level the worker sits only on an `internal: true`
+ *    Docker network (docker-compose.yml / docker-compose.prod.yml): no
+ *    route to the internet, though it can still reach the other services
+ *    on that network (Postgres, Redis, MinIO). Backstop if this
+ *    in-process block has a gap Chromium doesn't route through
+ *    `page.route` (e.g. DNS prefetch).
  *
  * Rendering security, in order of importance:
  * 1. `javaScriptEnabled: false` — the primary, structural control. A PDF

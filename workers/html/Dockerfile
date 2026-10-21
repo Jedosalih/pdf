@@ -13,11 +13,11 @@ WORKDIR /app
 # browser "doesn't exist" at container start).
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-COPY workers/html/package.json ./
+COPY workers/html/package.json workers/html/package-lock.json ./
 # Do NOT use --omit=optional here: TypeScript 7's compiler ships as a
 # platform-specific native binary via an optional dependency — see
 # docs/DECISIONS.md.
-RUN npm install
+RUN npm ci
 
 # Installs Chromium plus its full OS-level dependency set (fonts, shared
 # libs) via Playwright's own installer, rather than hand-tracking the

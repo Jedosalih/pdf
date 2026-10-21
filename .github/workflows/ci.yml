@@ -26,8 +26,22 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
+      # Prisma 7 does not generate the client on install; typecheck, build
+      # and seed all import it.
+      - name: Generate Prisma client
+        run: npm run db:generate
+        # prisma.config.ts requires DATABASE_URL even for generate (no
+        # connection is made); no .env exists yet in this job.
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+
       - name: Lint
         run: npm run lint
+
+      # Static check of the production stack template (no secrets: the
+      # example file only holds placeholders).
+      - name: Validate production compose file
+        run: docker compose -f docker-compose.prod.yml --env-file .env.production.example config --quiet
 
       - name: Typecheck (app)
         run: npm run typecheck
@@ -58,6 +72,15 @@ jobs:
 
       - name: Install app dependencies
         run: npm ci
+
+      # Prisma 7 does not generate the client on install; typecheck, build
+      # and seed all import it.
+      - name: Generate Prisma client
+        run: npm run db:generate
+        # prisma.config.ts requires DATABASE_URL even for generate (no
+        # connection is made); no .env exists yet in this job.
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
 
       # `next build` prerenders some routes at build time, which touches
       # env vars even though nothing here is a real credential.
@@ -156,11 +179,27 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
+      # Prisma 7 does not generate the client on install; typecheck, build
+      # and seed all import it.
+      - name: Generate Prisma client
+        run: npm run db:generate
+
       - name: Run database migrations
         run: npx prisma migrate deploy
 
       - name: Seed the database
         run: npm run db:seed
+
+      # Security regression tests that inspect PDF bytes with the real
+      # qpdf/poppler binaries, so they run inside the worker images.
+      - name: Redaction security regression test
+        run: docker compose run --rm --no-deps pdf-worker node dist/redaction.test.js
+
+      - name: qpdf password-handling test
+        run: docker compose run --rm --no-deps pdf-worker node dist/qpdfJob.test.js
+
+      - name: Cleanup sweep test
+        run: docker compose run --rm --no-deps cleanup-worker node dist/sweep.test.js
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

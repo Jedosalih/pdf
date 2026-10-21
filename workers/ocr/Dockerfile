@@ -13,11 +13,11 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY workers/ocr/package.json ./
+COPY workers/ocr/package.json workers/ocr/package-lock.json ./
 # Do NOT use --omit=optional here: TypeScript 7's compiler ships as a
 # platform-specific native binary via an optional dependency — see
 # docs/DECISIONS.md.
-RUN npm install
+RUN npm ci
 
 COPY prisma ./prisma
 COPY workers/ocr/tsconfig.json ./

@@ -1,0 +1,13 @@
+# Optional override for running an isolated test stack next to anything
+# else already using the default host ports:
+#
+#   docker compose -p jpdf-test -f docker-compose.yml -f docker-compose.test.yml up -d --build --wait
+#
+# then point the app/Prisma CLI at it for that shell only (process env
+# takes precedence over .env):
+#
+#   DATABASE_URL=postgresql://jdpdf:jdpdf@localhost:55432/jdpdf?schema=public
+services:
+  postgres:
+    ports: !override
+      - "127.0.0.1:55432:5432"

@@ -1,0 +1,22 @@
+# Every image builds with the repo root as context (docker-compose.yml) but
+# only COPYs specific paths. Keep secrets and bulky local state out of the
+# build context entirely -- it is sent to the Docker daemon even if never
+# copied into an image.
+.env
+.env.*
+!.env.example
+!.env.production.example
+.git
+**/node_modules
+.next
+**/dist
+test-results
+playwright-report
+*.tsbuildinfo
+*.log
+.storage
+tmp
+.claude
+.agents
+TASKS
+docs

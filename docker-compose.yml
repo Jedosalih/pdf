@@ -1,13 +1,18 @@
+# LOCAL DEVELOPMENT AND CI ONLY. The credentials below are fixed, public
+# dev values and every published port is bound to 127.0.0.1. Never deploy
+# this file -- production uses docker-compose.prod.yml (see
+# docs/DEPLOYMENT.md). Run an isolated copy for tests with its own
+# volumes via `docker compose -p jpdf-test ...`.
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
     restart: unless-stopped
     environment:
       POSTGRES_USER: jdpdf
       POSTGRES_PASSWORD: jdpdf
       POSTGRES_DB: jdpdf
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -23,10 +28,10 @@ services:
     networks: [default, restricted]
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -39,15 +44,15 @@ services:
   # S3-compatible object storage for local dev — same API surface as R2/S3
   # in production (see lib/storage).
   minio:
-    image: minio/minio:latest
+    image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: jdpdf
       MINIO_ROOT_PASSWORD: jdpdf12345
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -58,7 +63,7 @@ services:
     networks: [default, restricted]
 
   minio-init:
-    image: minio/mc:latest
+    image: minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
     depends_on:
       minio:
         condition: service_healthy
@@ -78,10 +83,10 @@ services:
   # postgres/redis/minio (trusted, vendored infrastructure) than to a
   # worker parsing hostile input with an engine that could be exploited.
   clamav:
-    image: clamav/clamav-debian:stable
+    image: clamav/clamav-debian:stable@sha256:cc16781fe005e49de6a8fc1231b63b265f74b18fc2a6347c670c35716914c3b6
     restart: unless-stopped
     ports:
-      - "3310:3310"
+      - "127.0.0.1:3310:3310"
     volumes:
       - clamav_data:/var/lib/clamav
     healthcheck:

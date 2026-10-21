@@ -9,12 +9,12 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY workers/pdf/package.json ./
+COPY workers/pdf/package.json workers/pdf/package-lock.json ./
 # Do NOT use --omit=optional here: TypeScript 7's compiler ships as a
 # platform-specific native binary via an optional dependency
 # (e.g. @typescript/typescript-linux-x64) — omitting optional deps breaks
 # `tsc` inside the image. See docs/DECISIONS.md.
-RUN npm install
+RUN npm ci
 
 COPY prisma ./prisma
 COPY workers/pdf/tsconfig.json ./
